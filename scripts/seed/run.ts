@@ -14,7 +14,11 @@
  */
 import { transaction } from '@/lib/db'
 import { peopleSeed } from './parts/people.seed'
+import { payrollConfigSeed } from './parts/payroll-config.seed'
+import { payrollProcessingSeed } from './parts/payroll-processing.seed'
+import { employmentSeed } from './parts/employment.seed'
 import { DEMO_CREDENTIALS, identitySeed } from './parts/identity.seed'
+import { attendanceSeed } from './parts/attendance.seed'
 import { timeoffSeed } from './parts/timeoff.seed'
 import type { PoolClient, SeedContext, SeedPart, SeedRow, SeedSummary } from './types'
 
@@ -25,11 +29,24 @@ import type { PoolClient, SeedContext, SeedPart, SeedRow, SeedSummary } from './
  * now, so a part must run after the tables it references. Identity before
  * timeoff, people before both.
  *
- * Dev B: `peopleSeed` is a placeholder standing in for your module — replace
- *        it, and add `employmentSeed` and `attendanceSeed`.
- * Dev C:  add `payrollConfigSeed` and `payrollProcessingSeed`.
+ * Everything except `identitySeed` and `timeoffSeed` is a placeholder written
+ * by Dev A so the dashboard has real rows to aggregate. Dev B and Dev C should
+ * replace theirs wholesale, keeping the ids from `SEED`.
+ *
+ * Order is foreign-key order, and it is not negotiable:
+ *   employees      before everything that references a person
+ *   payroll-config before contracts   (a contract names a salary structure)
+ *   contracts      before payslips    (a payslip records the contract it used)
  */
-const PARTS: SeedPart[] = [peopleSeed, identitySeed, timeoffSeed]
+const PARTS: SeedPart[] = [
+  peopleSeed,
+  payrollConfigSeed,
+  employmentSeed,
+  identitySeed,
+  attendanceSeed,
+  timeoffSeed,
+  payrollProcessingSeed,
+]
 
 export interface RunSeedOptions {
   /** Empty each part's tables first. Destructive — see the callers. */

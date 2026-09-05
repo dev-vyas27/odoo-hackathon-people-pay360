@@ -22,6 +22,7 @@ export const PORT_KEYS = {
   /** Dev B — modules/employment */
   contractQuery: 'employment.contract-query',
   scheduleQuery: 'employment.schedule-query',
+  contractAlerts: 'employment.contract-alerts',
   /** Dev B — modules/attendance */
   attendanceStats: 'attendance.attendance-stats',
   /** Dev A — modules/timeoff */

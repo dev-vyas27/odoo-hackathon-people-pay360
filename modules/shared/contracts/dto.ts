@@ -80,11 +80,23 @@ export interface EmployeeLookupPort {
   }): Promise<EmployeeSummary[]>
 }
 
+/**
+ * The narrowing spec A7 asks for: "Flexible filtering by Period and Department
+ * ... Employee Type filters enable focused analysis."
+ *
+ * Every dashboard aggregate takes this, so a filter set on screen reaches all
+ * of them rather than only the ones that happened to have a parameter for it.
+ */
+export interface StatsFilter {
+  departmentId?: string
+  employeeType?: string
+}
+
 export interface EmployeeStatsPort {
-  headcount(filter?: { departmentId?: string; employeeType?: string }): Promise<number>
-  headcountByDepartment(): Promise<
-    Array<{ departmentId: string; departmentName: string; count: number }>
-  >
+  headcount(filter?: StatsFilter): Promise<number>
+  headcountByDepartment(
+    filter?: StatsFilter,
+  ): Promise<Array<{ departmentId: string; departmentName: string; count: number }>>
   headcountByEmployeeType(): Promise<Array<{ employeeType: EmployeeType; count: number }>>
   /** Employees with no bank account on file — an operational alert on the dashboard. */
   missingBankDetails(): Promise<Array<{ employeeId: string; name: string }>>
@@ -122,6 +134,25 @@ export interface ScheduleQueryPort {
   expectedHours(scheduleId: string, period: Period): Promise<number>
 }
 
+/**
+ * A contract needing a human's attention — spec B9's "contract attention items".
+ * Owned by Dev B (`employment`), consumed by the dashboard.
+ */
+export interface ContractAlert {
+  contractId: string
+  employeeId: string
+  employeeName: string
+  /** Why it needs attention, already worded for display. */
+  issue: string
+  kind: 'expiring' | 'expired' | 'missing' | 'draft'
+  endsOn: Date | null
+}
+
+export interface ContractAlertsPort {
+  /** Contracts expiring within `withinDays`, plus employees with none at all. */
+  attentionItems(period: Period, withinDays: number): Promise<ContractAlert[]>
+}
+
 export interface AttendanceSummary {
   present: number
   late: number
@@ -134,7 +165,17 @@ export interface AttendanceSummary {
 export interface AttendanceStatsPort {
   workedHours(employeeId: string, period: Period): Promise<number>
   workedDays(employeeId: string, period: Period): Promise<number>
-  summary(period: Period, departmentId?: string): Promise<AttendanceSummary>
+  /**
+   * `employeeType` is a THIRD positional parameter rather than part of a filter
+   * object, deliberately: an existing two-parameter implementation still
+   * satisfies this interface, so adding it broke nobody. Implementations that
+   * ignore it simply do not honour the employee-type filter yet.
+   */
+  summary(
+    period: Period,
+    departmentId?: string,
+    employeeType?: string,
+  ): Promise<AttendanceSummary>
 }
 
 // ---------------------------------------------------------------------------
@@ -220,8 +261,12 @@ export interface PayrollTotals {
 }
 
 export interface PayrollStatsPort {
-  totals(period: Period, departmentId?: string): Promise<PayrollTotals>
-  costByDepartment(period: Period): Promise<Array<{ departmentId: string; total: number }>>
+  /** See the note on AttendanceStatsPort.summary about the third parameter. */
+  totals(period: Period, departmentId?: string, employeeType?: string): Promise<PayrollTotals>
+  costByDepartment(
+    period: Period,
+    employeeType?: string,
+  ): Promise<Array<{ departmentId: string; total: number }>>
   monthlyTrend(months: number): Promise<Array<{ month: string; total: number }>>
   /** Same employee paid twice inside one period — an operational alert. */
   duplicatePayslips(

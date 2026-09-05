@@ -85,10 +85,13 @@ export type {
   EmployeeSummary,
   EmployeeLookupPort,
   EmployeeStatsPort,
+  StatsFilter,
   ContractSnapshot,
   ContractQueryPort,
   ScheduleSnapshot,
   ScheduleQueryPort,
+  ContractAlert,
+  ContractAlertsPort,
   AttendanceSummary,
   AttendanceStatsPort,
   LeaveUnit,
@@ -114,4 +117,3 @@ export {
   portOr,
   type Container,
 } from './container'
-
