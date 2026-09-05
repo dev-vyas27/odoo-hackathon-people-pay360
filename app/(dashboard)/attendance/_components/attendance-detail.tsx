@@ -70,7 +70,7 @@ export function AttendanceDetail({ id, canCorrect }: { id: string; canCorrect: b
       />
 
       {record.manual ? (
-        <div className="mb-6 flex items-start gap-2.5 rounded-lg border border-warning/30 bg-warning/10 p-3">
+        <div className="mb-6 flex items-start gap-2.5 rounded-2xl border border-warning/30 bg-warning/10 p-3">
           <LuTriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
           <p className="text-sm text-warning-foreground">
             This record was corrected manually. It stays flagged so the dashboard can report on
@@ -131,7 +131,7 @@ function ReadOnlyRecord({ record }: { record: AttendanceListItem }) {
   ]
 
   return (
-    <div className="rounded-lg border border-border">
+    <div className="rounded-2xl border border-border">
       <dl className="divide-y divide-border">
         {rows.map(([label, value]) => (
           <div key={label} className="flex items-center justify-between px-4 py-3">

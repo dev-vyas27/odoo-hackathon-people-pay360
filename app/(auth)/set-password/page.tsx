@@ -16,17 +16,15 @@ export default async function SetPasswordPage({
   const { token } = await searchParams
 
   return (
-    <div className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="space-y-2">
-          <p className="text-sm tracking-tight">
-            PeoplePay<span className="text-primary">360</span>
-          </p>
-          <h1 className="text-2xl font-medium tracking-tight">Choose a password</h1>
-        </div>
-
-        <SetPasswordForm token={token ?? ''} />
+    <>
+      <div className="space-y-3">
+        <h1 className="text-xl font-medium">Choose a password</h1>
+        <p className="text-base text-muted-foreground">
+          This is the last step. Pick something you have not used elsewhere.
+        </p>
       </div>
-    </div>
+
+      <SetPasswordForm token={token ?? ''} />
+    </>
   )
 }

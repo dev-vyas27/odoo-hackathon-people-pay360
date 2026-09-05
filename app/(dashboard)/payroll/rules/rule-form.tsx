@@ -137,7 +137,7 @@ function ComputationFields({ availableCodes }: { availableCodes: string[] }) {
   const type = useWatch({ control: form.control, name: 'computationType' })
 
   return (
-    <div className="rounded-lg border border-border bg-muted/25 p-5">
+    <div className="rounded-2xl border border-border bg-muted/25 p-5">
       <p className="mb-4 text-xs uppercase tracking-wide text-muted-foreground">
         {COMPUTATION_TYPE_LABELS[type] ?? 'Computation'}
       </p>

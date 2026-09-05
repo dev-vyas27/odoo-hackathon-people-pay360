@@ -39,6 +39,7 @@ export function LoginForm({
       ) : null}
 
       <ResourceForm<LoginValues>
+        surface={false}
         schema={loginSchema}
         submitLabel="Sign in"
         defaultValues={{ email: prefill?.email ?? '', password: prefill?.password ?? '' }}

@@ -104,7 +104,7 @@ export function ScheduleForm({
         </div>
 
         {fields.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border py-10 text-center">
+          <div className="rounded-2xl border border-dashed border-border py-10 text-center">
             <p className="text-sm text-muted-foreground">
               No working days yet. Add at least one.
             </p>
@@ -114,7 +114,7 @@ export function ScheduleForm({
             {fields.map((field, index) => (
               <div
                 key={field.id}
-                className="grid grid-cols-2 items-end gap-3 rounded-lg border border-border p-3 sm:grid-cols-[1.4fr_1fr_1fr_1fr_auto]"
+                className="grid grid-cols-2 items-end gap-3 rounded-2xl border border-border p-3 sm:grid-cols-[1.4fr_1fr_1fr_1fr_auto]"
               >
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Day</Label>

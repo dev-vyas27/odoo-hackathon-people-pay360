@@ -28,7 +28,7 @@ export function SmartButton({
     <Link
       href={href}
       className={cn(
-        'group flex min-w-[7.5rem] flex-col items-start gap-0.5 rounded-lg border border-border',
+        'group flex min-w-[7.5rem] flex-col items-start gap-0.5 rounded-2xl border border-border',
         'bg-card px-4 py-3 transition-colors hover:border-primary/40 hover:bg-accent',
         className,
       )}
@@ -37,7 +37,7 @@ export function SmartButton({
         <Icon className="size-3.5" aria-hidden />
         {label}
       </span>
-      <span className="tabular text-xl font-medium text-foreground">{count}</span>
+      <span className="tabular text-lg font-medium text-foreground">{count}</span>
     </Link>
   )
 }

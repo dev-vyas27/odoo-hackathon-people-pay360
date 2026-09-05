@@ -66,7 +66,7 @@ export function ResourceTable<T>({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="divide-y divide-border">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 p-4">
@@ -83,20 +83,22 @@ export function ResourceTable<T>({
 
   if (!data.length) {
     return (
-      <div className="rounded-lg border border-dashed border-border py-16 text-center">
-        <LuInbox className="mx-auto size-8 text-muted-foreground/60" aria-hidden />
-        <p className="mt-3 text-sm text-muted-foreground">{emptyMessage}</p>
-        {emptyAction ? <div className="mt-4">{emptyAction}</div> : null}
+      <div className="rounded-2xl border border-dashed border-border bg-card py-16 text-center">
+        <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent">
+          <LuInbox className="size-5 text-primary" aria-hidden />
+        </span>
+        <p className="mt-4 text-base text-foreground">{emptyMessage}</p>
+        {emptyAction ? <div className="mt-5">{emptyAction}</div> : null}
       </div>
     )
   }
 
   return (
-    <div className="rounded-lg border border-border overflow-x-auto">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-card">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((group) => (
-            <TableRow key={group.id} className="bg-muted/40 hover:bg-muted/40">
+            <TableRow key={group.id} className="bg-secondary-50 hover:bg-secondary-50">
               {group.headers.map((header) => {
                 const sortable = header.column.getCanSort()
                 const dir = header.column.getIsSorted()
@@ -104,8 +106,7 @@ export function ResourceTable<T>({
                   <TableHead
                     key={header.id}
                     className={cn(
-                      'text-xs uppercase tracking-wide text-muted-foreground',
-                      sortable && 'cursor-pointer select-none',
+                      sortable && 'cursor-pointer select-none transition-colors hover:text-primary',
                     )}
                     onClick={sortable ? header.column.getToggleSortingHandler() : undefined}
                   >

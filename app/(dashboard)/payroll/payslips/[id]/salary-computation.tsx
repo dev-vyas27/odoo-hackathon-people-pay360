@@ -13,7 +13,7 @@ import { formatMoney } from '../../_lib/format'
  */
 export function SalaryComputation({ payslip }: { payslip: PayslipView }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-border">
+    <section className="overflow-hidden rounded-2xl border border-border">
       <header className="border-b border-border bg-muted/40 px-5 py-3">
         <h2 className="text-sm font-medium text-foreground">Salary computation</h2>
         <p className="text-xs text-muted-foreground">

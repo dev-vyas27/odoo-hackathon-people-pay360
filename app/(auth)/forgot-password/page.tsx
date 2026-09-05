@@ -6,7 +6,6 @@
  * a working session.
  */
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { getActor } from '@/lib/auth'
 import { landingPathFor } from '@/components/layout/nav-items'
 import { ForgotPasswordForm } from './forgot-password-form'
@@ -16,20 +15,15 @@ export default async function ForgotPasswordPage() {
   if (actor) redirect(landingPathFor(actor.role))
 
   return (
-    <div className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="space-y-2">
-          <Link href="/login" className="text-sm tracking-tight">
-            PeoplePay<span className="text-primary">360</span>
-          </Link>
-          <h1 className="text-2xl font-medium tracking-tight">Reset your password</h1>
-          <p className="text-sm text-muted-foreground">
-            Enter your work email and we will send you a link to choose a new password.
-          </p>
-        </div>
-
-        <ForgotPasswordForm />
+    <>
+      <div className="space-y-3">
+        <h1 className="text-xl font-medium">Reset your password</h1>
+        <p className="text-base text-muted-foreground">
+          Enter your work email and we will send you a link to choose a new one.
+        </p>
       </div>
-    </div>
+
+      <ForgotPasswordForm />
+    </>
   )
 }

@@ -22,7 +22,7 @@ export default async function ForbiddenPage() {
         <span className="mx-auto flex size-11 items-center justify-center rounded-full bg-destructive/10">
           <LuLock className="size-5 text-destructive" aria-hidden />
         </span>
-        <h1 className="text-2xl font-medium tracking-tight">Not available to your role</h1>
+        <h1 className="text-xl font-medium tracking-tight">Not available to your role</h1>
         <p className="text-sm text-muted-foreground">
           {actor
             ? `You are signed in as ${ROLE_LABELS[actor.role]}, which cannot open this section. Ask an administrator if you need access.`

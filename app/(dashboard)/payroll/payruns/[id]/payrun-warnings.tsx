@@ -11,7 +11,7 @@ import type { PayrollWarning } from '@/modules/payroll-processing'
 export function PayrunWarnings({ warnings }: { warnings: PayrollWarning[] }) {
   if (!warnings.length) {
     return (
-      <div className="mb-6 flex items-center gap-2.5 rounded-lg border border-success/25 bg-success/8 px-4 py-3 text-sm">
+      <div className="mb-6 flex items-center gap-2.5 rounded-2xl border border-success/25 bg-success/8 px-4 py-3 text-sm">
         <LuCircleCheck className="size-4 text-success" aria-hidden />
         <span className="text-foreground">All pre-finalisation checks passed.</span>
       </div>
@@ -24,7 +24,7 @@ export function PayrunWarnings({ warnings }: { warnings: PayrollWarning[] }) {
   return (
     <div className="mb-6 space-y-3">
       {errors.length ? (
-        <section className="rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3">
+        <section className="rounded-2xl border border-destructive/25 bg-destructive/5 px-4 py-3">
           <p className="flex items-center gap-2 text-sm font-medium text-foreground">
             <LuCircleAlert className="size-4 text-destructive" aria-hidden />
             {errors.length} issue{errors.length === 1 ? '' : 's'} must be resolved before validating
@@ -38,7 +38,7 @@ export function PayrunWarnings({ warnings }: { warnings: PayrollWarning[] }) {
       ) : null}
 
       {advisories.length ? (
-        <section className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+        <section className="rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3">
           <p className="flex items-center gap-2 text-sm font-medium text-foreground">
             <LuTriangleAlert className="size-4 text-warning-foreground" aria-hidden />
             {advisories.length} thing{advisories.length === 1 ? '' : 's'} to check

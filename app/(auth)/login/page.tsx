@@ -29,22 +29,17 @@ export default async function LoginPage({
   const { next } = await searchParams
 
   return (
-    <div className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="space-y-2">
-          <p className="text-sm tracking-tight">
-            PeoplePay<span className="text-primary">360</span>
-          </p>
-          <h1 className="text-2xl font-medium tracking-tight">Sign in</h1>
-          <p className="text-sm text-muted-foreground">
-            HR and payroll operations for your organisation.
-          </p>
-        </div>
-
-        {/* The flag is read here, on the server, and passed down as a prop —
-            it never reaches a client bundle. */}
-        <LoginScreen next={safeNext(next)} demoEnabled={isDemoSeedEnabled()} />
+    <>
+      <div className="space-y-3">
+        <h1 className="text-xl font-medium">Sign in</h1>
+        <p className="text-base text-muted-foreground">
+          Sign in with your work email.
+        </p>
       </div>
-    </div>
+
+      {/* The flag is read here, on the server, and passed down as a prop —
+          it never reaches a client bundle. */}
+      <LoginScreen next={safeNext(next)} demoEnabled={isDemoSeedEnabled()} />
+    </>
   )
 }

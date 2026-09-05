@@ -57,7 +57,7 @@ export default async function PayrunPage({ params }: { params: Promise<{ id: str
         actions={<PayrunActions payrun={payrun} payslipCount={payslips.length} />}
       />
 
-      <section className="mb-6 grid grid-cols-2 gap-6 rounded-lg border border-border bg-card px-5 py-4 sm:grid-cols-4">
+      <section className="mb-6 grid grid-cols-2 gap-6 rounded-2xl border border-border bg-card px-5 py-4 sm:grid-cols-4">
         <Field label="Status">
           <StatusBadge status={payrun.status} />
         </Field>

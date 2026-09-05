@@ -325,7 +325,7 @@ function SelectionStep({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-border bg-muted/25 px-5 py-3 text-sm">
+      <div className="rounded-2xl border border-border bg-muted/25 px-5 py-3 text-sm">
         <span className="text-foreground">{scope?.name}</span>
         <span className="text-muted-foreground">
           {' '}
@@ -334,7 +334,7 @@ function SelectionStep({
       </div>
 
       {loading ? (
-        <div className="space-y-2 rounded-lg border border-border p-4">
+        <div className="space-y-2 rounded-2xl border border-border p-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-10 w-full" />
           ))}
@@ -344,7 +344,7 @@ function SelectionStep({
       ) : (
         <>
           {eligible.length ? (
-            <div className="overflow-hidden rounded-lg border border-border">
+            <div className="overflow-hidden rounded-2xl border border-border">
               <div className="flex items-center gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-xs uppercase tracking-wide text-muted-foreground">
                 <span className="w-5" />
                 <span className="flex-1">Employee</span>

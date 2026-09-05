@@ -3,17 +3,157 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/**
- * Design tokens.
- *
- * Typography note: LT Wave has no bold. The heaviest weight is Medium (500),
- * exposed as `font-medium`. Never use font-semibold/font-bold — the browser
- * synthesises a smeared faux-bold. Build hierarchy with size, colour and
- * tracking instead.
- */
+/* ═══════════════════════════════════════════════════════════════════════════
+   PeoplePay360 design tokens — sourced from Design.md (the Odoo system).
+
+   Two layers, deliberately:
+
+     1. PALETTE OF RECORD — the 50→950 ramps and semantic intents exactly as
+        Design.md states them. These generate `bg-primary-700`, `text-neutral-600`
+        and so on, and are the only place a raw hex may appear.
+
+     2. SEMANTIC ROLES — `--primary`, `--background`, `--muted-foreground`…,
+        every one of them a step chosen FROM layer 1. Components consume these,
+        never the ramps, so a palette change is one edit here rather than sixty
+        across the app.
+
+   TYPOGRAPHY — read this before reaching for a size.
+
+   Design.md's scale comes from a marketing site: it steps 0.75 → 0.875 →
+   1.094 → 1.25rem and then leaps to 1.972, 3.898, 4.62, 5.342rem. There is
+   nothing in the 24–30px band a dense admin app normally lives in. Every value
+   is adopted verbatim, but each belongs to a register:
+
+     xs  0.75rem    labels, eyebrows, table headers, meta
+     sm  0.875rem   the product surface — tables, forms, buttons, nav
+     base 1.094rem  prose: page descriptions, empty states, sign-in copy
+     lg  1.25rem    section and card titles
+     xl  1.972rem   page titles, KPI figures
+     2xl 3.898rem   ONE headline number per screen. Nothing else.
+     3xl 4.62rem    the sign-in wordmark.
+     4xl 5.342rem   reserved.
+
+   WEIGHT — LT Wave ships Thin(100), Light(300), Regular(400), Medium(500) and
+   nothing heavier. Design.md's semibold/bold/black are declared at their true
+   values so the tokens stay honest, but with `font-synthesis-weight: none` the
+   browser resolves all of them to Medium rather than smearing a fake bold.
+   Build hierarchy with size, colour and tracking.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @theme inline {
+  /* Font family is the one thing carried over unchanged — LT Wave is the
+     brand face. Design.md names Inter; the brief keeps ours. */
   --font-sans: var(--font-lt-wave), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ── Type scale ─────────────────────────────────────────────────────────
+     Line height and tracking tighten as size grows, which is what keeps a
+     62px figure from looking like a mistake next to 14px table text. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.4;
+  --text-xs--letter-spacing: 0.01em;
+
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.45;
+
+  --text-base: 1.094rem;
+  --text-base--line-height: 1.6;
+
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.4;
+  --text-lg--letter-spacing: -0.01em;
+
+  --text-xl: 1.972rem;
+  --text-xl--line-height: 1.2;
+  --text-xl--letter-spacing: -0.02em;
+
+  --text-2xl: 3.898rem;
+  --text-2xl--line-height: 1.02;
+  --text-2xl--letter-spacing: -0.035em;
+
+  --text-3xl: 4.62rem;
+  --text-3xl--line-height: 1;
+  --text-3xl--letter-spacing: -0.04em;
+
+  --text-4xl: 5.342rem;
+  --text-4xl--line-height: 0.98;
+  --text-4xl--letter-spacing: -0.045em;
+
+  /* ── Weights (Design.md) ───────────────────────────────────────────────── */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-black: 900;
+
+  /* ── Spacing (Design.md) ───────────────────────────────────────────────── */
+  --spacing: 0.25rem;
+
+  /* ── Radii (Design.md) ──────────────────────────────────────────────────
+     `lg` (2rem) and `xl` (50rem) are the marketing-card and pill values.
+     Product convention: controls `md`, panels `2xl`, pills `full`. */
+  --radius-none: 0;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 2rem;
+  --radius-xl: 50rem;
+  --radius-2xl: 1rem;
+  --radius-full: 9999px;
+
+  /* ── Shadows (Design.md) ────────────────────────────────────────────────
+     `sm` rests under cards, `lg` lifts popovers, `xl` lifts dialogs. `md` is
+     a hard 1px hairline — it reads as an edge, not a lift, so it is used to
+     seat the sticky header against scrolling content. */
+  --shadow-2xs: rgba(29, 30, 38, 0.04) 0px 1px 2px 0px;
+  --shadow-xs: rgba(29, 30, 38, 0.05) 0px 1px 2px 0px;
+  --shadow-sm: rgba(0, 0, 0, 0.075) 0px 2px 4px 0px;
+  --shadow-md: rgba(0, 0, 0, 0.427) 1px 1px 1px 0px;
+  --shadow-lg: rgba(0, 0, 0, 0.1) 0px 8px 16px 0px;
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+
+  /* ══ 1. PALETTE OF RECORD — Design.md, verbatim ═══════════════════════════ */
+
+  /* Primary — the Odoo aubergine. 700 is the brand step. */
+  --color-primary-50: #f9f6f8;
+  --color-primary-100: #f2edf1;
+  --color-primary-200: #e2d5de;
+  --color-primary-300: #ceb5c8;
+  --color-primary-400: #b38aa8;
+  --color-primary-500: #99668c;
+  --color-primary-600: #815575;
+  --color-primary-700: #714b67;
+  --color-primary-800: #503549;
+  --color-primary-900: #3c2a37;
+  --color-primary-950: #271b24;
+
+  /* Secondary — the slate-blue that carries every quiet surface and rule. */
+  --color-secondary-50: #f6f7f8;
+  --color-secondary-100: #eeeef2;
+  --color-secondary-200: #d6d8e0;
+  --color-secondary-300: #b8bbcc;
+  --color-secondary-400: #8e93ae;
+  --color-secondary-500: #6b7194;
+  --color-secondary-600: #5a5f7c;
+  --color-secondary-700: #494d64;
+  --color-secondary-800: #383b4d;
+  --color-secondary-900: #252733;
+  --color-secondary-950: #1d1e26;
+
+  /* Neutral — pure grey, for anything that must not pick up a cast. */
+  --color-neutral-50: #ffffff;
+  --color-neutral-100: #f0f0f0;
+  --color-neutral-200: #dbdbdb;
+  --color-neutral-300: #c2c2c2;
+  --color-neutral-400: #9e9e9e;
+  --color-neutral-500: #808080;
+  --color-neutral-600: #6b6b6b;
+  --color-neutral-700: #575757;
+  --color-neutral-800: #424242;
+  --color-neutral-900: #333333;
+  --color-neutral-950: #212121;
+
+  /* ══ 2. SEMANTIC ROLES ═══════════════════════════════════════════════════ */
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -35,8 +175,12 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Semantic status colours — payroll/attendance states use these, not raw hues,
-     so a status means the same thing on every screen. */
+  /* Status intents. The convention this codebase already uses for warning is
+     applied to all four: the BASE is the fill and rule colour, the
+     `-foreground` is the readable ink to set on a tint of it. Design.md's
+     success (#22c55e) and error (#ef4444) are 2.3:1 and 3.8:1 on white — fine
+     as a fill, unreadable as 14px text — so the ink is a darker step of the
+     same hue. Nothing is invented; only the step changes. */
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -49,100 +193,197 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
 }
 
 :root {
-  --radius: 0.625rem;
+  /* Cool paper, white cards. The ground is secondary-50, one step off white,
+     which is what lets a card read as a card without a heavy shadow. */
+  --background: #f6f7f8;
+  --foreground: #1d1e26;
+  --card: #ffffff;
+  --card-foreground: #1d1e26;
+  --popover: #ffffff;
+  --popover-foreground: #1d1e26;
 
-  --background: oklch(0.995 0 0);
-  --foreground: oklch(0.21 0.02 264);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.02 264);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.02 264);
+  --primary: #714b67;
+  --primary-foreground: #f9f6f8;
+  --secondary: #eeeef2;
+  --secondary-foreground: #383b4d;
+  --muted: #eeeef2;
+  --muted-foreground: #5a5f7c;
 
-  --primary: oklch(0.48 0.16 264);
-  --primary-foreground: oklch(0.98 0.005 264);
-  --secondary: oklch(0.96 0.008 264);
-  --secondary-foreground: oklch(0.28 0.03 264);
-  --muted: oklch(0.96 0.008 264);
-  --muted-foreground: oklch(0.53 0.02 264);
-  --accent: oklch(0.95 0.02 264);
-  --accent-foreground: oklch(0.28 0.03 264);
-  --destructive: oklch(0.58 0.21 27);
-  --destructive-foreground: oklch(0.98 0.01 27);
+  /* Hover tint. Plum rather than grey, so every hover in the app is quietly
+     brand-coloured — the cheapest way to make a CRUD screen feel designed. */
+  --accent: #f2edf1;
+  --accent-foreground: #503549;
 
-  --success: oklch(0.6 0.14 155);
-  --success-foreground: oklch(0.98 0.01 155);
-  --warning: oklch(0.75 0.15 75);
-  --warning-foreground: oklch(0.25 0.05 75);
-  --info: oklch(0.62 0.13 240);
-  --info-foreground: oklch(0.98 0.01 240);
+  --destructive: #dc2626;
+  --destructive-foreground: #7f1d1d;
 
-  --border: oklch(0.91 0.01 264);
-  --input: oklch(0.91 0.01 264);
-  --ring: oklch(0.48 0.16 264);
+  --success: #22c55e;
+  --success-foreground: #15803d;
+  --warning: #f59e0b;
+  --warning-foreground: #92400e;
+  /* Design.md names no informational intent, so the system's own secondary
+     slate serves as one. */
+  --info: #6b7194;
+  --info-foreground: #494d64;
 
-  --chart-1: oklch(0.55 0.18 264);
-  --chart-2: oklch(0.65 0.14 185);
-  --chart-3: oklch(0.7 0.15 85);
-  --chart-4: oklch(0.6 0.16 320);
-  --chart-5: oklch(0.62 0.17 30);
+  --border: #d6d8e0;
+  --input: #d6d8e0;
+  --ring: #99668c;
+
+  /* Alternating plum and slate, descending in weight. Two families rather than
+     five hues keeps a department breakdown readable when it runs to twelve
+     bars and the last few are 3px tall. */
+  --chart-1: #714b67;
+  --chart-2: #5a5f7c;
+  --chart-3: #b38aa8;
+  --chart-4: #8e93ae;
+  --chart-5: #3c2a37;
 }
 
 .dark {
-  --background: oklch(0.17 0.015 264);
-  --foreground: oklch(0.96 0.005 264);
-  --card: oklch(0.21 0.02 264);
-  --card-foreground: oklch(0.96 0.005 264);
-  --popover: oklch(0.21 0.02 264);
-  --popover-foreground: oklch(0.96 0.005 264);
+  --background: #1d1e26;
+  --foreground: #eeeef2;
+  --card: #252733;
+  --card-foreground: #eeeef2;
+  --popover: #252733;
+  --popover-foreground: #eeeef2;
 
-  --primary: oklch(0.7 0.15 264);
-  --primary-foreground: oklch(0.17 0.02 264);
-  --secondary: oklch(0.27 0.02 264);
-  --secondary-foreground: oklch(0.96 0.005 264);
-  --muted: oklch(0.27 0.02 264);
-  --muted-foreground: oklch(0.7 0.02 264);
-  --accent: oklch(0.3 0.03 264);
-  --accent-foreground: oklch(0.96 0.005 264);
-  --destructive: oklch(0.65 0.19 27);
-  --destructive-foreground: oklch(0.98 0.01 27);
+  /* The brand plum inverts: 700 is invisible on a dark ground, 300 carries. */
+  --primary: #ceb5c8;
+  --primary-foreground: #271b24;
+  --secondary: #383b4d;
+  --secondary-foreground: #eeeef2;
+  --muted: #383b4d;
+  --muted-foreground: #b8bbcc;
+  --accent: #3c2a37;
+  --accent-foreground: #f2edf1;
 
-  --success: oklch(0.68 0.14 155);
-  --success-foreground: oklch(0.17 0.02 155);
-  --warning: oklch(0.79 0.14 75);
-  --warning-foreground: oklch(0.22 0.04 75);
-  --info: oklch(0.68 0.13 240);
-  --info-foreground: oklch(0.17 0.02 240);
+  --destructive: #f87171;
+  --destructive-foreground: #fecaca;
 
-  --border: oklch(0.3 0.02 264 / 60%);
-  --input: oklch(0.3 0.02 264 / 70%);
-  --ring: oklch(0.7 0.15 264);
+  --success: #22c55e;
+  --success-foreground: #4ade80;
+  --warning: #f59e0b;
+  --warning-foreground: #fbbf24;
+  --info: #8e93ae;
+  --info-foreground: #b8bbcc;
 
-  --chart-1: oklch(0.65 0.18 264);
-  --chart-2: oklch(0.7 0.14 185);
-  --chart-3: oklch(0.75 0.15 85);
-  --chart-4: oklch(0.68 0.16 320);
-  --chart-5: oklch(0.7 0.17 30);
+  --border: #383b4d;
+  --input: #494d64;
+  --ring: #b38aa8;
+
+  --chart-1: #ceb5c8;
+  --chart-2: #8e93ae;
+  --chart-3: #99668c;
+  --chart-4: #b8bbcc;
+  --chart-5: #e2d5de;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
-    font-synthesis-weight: none; /* never fake a bold LT Wave does not have */
+    /* LT Wave has no weight above 500. Never let the browser invent one. */
+    font-synthesis-weight: none;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  /* Tabular figures keep salary columns aligned down the table. */
+
+  /* Headings default to Medium — the heaviest real weight — so a bare <h*>
+     is never accidentally set in Regular. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-medium tracking-tight;
+  }
+
+  /* Plum selection, so even highlighting text is on-brand. */
+  ::selection {
+    background-color: var(--color-primary-200);
+    color: var(--color-primary-950);
+  }
+
+  /* The default focus ring is a browser artefact. This one is the brand
+     colour at a visible weight, and it is never removed — only restyled. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Tabular figures keep salary columns aligned down the table. Every money
+     and duration cell in the app carries this. */
   .tabular {
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /*
+   * The eyebrow: a small uppercase label that names what follows.
+   *
+   * Used above KPI figures, on table headers and on form sections. It is the
+   * one repeated typographic device in the system, and it earns its place by
+   * carrying the label so the value beneath it can be set large and bare.
+   */
+  .eyebrow {
+    @apply text-xs font-medium uppercase text-muted-foreground;
+    letter-spacing: 0.08em;
+  }
+
+  /*
+   * The spine: a 2px plum rule down the left edge.
+   *
+   * Marks the thing you are currently inside — the open payrun, the section
+   * being read, the selected row. Structural, not decorative: it appears only
+   * where "you are here" is true.
+   */
+  .spine {
+    @apply border-l-2 border-primary pl-4;
+  }
+}
+
+/*
+ * The signed-out backdrop. See app/(auth)/_components/payroll-horizon.tsx.
+ *
+ * Both are transform-only so they composite on the GPU and never touch layout.
+ * The drift ends at exactly -50% because the ridge renders its bars twice, so
+ * the loop point is invisible.
+ */
+@keyframes horizon-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes horizon-breathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.16);
+  }
+}
+
+/* Motion is a courtesy, and some people have asked us not to. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

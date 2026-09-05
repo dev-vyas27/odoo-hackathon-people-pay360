@@ -127,9 +127,16 @@ export default function ReportsPage() {
         </p>
       ) : null}
 
-      {/* ── KPI cards ─────────────────────────────────────────────────────── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {/*
+        ── KPI cards ────────────────────────────────────────────────────────
+        Six columns, not five: total net paid takes two of them and is the one
+        tile allowed the display size. It is the figure the page exists to
+        answer, and giving the other four equal weight would bury it.
+      */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <KpiCard
+          featured
+          className="sm:col-span-2"
           label="Total net paid"
           value={compactMoney(kpis.totalNetPaid)}
           hint="Paid payslips only"
@@ -174,7 +181,7 @@ export default function ReportsPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-normal text-muted-foreground">
+            <CardTitle className="eyebrow">
               Salary cost by department
             </CardTitle>
           </CardHeader>
@@ -189,7 +196,7 @@ export default function ReportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-normal text-muted-foreground">
+            <CardTitle className="eyebrow">
               Monthly net salary trend
             </CardTitle>
           </CardHeader>
@@ -255,7 +262,7 @@ export default function ReportsPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-normal text-muted-foreground">
+            <CardTitle className="eyebrow">
               Attendance overview
             </CardTitle>
           </CardHeader>
@@ -290,7 +297,7 @@ export default function ReportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-normal text-muted-foreground">
+            <CardTitle className="eyebrow">
               Department breakdown
             </CardTitle>
           </CardHeader>

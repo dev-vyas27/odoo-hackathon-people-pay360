@@ -125,6 +125,15 @@ export interface ResourceFormProps<T extends FieldValues> {
    * about not asking someone to fill in a form that will be rejected.
    */
   readOnly?: boolean
+  /**
+   * Render on a card with a seated action bar.
+   *
+   * On by default, because every other block in the dashboard is a card and a
+   * bare form floating on the page ground is the one surface that looks
+   * unfinished. Turned off for the sign-in screens, where the column is already
+   * a white sheet and a second frame inside it is a frame too many.
+   */
+  surface?: boolean
   derive?: (values: T) => Partial<T> | null
   /** Rendered above the buttons — warnings, computed totals, related records. */
   children?: React.ReactNode
@@ -176,6 +185,7 @@ export function ResourceForm<T extends FieldValues>({
   submitLabel = 'Save',
   cancel,
   readOnly = false,
+  surface = true,
   derive,
   children,
   className,
@@ -335,25 +345,33 @@ export function ResourceForm<T extends FieldValues>({
         onSubmit={form.handleSubmit(async (values) => {
           await onSubmit(values)
         })}
-        className={cn('space-y-6', className)}
+        className={cn(
+          surface ? 'overflow-hidden rounded-2xl border border-border bg-card shadow-sm' : 'space-y-6',
+          className,
+        )}
         noValidate
       >
-        {sections.map((section, index) => (
-          <div key={section.title ?? `__unsectioned-${index}`} className="space-y-4">
-            {section.title ? (
-              <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {section.title}
-              </h2>
-            ) : null}
-            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-              {section.items.map(renderField)}
+        <div className={cn(surface ? 'space-y-8 p-6 sm:p-8' : 'space-y-6')}>
+          {sections.map((section, index) => (
+            <div key={section.title ?? `__unsectioned-${index}`} className="space-y-4">
+              {section.title ? <h2 className="eyebrow">{section.title}</h2> : null}
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+                {section.items.map(renderField)}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {children}
+          {children}
+        </div>
 
-        <div className="flex items-center gap-3 border-t border-border pt-5">
+        <div
+          className={cn(
+            'flex items-center gap-3',
+            surface
+              ? 'border-t border-border bg-secondary-50 px-6 py-4 sm:px-8'
+              : 'pt-1',
+          )}
+        >
           {/* No submit at all when read-only — a disabled Save still invites a
               click and still says "you should be able to do this". */}
           {readOnly ? null : (

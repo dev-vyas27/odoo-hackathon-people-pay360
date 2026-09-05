@@ -58,6 +58,7 @@ export function ForgotPasswordForm() {
       ) : null}
 
       <ResourceForm<ForgotPasswordValues>
+        surface={false}
         schema={forgotPasswordSchema}
         submitLabel="Send reset link"
         defaultValues={{ email: '' }}

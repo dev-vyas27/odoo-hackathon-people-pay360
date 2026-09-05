@@ -73,7 +73,7 @@ export function DemoSeedPanel({
   }
 
   return (
-    <section className="space-y-3 rounded-lg border border-dashed border-border p-4">
+    <section className="space-y-3 rounded-md border border-dashed border-border bg-secondary-50 p-4">
       <div className="flex items-start gap-2.5">
         <LuDatabase className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
         <div className="space-y-1">

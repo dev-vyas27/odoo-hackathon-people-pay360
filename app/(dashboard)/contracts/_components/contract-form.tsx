@@ -55,7 +55,7 @@ function InheritedFromEmployee({
     positions.options.find((p) => p.value === employee?.jobPositionId)?.label ?? null
 
   return (
-    <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+    <div className="rounded-2xl border border-border bg-muted/30 px-4 py-3">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         From the employee record
       </p>

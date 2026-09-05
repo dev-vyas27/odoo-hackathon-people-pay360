@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 
 export function ErrorState({ title = 'Could not load this page', message }: { title?: string; message: string }) {
   return (
-    <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-6">
+    <div className="rounded-2xl border border-destructive/25 bg-destructive/5 p-6">
       <div className="flex items-start gap-3">
         <LuCircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
         <div className="space-y-1">
@@ -25,7 +25,7 @@ export function InfoNote({ children, className }: { children: React.ReactNode; c
   return (
     <div
       className={cn(
-        'flex items-start gap-2.5 rounded-lg border border-info/25 bg-info/8 px-4 py-3 text-sm text-foreground',
+        'flex items-start gap-2.5 rounded-2xl border border-info/25 bg-info/8 px-4 py-3 text-sm text-foreground',
         className,
       )}
     >
@@ -39,7 +39,7 @@ export function WarningNote({ children, className }: { children: React.ReactNode
   return (
     <div
       className={cn(
-        'flex items-start gap-2.5 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground',
+        'flex items-start gap-2.5 rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground',
         className,
       )}
     >

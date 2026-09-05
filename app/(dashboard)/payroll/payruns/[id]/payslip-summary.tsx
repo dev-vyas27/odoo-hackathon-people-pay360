@@ -23,7 +23,7 @@ export function PayslipSummary({
 }) {
   if (!payslips.length) {
     return (
-      <div className="rounded-lg border border-dashed border-border py-16 text-center">
+      <div className="rounded-2xl border border-dashed border-border py-16 text-center">
         <LuInbox className="mx-auto size-8 text-muted-foreground/60" aria-hidden />
         <p className="mt-3 text-sm text-muted-foreground">
           {status === 'draft'
@@ -37,7 +37,7 @@ export function PayslipSummary({
   const totalNet = payslips.reduce((sum, payslip) => sum + payslip.net, 0)
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border">
+    <section className="overflow-hidden rounded-2xl border border-border">
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border bg-muted/40 px-5 py-3">
         <h2 className="text-sm font-medium text-foreground">
           {payslips.length} payslip{payslips.length === 1 ? '' : 's'}

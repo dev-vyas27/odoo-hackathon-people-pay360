@@ -64,7 +64,7 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
         }
       />
 
-      <section className="mb-6 grid grid-cols-2 gap-6 rounded-lg border border-border bg-card px-5 py-4 sm:grid-cols-3 lg:grid-cols-6">
+      <section className="mb-6 grid grid-cols-2 gap-6 rounded-2xl border border-border bg-card px-5 py-4 sm:grid-cols-3 lg:grid-cols-6">
         <Field label="Employee">{payslip.employeeName}</Field>
         <Field label="Structure">{payslip.structureName}</Field>
         <Field label="Pay run">

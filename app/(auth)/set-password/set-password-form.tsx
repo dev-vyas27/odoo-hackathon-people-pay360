@@ -106,6 +106,7 @@ export function SetPasswordForm({ token }: { token: string }) {
       ) : null}
 
       <ResourceForm<SetPasswordValues>
+        surface={false}
         schema={setPasswordSchema}
         submitLabel="Set password"
         defaultValues={{ password: '', confirmPassword: '' }}
