@@ -253,8 +253,12 @@ export function ResourceForm<T extends FieldValues>({
       control={form.control}
       name={field.name}
       render={({ field: rhf }) => (
-        <FormItem className={cn(field.span === 2 && 'sm:col-span-2')}>
-          {field.type !== 'checkbox' && <FormLabel>{field.label}</FormLabel>}
+        <FormItem className={cn('self-start', field.span === 2 && 'sm:col-span-2')}>
+          {field.type === 'checkbox' ? (
+            <FormLabel className="invisible">{field.label}</FormLabel>
+          ) : (
+            <FormLabel>{field.label}</FormLabel>
+          )}
           {/**
            * The select is handled before the shared FormControl, and FormControl
            * wraps its TRIGGER instead.
@@ -298,7 +302,7 @@ export function ResourceForm<T extends FieldValues>({
                 rows={4}
               />
             ) : field.type === 'checkbox' ? (
-              <label className="flex items-center gap-2.5 pt-1">
+              <label className="flex h-9 items-center gap-2.5">
                 <Checkbox
                   checked={Boolean(rhf.value)}
                   onCheckedChange={rhf.onChange}

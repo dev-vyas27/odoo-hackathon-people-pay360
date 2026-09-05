@@ -19,16 +19,18 @@
 
    TYPOGRAPHY — read this before reaching for a size.
 
-   Design.md's scale comes from a marketing site: it steps 0.75 → 0.875 →
-   1.094 → 1.25rem and then leaps to 1.972, 3.898, 4.62, 5.342rem. There is
-   nothing in the 24–30px band a dense admin app normally lives in. Every value
-   is adopted verbatim, but each belongs to a register:
+   Design.md's scale comes from a marketing site and originally stepped
+   0.75 → 0.875 → 1.094 → 1.25rem before leaping to 1.972, 3.898, 4.62,
+   5.342rem. That was too small to read comfortably on a dense admin screen,
+   so xs–xl were raised a step each; 2xl–4xl stay at Design.md's marketing
+   values since they are reserved for one-off headline sizes, not body text.
+   Each belongs to a register:
 
-     xs  0.75rem    labels, eyebrows, table headers, meta
-     sm  0.875rem   the product surface — tables, forms, buttons, nav
-     base 1.094rem  prose: page descriptions, empty states, sign-in copy
-     lg  1.25rem    section and card titles
-     xl  1.972rem   page titles, KPI figures
+     xs  0.8125rem  labels, eyebrows, table headers, meta
+     sm  1rem       the product surface — tables, forms, buttons, nav
+     base 1.125rem  prose: page descriptions, empty states, sign-in copy
+     lg  1.375rem   section and card titles
+     xl  2.25rem    page titles, KPI figures
      2xl 3.898rem   ONE headline number per screen. Nothing else.
      3xl 4.62rem    the sign-in wordmark.
      4xl 5.342rem   reserved.
@@ -49,21 +51,21 @@
   /* ── Type scale ─────────────────────────────────────────────────────────
      Line height and tracking tighten as size grows, which is what keeps a
      62px figure from looking like a mistake next to 14px table text. */
-  --text-xs: 0.75rem;
+  --text-xs: 0.8125rem;
   --text-xs--line-height: 1.4;
   --text-xs--letter-spacing: 0.01em;
 
-  --text-sm: 0.875rem;
-  --text-sm--line-height: 1.45;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5;
 
-  --text-base: 1.094rem;
+  --text-base: 1.125rem;
   --text-base--line-height: 1.6;
 
-  --text-lg: 1.25rem;
+  --text-lg: 1.375rem;
   --text-lg--line-height: 1.4;
   --text-lg--letter-spacing: -0.01em;
 
-  --text-xl: 1.972rem;
+  --text-xl: 2.25rem;
   --text-xl--line-height: 1.2;
   --text-xl--letter-spacing: -0.02em;
 
