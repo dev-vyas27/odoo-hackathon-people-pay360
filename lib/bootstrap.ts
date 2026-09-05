@@ -12,7 +12,9 @@
  * Called from `instrumentation.ts`, which Next runs once at server startup.
  */
 import { registerTimeOff } from '@/modules/timeoff'
+import { registerPayrollPorts } from '@/modules/payroll-processing/composition'
 import { registerInterimAdapters } from '@/lib/interim-adapters'
+import { registerInterimStats } from '@/lib/interim-stats'
 
 let done = false
 
@@ -34,9 +36,12 @@ export function bootstrap(): void {
   // registerAttendance()      // AttendanceStatsPort
 
   // ── Dev C ────────────────────────────────────────────────────────────────
-  // import { registerPayrollProcessing } from '@/modules/payroll-processing'
-  // registerPayrollProcessing()   // PayslipQueryPort, PayrollStatsPort
+  // PayslipQueryPort (for the PDF and bulk email) and PayrollStatsPort (for the
+  // dashboard). Registered here rather than in their module so there is exactly
+  // one place that says what a running process has wired up.
+  registerPayrollPorts()
 
-  // Must stay last: fills only the ports nobody claimed above.
+  // Must stay last: these fill only the ports nobody claimed above.
   registerInterimAdapters()
+  registerInterimStats()
 }
