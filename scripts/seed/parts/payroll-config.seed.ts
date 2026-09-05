@@ -41,16 +41,14 @@ export const payrollConfigSeed: SeedPart = {
 
     /**
      * The join table has a composite primary key and no `id`, so it cannot go
-     * through `ctx.upsert` — that helper keys on `id`. This is what `ctx.sql`
-     * exists for.
+     * through `ctx.upsert` — that helper keys on `id`. `ctx.link` is the
+     * two-column equivalent, and writes the set in one statement.
      */
-    for (let i = 1; i <= 7; i += 1) {
-      await ctx.sql(
-        `INSERT INTO salary_structure_rules (salary_structure_id, salary_rule_id)
-         VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-        [STRUCTURE_ID, seedId('rul', i)],
-      )
-    }
+    await ctx.link(
+      'salary_structure_rules',
+      ['salary_structure_id', 'salary_rule_id'],
+      Array.from({ length: 7 }, (_, i) => [STRUCTURE_ID, seedId('rul', i + 1)] as [string, string]),
+    )
     ctx.log('1 salary structure with 7 rules in sequence')
   },
 }

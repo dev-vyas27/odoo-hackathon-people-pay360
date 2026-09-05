@@ -22,9 +22,17 @@ export interface SeedContext {
    */
   upsert(table: string, rows: SeedRow[]): Promise<number>
   /**
-   * Escape hatch for anything an upsert cannot express — a join table with a
-   * composite key, say. Always parameterised; never build SQL by concatenating
-   * values into the string.
+   * Rows for a join table with a composite primary key and no `id`.
+   *
+   * `payrun_employees` and `salary_structure_rules` are both of this shape, and
+   * both used to be filled one INSERT at a time inside the transaction. At five
+   * payruns across a full workforce that is hundreds of round trips for data
+   * that fits in one statement.
+   */
+  link(table: string, columns: [string, string], pairs: Array<[string, string]>): Promise<number>
+  /**
+   * Escape hatch for anything the helpers above cannot express. Always
+   * parameterised; never build SQL by concatenating values into the string.
    */
   sql(text: string, params?: readonly unknown[]): Promise<void>
   log(message: string): void

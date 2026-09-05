@@ -209,6 +209,7 @@ const contractAlerts: ContractAlertsPort = {
          JOIN employees e ON e.id = c.employee_id
         WHERE c.status = 'active'
           AND e.is_active = true
+          AND e.${NOT_AN_ADMIN}
           AND c.ends_on IS NOT NULL
           AND c.ends_on <= ($2::date + ($3 || ' days')::interval)
 
@@ -217,6 +218,11 @@ const contractAlerts: ContractAlertsPort = {
        SELECT NULL, e.id, e.name, NULL, 'missing'
          FROM employees e
         WHERE e.is_active = true
+          -- An administrator operates the system rather than being paid by it,
+          -- so it has no contract and never will. Without this the alert opens
+          -- every day reporting a problem nobody can fix, which is how a work
+          -- queue stops being read.
+          AND e.${NOT_AN_ADMIN}
           AND NOT EXISTS (
             SELECT 1 FROM contracts c2
              WHERE c2.employee_id = e.id

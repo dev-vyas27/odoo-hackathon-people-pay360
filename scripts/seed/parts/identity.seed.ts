@@ -4,19 +4,16 @@
  * Owner: Dev A.
  *
  * Since migration 0010 there is no `users` table: an account IS an employee
- * row, carrying `role` and `password_hash`. So this part no longer inserts
- * users; it does two things instead:
+ * row, carrying `role` and `password_hash`. Four of the five accounts are
+ * therefore ordinary members of the workforce who have been GRANTED a role —
+ * the HR Manager is the person in Human Resources whose job title is HR
+ * Manager. `people.seed` already created them; this part only adds credentials,
+ * and deliberately writes nothing else, because granting somebody a login must
+ * not quietly rewrite their HR record.
  *
- *   1. Attaches credentials to an employee `people.seed` already created —
- *      that is the `employee` role, and it is what makes row-level scoping
- *      demonstrable (this account sees its own attendance and leave, nobody
- *      else's).
- *   2. Creates employee rows for the staff roles, because an administrator has
- *      to exist as a person now. Their ids are the old `SEED.users.*` values,
- *      unchanged, so `timeoff.seed`'s `decided_by_employee_id` still resolves.
- *
- * It must run AFTER `people.seed` for the same reason it always did: the
- * employee it attaches to has to exist first.
+ * The administrator is the exception and is created here. It operates the
+ * system rather than working in it: no department, no post, no bank account,
+ * and the employee list filters admins out for that reason.
  *
  * The passwords are deliberately obvious and deliberately identical in shape.
  * This data only ever exists behind `DEMO_SEED_ENABLED`, and a demo where
@@ -25,98 +22,67 @@
  */
 import bcrypt from 'bcryptjs'
 import { ROLE_LABELS, type Role } from '@/modules/shared'
-import { SEED, seedId } from '../ids'
+import { MAIL_DOMAIN, STAFF } from '../roster'
 import type { SeedCredential, SeedPart } from '../types'
 
 interface DemoAccount {
-  /** The employee id. For staff roles this row is created here. */
+  /** The employee id this login attaches to. */
   id: string
   email: string
   name: string
   role: Role
   password: string
-  /** True when `people.seed` already created this employee. */
+  /** False only for the administrator, whose employee row is created here. */
   existing: boolean
-  /**
-   * Where this person sits in the org. Only meaningful for the rows created
-   * here — an employee `people.seed` already made keeps the department it was
-   * given, because granting a login must not rewrite an HR record.
-   *
-   * Null for the administrator: an operator of the system rather than a member
-   * of a department, and hidden from the employee list for that reason.
-   */
-  departmentId: string | null
-  jobPositionId: string | null
-  /**
-   * Staff get paid, so they have one. The dashboard's "missing required
-   * information" alert lists every active employee without a bank account, and
-   * after the merge these rows are employees — leaving it blank puts three
-   * false alerts on the demo dashboard.
-   */
-  bankAccount: string | null
 }
+
+const ADMIN_EMAIL = `admin@${MAIL_DOMAIN}`
 
 const DEMO_ACCOUNTS: DemoAccount[] = [
   {
-    id: SEED.users.admin,
-    email: 'admin@peoplepay360.dev',
-    name: 'Aarav Admin',
+    id: STAFF.admin,
+    email: ADMIN_EMAIL,
+    name: 'Aarav Menon',
     role: 'admin',
     password: 'admin1234',
     existing: false,
-    departmentId: null,
-    jobPositionId: null,
-    bankAccount: null,
   },
   {
-    id: SEED.users.hrManager,
-    email: 'hr@peoplepay360.dev',
-    name: 'Meera HR',
+    id: STAFF.hrManager.id,
+    email: STAFF.hrManager.email,
+    name: STAFF.hrManager.name,
     role: 'hr_manager',
     password: 'hr1234567',
-    existing: false,
-    departmentId: SEED.departments.humanResources,
-    jobPositionId: seedId('job', 5),
-    bankAccount: 'HDFC0009900001',
+    existing: true,
   },
   {
-    id: SEED.users.payrollUser,
-    email: 'payroll.user@peoplepay360.dev',
-    name: 'Rohan Payroll',
+    id: STAFF.payrollUser.id,
+    email: STAFF.payrollUser.email,
+    name: STAFF.payrollUser.name,
     role: 'hr_payroll_user',
     password: 'payroll12',
-    existing: false,
-    departmentId: SEED.departments.humanResources,
-    jobPositionId: seedId('job', 6),
-    bankAccount: 'HDFC0009900002',
+    existing: true,
   },
   {
-    id: SEED.users.payrollManager,
-    email: 'payroll.manager@peoplepay360.dev',
-    name: 'Divya Finance',
+    id: STAFF.payrollManager.id,
+    email: STAFF.payrollManager.email,
+    name: STAFF.payrollManager.name,
     role: 'hr_payroll_manager',
     password: 'manager12',
-    existing: false,
-    departmentId: SEED.departments.humanResources,
-    jobPositionId: seedId('job', 7),
-    bankAccount: 'HDFC0009900003',
+    existing: true,
   },
   {
     /**
-     * The protagonist. `people.seed` created this row, so the login address is
-     * that employee's own email — there is no separate account address to sign
-     * in with any more, which is the whole point of the merge.
+     * The protagonist, and the reason row-level scoping is demonstrable: this
+     * account sees its own attendance and leave out of a hundred and seventy
+     * people's, and nobody else's.
      */
-    id: SEED.employees.demoLead,
-    email: 'priya.sharma@peoplepay360.dev',
-    name: 'Priya Sharma',
+    id: STAFF.employee.id,
+    email: STAFF.employee.email,
+    name: STAFF.employee.name,
     role: 'employee',
     password: 'employee1',
     existing: true,
-    // Untouched here: people.seed owns Priya's department, post and bank details.
-    departmentId: null,
-    jobPositionId: null,
-    bankAccount: null,
   },
 ]
 
@@ -145,19 +111,12 @@ export const identitySeed: SeedPart = {
     )
 
     /**
-     * Keys are COLUMN names, not domain field names. The seed writes rows, so
-     * it speaks the database's snake_case rather than the application's
-     * camelCase — there is no repository in between to translate.
-     *
      * TWO batches, not one with a conditional spread. `ctx.upsert` builds a
      * single multi-row INSERT, so every row in a batch has to carry exactly the
      * same columns — a row that omits one throws
      * `Row N of "employees" has different columns from row 0`. That is the
      * right check to have; the shapes here are genuinely different.
      */
-
-    // Staff roles: these people do not exist yet, so the row has to satisfy
-    // `employee_type NOT NULL`.
     const created = await ctx.upsert(
       'employees',
       DEMO_ACCOUNTS.filter((a) => !a.existing).map((account) => ({
@@ -167,31 +126,40 @@ export const identitySeed: SeedPart = {
         role: account.role,
         password_hash: hashes[DEMO_ACCOUNTS.indexOf(account)],
         is_active: true,
+        // The row has to satisfy `employee_type NOT NULL` even though this
+        // person is not really on the payroll.
         employee_type: 'full_time',
-        department_id: account.departmentId,
-        job_position_id: account.jobPositionId,
-        working_schedule_id: SEED.schedules.standard40,
-        bank_account: account.bankAccount,
+        department_id: null,
+        job_position_id: null,
+        bank_account: null,
       })),
     )
 
     /**
-     * Already-seeded employees: credentials only. Deliberately no
-     * `employee_type`, `department_id` or anything else `people.seed` owns —
-     * granting somebody a login must not quietly rewrite their HR record.
+     * Granting a role to somebody who already exists is an UPDATE, not an
+     * upsert.
+     *
+     * `INSERT ... ON CONFLICT (id) DO UPDATE` cannot express "set only these
+     * two columns": Postgres validates NOT NULL on the proposed row BEFORE it
+     * arbitrates the conflict, so a row carrying only `id`, `role` and
+     * `password_hash` fails on `name` even though it was never going to be
+     * inserted. Restating name and email to get past that would mean this part
+     * rewriting HR data it does not own — the exact thing the header says it
+     * must not do. An UPDATE says what is meant.
      */
-    const granted = await ctx.upsert(
-      'employees',
-      DEMO_ACCOUNTS.filter((a) => a.existing).map((account) => ({
-        id: account.id,
-        name: account.name,
-        email: account.email,
-        role: account.role,
-        password_hash: hashes[DEMO_ACCOUNTS.indexOf(account)],
-        is_active: true,
-      })),
-    )
+    let granted = 0
+    for (const account of DEMO_ACCOUNTS.filter((a) => a.existing)) {
+      await ctx.sql(`UPDATE employees SET role = $1, password_hash = $2 WHERE id = $3`, [
+        account.role,
+        hashes[DEMO_ACCOUNTS.indexOf(account)],
+        account.id,
+      ])
+      granted += 1
+    }
 
-    ctx.log(`${created + granted} accounts (one per role)`)
+    ctx.log(`${created} administrator, ${granted} roles granted to existing staff`)
+    for (const account of DEMO_ACCOUNTS) {
+      ctx.log(`  ${ROLE_LABELS[account.role].padEnd(20)} ${account.name} — ${account.email}`)
+    }
   },
 }

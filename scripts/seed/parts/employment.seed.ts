@@ -1,103 +1,45 @@
 /**
- * Contracts.
+ * Contracts — one per person, plus the two histories the demo turns on.
  *
- * ── Dev B: this file is yours to replace. ───────────────────────────────────
+ * The plan itself is in `../contracts.ts`, shared with payroll processing so a
+ * payslip records the contract that actually covered its period. What matters
+ * here is only that the rows land, and that the two load-bearing cases survive:
  *
- * It exists so the dashboard has contract data to aggregate and so payslips
- * have something to reference. Two rows are load-bearing for the demo:
+ *   - One employee has an EXPIRED contract and a current one at a higher wage.
+ *     The oldest seeded payrun falls inside the old contract, so its payslip
+ *     must come out at the old figure. That is period-based contract selection,
+ *     proven rather than asserted.
+ *   - Three contracts end inside the 60-day window, so the dashboard's contract
+ *     attention panel has real work in it.
  *
- *   - Rahul Verma has an EXPIRED contract and a current one. That pair is what
- *     proves period-based contract selection: payroll for a month inside the
- *     old contract must use the old wage.
- *   - Vikram Desai's contract ends inside the warning window, so spec B9's
- *     "contract attention items" alert has something real to surface.
- *
- * The exclusion constraint in migration 0006 only applies to `status = 'active'`
- * rows, which is why the expired contract can overlap nothing and still sit in
- * the same table.
+ * The exclusion constraint in migration 0006 applies only to `status =
+ * 'active'` rows, which is why an expired contract can sit under the same
+ * employee without conflicting.
  */
-import { SEED, seedId } from '../ids'
+import { CONTRACT_PLAN } from '../contracts'
+import { STRUCTURE_ID } from './payroll-config.seed'
 import type { SeedPart } from '../types'
-
-const iso = (date: Date) => date.toISOString().slice(0, 10)
 
 export const employmentSeed: SeedPart = {
   name: 'employment',
   tables: ['contracts'],
   async run(ctx) {
-    const today = new Date()
-    const year = today.getUTCFullYear()
+    const contracts = await ctx.upsert(
+      'contracts',
+      CONTRACT_PLAN.map((contract) => ({
+        id: contract.id,
+        employee_id: contract.employeeId,
+        wage: contract.wage,
+        salary_structure_id: STRUCTURE_ID,
+        working_schedule_id: contract.scheduleId,
+        starts_on: contract.startsOn,
+        ends_on: contract.endsOn,
+        status: contract.status,
+      })),
+    )
 
-    /** Ends inside the 60-day attention window, so the alert fires. */
-    const endingSoon = new Date(Date.UTC(year, today.getUTCMonth(), today.getUTCDate() + 30))
-
-    const contracts = await ctx.upsert('contracts', [
-      {
-        id: seedId('con', 1),
-        employee_id: SEED.employees.demoLead,
-        wage: 90000,
-        salary_structure_id: seedId('str', 1),
-        working_schedule_id: SEED.schedules.standard40,
-        starts_on: `${year - 1}-04-01`,
-        ends_on: null,
-        status: 'active',
-      },
-      {
-        // Rahul, contract 1 of 2: the historical one. Lower wage on purpose —
-        // a payslip for a month it covers must not use the current figure.
-        id: seedId('con', 2),
-        employee_id: SEED.employees.twoContracts,
-        wage: 62000,
-        salary_structure_id: seedId('str', 1),
-        working_schedule_id: SEED.schedules.standard40,
-        starts_on: `${year - 1}-01-01`,
-        ends_on: `${year - 1}-12-31`,
-        status: 'expired',
-      },
-      {
-        // Rahul, contract 2 of 2: the current one.
-        id: seedId('con', 3),
-        employee_id: SEED.employees.twoContracts,
-        wage: 78000,
-        salary_structure_id: seedId('str', 1),
-        working_schedule_id: SEED.schedules.standard40,
-        starts_on: `${year}-01-01`,
-        ends_on: null,
-        status: 'active',
-      },
-      {
-        id: seedId('con', 4),
-        employee_id: seedId('emp', 3),
-        wage: 145000,
-        salary_structure_id: seedId('str', 1),
-        working_schedule_id: SEED.schedules.standard40,
-        starts_on: `${year - 2}-06-01`,
-        ends_on: null,
-        status: 'active',
-      },
-      {
-        id: seedId('con', 5),
-        employee_id: seedId('emp', 4),
-        wage: 42000,
-        salary_structure_id: seedId('str', 1),
-        working_schedule_id: SEED.schedules.partTime20,
-        starts_on: `${year}-02-01`,
-        ends_on: null,
-        status: 'active',
-      },
-      {
-        // The one that triggers the contract-attention alert.
-        id: seedId('con', 6),
-        employee_id: seedId('emp', 5),
-        wage: 25000,
-        salary_structure_id: seedId('str', 1),
-        working_schedule_id: SEED.schedules.standard40,
-        starts_on: `${year}-01-15`,
-        ends_on: iso(endingSoon),
-        status: 'active',
-      },
-    ])
-
-    ctx.log(`${contracts} contracts (one employee has an expired plus a current one)`)
+    const active = CONTRACT_PLAN.filter((c) => c.status === 'active').length
+    const endingSoon = CONTRACT_PLAN.filter((c) => c.status === 'active' && c.endsOn).length
+    ctx.log(`${contracts} contracts (${active} active, ${endingSoon} ending inside the window)`)
   },
 }
