@@ -19,6 +19,20 @@ export interface AttendanceFilter {
   status?: AttendanceStatus
 }
 
+/**
+ * A stored record as the list path needs it: the aggregate plus the status that
+ * was persisted beside it.
+ *
+ * `Attendance` cannot derive `late` or `overtime` on its own — that needs the
+ * employee's schedule, which `save` had and a list query does not. Returning
+ * the stored value keeps the list honest without re-resolving a schedule per
+ * row, which is what the note on `save` below always intended.
+ */
+export interface AttendanceRecord {
+  attendance: Attendance
+  status: AttendanceStatus
+}
+
 export interface AttendanceRepositoryPort {
   findById(id: string): Promise<Attendance | null>
   /** The employee's most recent open (no check-out yet) record, if any. */
@@ -29,6 +43,6 @@ export interface AttendanceRepositoryPort {
    * `findMany` can filter by status without recomputing it per row.
    */
   save(attendance: Attendance, status: AttendanceStatus): Promise<Attendance>
-  findMany(filter: AttendanceFilter, page: PageQuery): Promise<Paged<Attendance>>
+  findMany(filter: AttendanceFilter, page: PageQuery): Promise<Paged<AttendanceRecord>>
   deleteById(id: string): Promise<boolean>
 }

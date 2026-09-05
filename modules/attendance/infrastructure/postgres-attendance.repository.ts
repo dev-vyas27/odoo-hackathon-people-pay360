@@ -16,6 +16,7 @@ import {
 } from '@/modules/shared'
 import type {
   AttendanceFilter,
+  AttendanceRecord,
   AttendanceRepositoryPort,
 } from '../application/ports/attendance-repository.port'
 import { Attendance } from '../domain/attendance'
@@ -26,6 +27,7 @@ import {
   isUniqueViolation,
 
   toStoredStatus,
+  toDomainStatus,
   workedOnFor,
   type AttendanceRow,
 } from './attendance.table'
@@ -137,7 +139,7 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
     }
   }
 
-  async findMany(filter: AttendanceFilter, pageQuery: PageQuery): Promise<Paged<Attendance>> {
+  async findMany(filter: AttendanceFilter, pageQuery: PageQuery): Promise<Paged<AttendanceRecord>> {
     const q = normalizePageQuery(pageQuery)
     const conditions: string[] = []
     const values: unknown[] = []
@@ -185,7 +187,16 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
       ),
     ])
 
-    return paged(rows.map(toDomain), total?.count ?? 0, q.page, q.limit)
+    return paged(
+      rows.map((row) => ({
+        attendance: toDomain(row),
+        // is_manual wins, matching deriveStatus's precedence — see attendance.table.ts.
+        status: toDomainStatus(row.status, row.is_manual),
+      })),
+      total?.count ?? 0,
+      q.page,
+      q.limit,
+    )
   }
 
   async deleteById(id: string): Promise<boolean> {

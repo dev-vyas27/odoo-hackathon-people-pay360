@@ -46,7 +46,7 @@ describe('ListAttendanceUseCase', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.total).toBe(1)
-      expect(result.value.items[0]?.employeeId).toBe('emp-1')
+      expect(result.value.items[0]?.attendance.employeeId).toBe('emp-1')
     }
   })
 })

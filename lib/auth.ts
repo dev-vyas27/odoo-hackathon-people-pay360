@@ -66,12 +66,50 @@ export async function requireActor(): Promise<Actor> {
   return actor
 }
 
+/**
+ * Should the session cookie carry `Secure`?
+ *
+ * Configuration only. No request header feeds this decision, deliberately.
+ *
+ * The problem being solved: `NODE_ENV === 'production'` alone means a
+ * production build served over plain HTTP — `npm run build && npm start` on a
+ * laptop, which is how a demo usually gets shown — issues a `Secure` cookie the
+ * browser then refuses to store. Login returns 200 and the app bounces straight
+ * back to /login with no error anywhere, because nothing actually failed.
+ *
+ * The tempting fix is to read `x-forwarded-proto`. Do not. Plenty of proxies
+ * APPEND to a client-supplied value instead of replacing it, so the leftmost
+ * entry is whatever the caller sent: a request carrying `x-forwarded-proto:
+ * http` arrives as `http,https` and downgrades the victim's own session cookie
+ * off TLS. `origin` and `referer` are worse still — freely set by the caller
+ * and no evidence of transport security whatever.
+ *
+ * So the transport is stated at deploy time rather than inferred per request:
+ *
+ *   COOKIE_SECURE=true    always set Secure (any TLS deployment)
+ *   COOKIE_SECURE=false   never set it (a local HTTP demo, opting out knowingly)
+ *   unset                 secure in production, open in development
+ *
+ * The default is the safe one, so forgetting the variable in a real deployment
+ * cannot silently downgrade anybody.
+ *
+ * Named `secureCookieEnabled` rather than `useSecureCookie` for the same reason
+ * `container.ts` has `getPort` and not `usePort`: a `use` prefix makes the React
+ * hooks lint rule treat every call site as a hook and reject it.
+ */
+export function secureCookieEnabled(): boolean {
+  const explicit = process.env.COOKIE_SECURE
+  if (explicit === 'true') return true
+  if (explicit === 'false') return false
+  return process.env.NODE_ENV === 'production'
+}
+
 export async function setAuthCookie(token: string): Promise<void> {
   const store = await cookies()
   store.set(AUTH_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: secureCookieEnabled(),
     path: '/',
     maxAge: MAX_AGE_SECONDS,
   })

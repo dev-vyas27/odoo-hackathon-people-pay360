@@ -44,3 +44,7 @@ next-env.d.ts
 .claude/
 # ...but the template IS committed: it is the only record of what to set.
 !.env.example
+
+# Playwright QA suite output
+/test-results/
+/playwright-report/

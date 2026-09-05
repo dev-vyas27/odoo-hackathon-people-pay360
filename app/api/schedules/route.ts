@@ -1,14 +1,14 @@
 import type { NextRequest } from 'next/server'
 import { requireActor } from '@/lib/auth'
-import { handle, respond, parseQuery } from '@/lib/http'
-import { pageQuerySchema } from '@/modules/shared'
+import { handle, respond, parsePageQuery } from '@/lib/http'
 import { createScheduleSchema, listSchedules, createSchedule } from '@/modules/employment'
 
 export async function GET(req: NextRequest) {
   return handle(async () => {
     const actor = await requireActor()
-    const query = pageQuerySchema.parse(parseQuery(req.url))
-    return respond(await listSchedules(actor, query))
+    // See the note in app/api/contracts/route.ts: parsing with pageQuerySchema
+    // discards every non-paging filter.
+    return respond(await listSchedules(actor, parsePageQuery(req.url)))
   })
 }
 

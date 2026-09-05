@@ -7,7 +7,11 @@
 import type { Paged, PageQuery } from '@/modules/shared'
 import { paged } from '@/modules/shared'
 import { Attendance } from '../../domain/attendance'
-import type { AttendanceFilter, AttendanceRepositoryPort } from '../ports/attendance-repository.port'
+import type {
+  AttendanceFilter,
+  AttendanceRecord,
+  AttendanceRepositoryPort,
+} from '../ports/attendance-repository.port'
 import type { AttendanceStatus } from '../../domain/exception'
 
 interface Row {
@@ -41,19 +45,18 @@ export class InMemoryAttendanceRepository implements AttendanceRepositoryPort {
     return withId
   }
 
-  async findMany(filter: AttendanceFilter, page: PageQuery): Promise<Paged<Attendance>> {
+  async findMany(filter: AttendanceFilter, page: PageQuery): Promise<Paged<AttendanceRecord>> {
     let items = [...this.rows.values()]
     if (filter.employeeId) items = items.filter((r) => r.attendance.employeeId === filter.employeeId)
     if (filter.status) items = items.filter((r) => r.status === filter.status)
     if (filter.from) items = items.filter((r) => r.attendance.checkIn.getTime() >= filter.from!.getTime())
     if (filter.to) items = items.filter((r) => r.attendance.checkIn.getTime() <= filter.to!.getTime())
 
-    const attendances = items.map((r) => r.attendance)
     const pageNum = page.page ?? 1
     const limit = page.limit ?? 20
     const start = (pageNum - 1) * limit
-    const slice = attendances.slice(start, start + limit)
-    return paged(slice, attendances.length, pageNum, limit)
+    const slice = items.slice(start, start + limit)
+    return paged(slice, items.length, pageNum, limit)
   }
 
   async deleteById(id: string): Promise<boolean> {

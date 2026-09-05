@@ -27,6 +27,28 @@ export interface NewAttendanceInput {
   breakMinutes?: number
 }
 
+const MS_PER_DAY = 86_400_000
+
+/**
+ * A night shift's check-out belongs to the FOLLOWING calendar day.
+ *
+ * `computeWorkedHours` already treats a check-out that is numerically earlier
+ * than the check-in as having rolled past midnight, so 23:00 -> 06:00 measured
+ * seven hours correctly. What nobody did was carry that decision into the value
+ * we store: the raw 06:00 timestamp went to the database, where
+ * `attendances_checkout_after_checkin` refused it outright. A night shift was
+ * therefore impossible to record end to end, even though the domain was written
+ * to support one.
+ *
+ * Moving the timestamp forward a day is not a workaround for the constraint —
+ * it is what actually happened. The constraint was right and the stored value
+ * was wrong.
+ */
+function resolveCheckOut(checkIn: Date, checkOut: Date): Date {
+  if (checkOut.getTime() >= checkIn.getTime()) return checkOut
+  return new Date(checkOut.getTime() + MS_PER_DAY)
+}
+
 export class Attendance {
   private constructor(private readonly props: AttendanceProps) {}
 
@@ -87,6 +109,19 @@ export class Attendance {
     return { ...this.props }
   }
 
+  /**
+   * `private` is a TypeScript-only marker: `props` is still an own enumerable
+   * property at runtime, so `JSON.stringify(attendance)` serialised the
+   * aggregate's internals and every attendance response came back shaped as
+   * `{ attendance: { props: { … } } }`. That leaked the domain's internal
+   * layout into the public API and forced clients to read `item.props.id`
+   * while every other module returns a flat record. Serialising as the flat
+   * props keeps the wire contract stable if the internals ever change.
+   */
+  toJSON(): AttendanceProps {
+    return this.toProps()
+  }
+
   /** Worked hours, or an Err (e.g. MISSING_CHECKOUT) when they cannot be computed yet. */
   workedHours(): Result<number> {
     return computeWorkedHours(this.props.checkIn, this.props.checkOut, this.props.breakMinutes)
@@ -115,13 +150,14 @@ export class Attendance {
       return Err(DomainError.conflict('ALREADY_CHECKED_OUT', 'This attendance record already has a check-out'))
     }
     const nextBreak = breakMinutes ?? this.props.breakMinutes
-    const validated = computeWorkedHours(this.props.checkIn, checkOut, nextBreak)
+    const resolved = resolveCheckOut(this.props.checkIn, checkOut)
+    const validated = computeWorkedHours(this.props.checkIn, resolved, nextBreak)
     if (!validated.ok) return Err(validated.error)
 
     return Ok(
       new Attendance({
         ...this.props,
-        checkOut,
+        checkOut: resolved,
         breakMinutes: nextBreak,
         updatedAt: new Date(),
       }),
@@ -131,7 +167,8 @@ export class Attendance {
   /** Authorized correction. Always flips `manual` on, whatever else changes. */
   correct(patch: { checkIn?: Date; checkOut?: Date | null; breakMinutes?: number }): Result<Attendance> {
     const nextCheckIn = patch.checkIn ?? this.props.checkIn
-    const nextCheckOut = patch.checkOut === undefined ? this.props.checkOut : patch.checkOut
+    const patched = patch.checkOut === undefined ? this.props.checkOut : patch.checkOut
+    const nextCheckOut = patched ? resolveCheckOut(nextCheckIn, patched) : patched
     const nextBreak = patch.breakMinutes ?? this.props.breakMinutes
 
     if (!Number.isFinite(nextBreak) || nextBreak < 0) {
