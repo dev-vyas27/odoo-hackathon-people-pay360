@@ -12,7 +12,20 @@
  * bundle. Client components import `@/modules/identity/schemas` instead — same
  * zod definitions, no database.
  */
-export { login, me, createAccount, listAccounts } from './interface/auth.controller'
+export {
+  login,
+  me,
+  createAccount,
+  listAccounts,
+  getAccount,
+  updateAccount,
+  revokeLogin,
+  inviteAccount,
+  setPassword,
+  checkSetupLink,
+  requestPasswordReset,
+  type CreatedAccount,
+} from './interface/auth.controller'
 export {
   loginSchema,
   createAccountSchema,

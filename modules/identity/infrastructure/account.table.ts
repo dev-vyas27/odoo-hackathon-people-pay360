@@ -31,11 +31,23 @@ export interface AccountRow {
    * SELECT *, so the hash cannot arrive somewhere it was not asked for.
    */
   password_hash?: string | null
+  /** Computed by ACCOUNT_SELECTION, not a real column. */
+  has_login?: boolean
 }
 
 export const ACCOUNTS_TABLE = 'employees'
 
 /** The default projection. Note the deliberate absence of password_hash. */
+/**
+ * The projection every read uses.
+ *
+ * `has_login` is COMPUTED in SQL rather than selected: the screens need to know
+ * whether somebody can sign in, and that must not require shipping their hash
+ * to the application to find out.
+ */
+export const ACCOUNT_SELECTION =
+  '"id", "email", "name", "role", "is_active", "created_at", "updated_at", (password_hash IS NOT NULL) AS has_login'
+
 export const ACCOUNT_COLUMNS = [
   'id',
   'email',

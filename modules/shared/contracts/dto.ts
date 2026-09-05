@@ -185,6 +185,32 @@ export interface AttendanceStatsPort {
   ): Promise<AttendanceSummary>
 }
 
+/**
+ * Outbound email — owner: Dev A (`delivery`).
+ *
+ * Consumed by identity for invitations, and later by payslip distribution.
+ * Behind a port so `nodemailer` is imported in exactly one file and so a test
+ * can assert on what would have been sent without an SMTP server.
+ */
+export interface EmailMessage {
+  to: string
+  subject: string
+  /** Plain text is required; HTML is the enhancement, not the other way round. */
+  text: string
+  html?: string
+}
+
+export interface EmailResult {
+  to: string
+  sent: boolean
+  /** Present when `sent` is false. Never contains credentials. */
+  error?: string
+}
+
+export interface MailerPort {
+  send(message: EmailMessage): Promise<EmailResult>
+}
+
 // ---------------------------------------------------------------------------
 // Time Off — owner: Dev A
 // ---------------------------------------------------------------------------

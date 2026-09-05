@@ -22,8 +22,23 @@ export interface AccountProps {
   email: string
   name: string
   role: Role
-  /** NULL for an employee who has never been given a login. */
+  /**
+   * NULL for an employee who has never been given a login.
+   *
+   * Only `findByEmail` selects this. Every other projection leaves it out on
+   * purpose, so do NOT infer `hasLogin` from it — see below.
+   */
   passwordHash: string | null
+  /**
+   * Whether a hash exists, carried separately from the hash itself.
+   *
+   * This field exists because deriving `hasLogin` from `passwordHash` is wrong
+   * for every read except the login lookup: the list and detail queries omit
+   * the hash, so the derivation silently reported "no login" for everybody.
+   * The repository selects `(password_hash IS NOT NULL)` instead, which is the
+   * truth without ever putting a hash on the wire.
+   */
+  hasLogin?: boolean
   isActive: boolean
 }
 
@@ -61,7 +76,9 @@ export class Account {
     return this.props.isActive
   }
   get hasLogin(): boolean {
-    return this.props.passwordHash !== null
+    // Prefer the explicit flag; fall back to the hash for callers that build an
+    // Account from credentials they already hold (creation, login).
+    return this.props.hasLogin ?? this.props.passwordHash !== null
   }
 
   /**

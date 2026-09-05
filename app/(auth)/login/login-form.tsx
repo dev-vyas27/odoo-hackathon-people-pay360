@@ -8,6 +8,7 @@
  */
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 // NOT '@/modules/identity' — that barrel reaches the Postgres repository, and
 // pulling the pg driver into a client bundle breaks at module evaluation.
 // See modules/identity/schemas.ts.
@@ -45,6 +46,14 @@ export function LoginForm({
           { name: 'email', label: 'Email', type: 'email', span: 2, placeholder: 'you@company.com' },
           { name: 'password', label: 'Password', type: 'password', span: 2 },
         ]}
+        cancel={
+          <Link
+            href="/forgot-password"
+            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Forgot your password?
+          </Link>
+        }
         onSubmit={async (values) => {
           setError(null)
           try {

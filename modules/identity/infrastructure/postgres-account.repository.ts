@@ -14,9 +14,10 @@ import { query, queryOne } from '@/lib/db'
 import { normalizePageQuery, paged, type PageQuery, type Paged } from '@/modules/shared'
 import type { AccountRepositoryPort } from '../application/ports/account-repository.port'
 import { Account, type AccountProps } from '../domain/account'
-import { ACCOUNT_COLUMNS, ACCOUNTS_TABLE, type AccountRow } from './account.table'
+import { ACCOUNT_SELECTION, ACCOUNTS_TABLE, type AccountRow } from './account.table'
 
-const SELECTION = ACCOUNT_COLUMNS.map((c) => `"${c}"`).join(', ')
+// Includes the computed `has_login`; see ACCOUNT_SELECTION for why.
+const SELECTION = ACCOUNT_SELECTION
 
 function toDomain(row: AccountRow): Account {
   return Account.from({
@@ -24,10 +25,11 @@ function toDomain(row: AccountRow): Account {
     email: row.email,
     name: row.name,
     role: row.role,
-    // `undefined` means the projection omitted it; `null` means this employee
-    // genuinely has no login. Both read as "cannot sign in", which is correct —
-    // only findByEmail selects it, and that is the only caller that may care.
     passwordHash: row.password_hash ?? null,
+    // Computed in SQL, so this is truthful even on the projections that
+    // deliberately omit the hash. Inferring it from `passwordHash` reported
+    // "no login" for every account on every screen.
+    hasLogin: row.has_login,
     isActive: row.is_active,
   })
 }
@@ -167,6 +169,20 @@ export class PostgresAccountRepository implements AccountRepositoryPort {
         props.passwordHash ?? null,
         props.isActive ?? null,
       ],
+    )
+    return row ? toDomain(row) : null
+  }
+
+  /**
+   * The employee row survives; only the credentials go. Contracts, payslips and
+   * leave history all still point at this id, which is exactly the point.
+   */
+  async revokeLogin(id: string): Promise<Account | null> {
+    const row = await queryOne<AccountRow>(
+      `UPDATE "${ACCOUNTS_TABLE}" SET password_hash = NULL
+       WHERE id = $1
+       RETURNING ${SELECTION}`,
+      [id],
     )
     return row ? toDomain(row) : null
   }
