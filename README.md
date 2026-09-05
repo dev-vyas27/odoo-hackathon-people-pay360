@@ -1,1 +1,1 @@
-# odoo-hackathon-people-pay360
+# odoo-hackathon-peoplepay-360
