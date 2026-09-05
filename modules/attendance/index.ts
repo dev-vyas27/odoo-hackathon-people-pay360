@@ -24,7 +24,7 @@ export { PostgresAttendanceRepository } from './infrastructure/postgres-attendan
 export { PostgresAttendanceStats } from './infrastructure/attendance-stats.adapter'
 
 /** Publish this module's cross-module port. */
-export function registerAttendancePorts(): void {
+export function registerAttendance(): void {
   providePort<AttendanceStatsPort>(
     PORT_KEYS.attendanceStats,
     () => new PostgresAttendanceStats(),

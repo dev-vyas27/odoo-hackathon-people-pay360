@@ -12,6 +12,9 @@
  * Called from `instrumentation.ts`, which Next runs once at server startup.
  */
 import { registerTimeOff } from '@/modules/timeoff'
+import { registerPeople } from '@/modules/people'
+import { registerEmployment } from '@/modules/employment'
+import { registerAttendance } from '@/modules/attendance'
 import { registerInterimAdapters } from '@/lib/interim-adapters'
 
 let done = false
@@ -25,13 +28,10 @@ export function bootstrap(): void {
   // ── Dev A ────────────────────────────────────────────────────────────────
   registerTimeOff()
 
-  // ── Dev B ── uncomment as each module publishes its ports ────────────────
-  // import { registerPeople } from '@/modules/people'
-  // registerPeople()          // EmployeeLookupPort, EmployeeStatsPort
-  // import { registerEmployment } from '@/modules/employment'
-  // registerEmployment()      // ContractQueryPort, ScheduleQueryPort
-  // import { registerAttendance } from '@/modules/attendance'
-  // registerAttendance()      // AttendanceStatsPort
+  // ── Dev B ──────────────────────────────────────────────────────────────
+  registerPeople()          // EmployeeLookupPort
+  registerEmployment()      // ContractQueryPort, ScheduleQueryPort
+  registerAttendance()      // AttendanceStatsPort
 
   // ── Dev C ────────────────────────────────────────────────────────────────
   // import { registerPayrollProcessing } from '@/modules/payroll-processing'

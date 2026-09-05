@@ -41,7 +41,7 @@ export { PostgresEmployeeLookup } from './infrastructure/employee-lookup.adapter
  * `getPort(PORT_KEYS.employeeLookup)` and never import this module's classes,
  * so swapping the implementation touches this one line.
  */
-export function registerPeoplePorts(): void {
+export function registerPeople(): void {
   providePort<EmployeeLookupPort>(PORT_KEYS.employeeLookup, () => new PostgresEmployeeLookup())
 }
 

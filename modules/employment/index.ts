@@ -43,7 +43,7 @@ export { PostgresContractQuery } from './infrastructure/contract-query.adapter'
 export { PostgresScheduleQuery } from './infrastructure/schedule-query.adapter'
 
 /** Publish this module's cross-module ports. */
-export function registerEmploymentPorts(): void {
+export function registerEmployment(): void {
   providePort<ContractQueryPort>(PORT_KEYS.contractQuery, () => new PostgresContractQuery())
   providePort<ScheduleQueryPort>(PORT_KEYS.scheduleQuery, () => new PostgresScheduleQuery())
 }
