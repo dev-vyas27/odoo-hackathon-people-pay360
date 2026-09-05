@@ -7,6 +7,7 @@ import { SALARY_CATEGORIES, SALARY_CATEGORY_LABELS, type SalaryCategory } from '
 import { ResourceTable } from '@/components/resource/resource-table'
 import { StatusBadge } from '@/components/resource/status-badge'
 import { FilterBar } from '@/components/resource/filter-bar'
+import { useCan } from '@/components/auth/current-user'
 import { Button } from '@/components/ui/button'
 
 export interface RuleRow {
@@ -76,6 +77,9 @@ export function RulesTable({ rules }: { rules: RuleRow[] }) {
     return true
   })
 
+  // hr_payroll_user reads salary configuration but cannot add to it.
+  const canCreate = useCan('salary_rule', 'create')
+
   return (
     <div>
       <FilterBar
@@ -93,7 +97,7 @@ export function RulesTable({ rules }: { rules: RuleRow[] }) {
             : 'No salary rules match these filters.'
         }
         emptyAction={
-          rules.length === 0 ? (
+          rules.length === 0 && canCreate ? (
             <Button asChild variant="outline">
               <Link href="/payroll/rules/new">Create the first rule</Link>
             </Button>

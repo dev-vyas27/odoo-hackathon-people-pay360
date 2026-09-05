@@ -3,10 +3,19 @@
 /**
  * Compute · Validate · Mark Paid · Send Payslips.
  *
- * Buttons are enabled from the SAME transition table the aggregate enforces
- * (`canTransition`), so the UI and the domain cannot disagree about what is
- * possible — and the server still refuses illegal transitions regardless of what
- * a client sends.
+ * Each button answers TWO questions, and both have to be yes:
+ *
+ *   1. May this pay run move there? — `canTransition`, the same table the
+ *      aggregate enforces, so the UI and the domain agree about what is
+ *      possible.
+ *   2. May THIS ROLE do it? — `can()`, the same table the use case authorises
+ *      with.
+ *
+ * The second was missing, and the gap was not theoretical: `hr_payroll_user`
+ * holds payrun create/read/update but NOT `payrun:approve`, so Validate and
+ * Mark paid were offered to exactly the role that cannot use them and answered
+ * with a 403. The server refuses regardless of what a client sends; this is
+ * about not offering an action that will fail.
  */
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -14,6 +23,7 @@ import toast from 'react-hot-toast'
 import { LuBanknote, LuCalculator, LuCircleCheck, LuLoaderCircle, LuSend } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { canTransition, type PayrunView } from '@/modules/payroll-processing'
+import { useCan } from '@/components/auth/current-user'
 import { Button } from '@/components/ui/button'
 import { ApiError, apiPost } from '../../_lib/api'
 
@@ -42,6 +52,12 @@ export function PayrunActions({
 }) {
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
+
+  // Computing edits the run; validating and paying it are approvals.
+  const canCompute = useCan('payrun', 'update')
+  const canApprove = useCan('payrun', 'approve')
+  // Sending mails every employee in the run — the same grant the use case wants.
+  const canSend = useCan('payslip', 'update')
 
   async function run(action: string, onDone: (result: unknown) => void) {
     setBusy(action)
@@ -100,6 +116,7 @@ export function PayrunActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {canCompute ? (
       <Action
         icon={LuCalculator}
         label={payslipCount ? 'Recompute' : 'Compute'}
@@ -120,31 +137,38 @@ export function PayrunActions({
           })
         }
       />
+      ) : null}
 
-      <Action
-        icon={LuCircleCheck}
-        label="Validate"
-        busy={busy === 'validate'}
-        disabled={Boolean(busy) || !canTransition(payrun.status, 'validated')}
-        onClick={() => run('validate', () => toast.success('Pay run validated'))}
-      />
+      {canApprove ? (
+        <Action
+          icon={LuCircleCheck}
+          label="Validate"
+          busy={busy === 'validate'}
+          disabled={Boolean(busy) || !canTransition(payrun.status, 'validated')}
+          onClick={() => run('validate', () => toast.success('Pay run validated'))}
+        />
+      ) : null}
 
-      <Action
-        icon={LuBanknote}
-        label="Mark paid"
-        busy={busy === 'mark-paid'}
-        disabled={Boolean(busy) || !canTransition(payrun.status, 'paid')}
-        onClick={() => run('mark-paid', () => toast.success('Pay run marked as paid'))}
-      />
+      {canApprove ? (
+        <Action
+          icon={LuBanknote}
+          label="Mark paid"
+          busy={busy === 'mark-paid'}
+          disabled={Boolean(busy) || !canTransition(payrun.status, 'paid')}
+          onClick={() => run('mark-paid', () => toast.success('Pay run marked as paid'))}
+        />
+      ) : null}
 
-      <Action
-        icon={LuSend}
-        label="Send payslips"
-        variant="outline"
-        busy={busy === 'send'}
-        disabled={Boolean(busy) || !payslipCount}
-        onClick={sendPayslips}
-      />
+      {canSend ? (
+        <Action
+          icon={LuSend}
+          label="Send payslips"
+          variant="outline"
+          busy={busy === 'send'}
+          disabled={Boolean(busy) || !payslipCount}
+          onClick={sendPayslips}
+        />
+      ) : null}
     </div>
   )
 }

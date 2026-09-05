@@ -7,6 +7,7 @@ import type { SalaryStructureListItem } from '@/modules/payroll-config'
 import { ResourceTable } from '@/components/resource/resource-table'
 import { StatusBadge } from '@/components/resource/status-badge'
 import { FilterBar } from '@/components/resource/filter-bar'
+import { useCan } from '@/components/auth/current-user'
 import { Button } from '@/components/ui/button'
 
 const ACTIVE_OPTIONS = [
@@ -55,6 +56,9 @@ export function StructuresTable({ structures }: { structures: SalaryStructureLis
     return true
   })
 
+  // hr_payroll_user reads salary configuration but cannot add to it.
+  const canCreate = useCan('salary_structure', 'create')
+
   return (
     <div>
       <FilterBar
@@ -72,7 +76,7 @@ export function StructuresTable({ structures }: { structures: SalaryStructureLis
             : 'No salary structures match these filters.'
         }
         emptyAction={
-          structures.length === 0 ? (
+          structures.length === 0 && canCreate ? (
             <Button asChild variant="outline">
               <Link href="/payroll/structures/new">Create the first structure</Link>
             </Button>

@@ -41,10 +41,13 @@ export function StructureForm({
   structure,
   structureId,
   available,
+  readOnly = false,
 }: {
   structure: SalaryStructureFormValues
   structureId?: string
   available: AvailableRule[]
+  /** A role that may read salary configuration but not change it. */
+  readOnly?: boolean
 }) {
   const router = useRouter()
 
@@ -66,6 +69,7 @@ export function StructureForm({
 
   return (
     <ResourceForm
+      readOnly={readOnly}
       schema={salaryStructureFormSchema}
       fields={fields}
       defaultValues={structure as never}

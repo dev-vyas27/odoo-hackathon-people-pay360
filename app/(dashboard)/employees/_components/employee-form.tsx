@@ -9,6 +9,7 @@
  */
 import { createEmployeeSchema, type CreateEmployeeBody } from '@/modules/people/schemas'
 import { isFullTimeSchedule } from '@/modules/employment/schemas'
+import { useCan } from '@/components/auth/current-user'
 import { ResourceForm } from '@/components/resource/resource-form'
 import {
   EMPLOYEE_TYPE_OPTIONS,
@@ -59,6 +60,14 @@ export function EmployeeForm({
   /** Editing an existing record rather than creating one. */
   const isEditing = Boolean(employeeId)
 
+  /**
+   * A plain `employee` may open their OWN record — the read is scoped — but
+   * holds no `employee:update`. Showing them an editable form with a Save
+   * button that answers 403 is the same bug as an ungated create button, one
+   * click further in.
+   */
+  const canEdit = useCan('employee', isEditing ? 'update' : 'create')
+
   return (
     <ResourceForm<CreateEmployeeBody>
       schema={createEmployeeSchema}
@@ -66,6 +75,7 @@ export function EmployeeForm({
       defaultValues={defaultValues}
       cancel={cancel}
       onSubmit={onSubmit}
+      readOnly={!canEdit}
       /**
        * Keep the schedule consistent with the employee type.
        *

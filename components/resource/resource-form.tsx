@@ -114,6 +114,17 @@ export interface ResourceFormProps<T extends FieldValues> {
    * Use it for consequences, never for validation — a rule that can REJECT
    * belongs in the zod schema where the server enforces it too.
    */
+  /**
+   * Render as a record rather than an editor: every field disabled and no
+   * submit button.
+   *
+   * For a role that may READ a thing but not change it. Without this such a
+   * user got a fully editable form and a Save button that answered 403 — the
+   * same "offered an action that cannot work" problem as an ungated create
+   * button, just one click further in. The server refuses regardless; this is
+   * about not asking someone to fill in a form that will be rejected.
+   */
+  readOnly?: boolean
   derive?: (values: T) => Partial<T> | null
   /** Rendered above the buttons — warnings, computed totals, related records. */
   children?: React.ReactNode
@@ -164,6 +175,7 @@ export function ResourceForm<T extends FieldValues>({
   onSubmit,
   submitLabel = 'Save',
   cancel,
+  readOnly = false,
   derive,
   children,
   className,
@@ -250,7 +262,7 @@ export function ResourceForm<T extends FieldValues>({
             <Select
               onValueChange={rhf.onChange}
               value={rhf.value ? String(rhf.value) : undefined}
-              disabled={field.disabled || isSubmitting}
+              disabled={readOnly || field.disabled || isSubmitting}
             >
               <FormControl>
                 <SelectTrigger className="w-full">
@@ -272,7 +284,7 @@ export function ResourceForm<T extends FieldValues>({
                 {...rhf}
                 value={rhf.value ?? ''}
                 placeholder={field.placeholder}
-                disabled={field.disabled || isSubmitting}
+                disabled={readOnly || field.disabled || isSubmitting}
                 rows={4}
               />
             ) : field.type === 'checkbox' ? (
@@ -280,7 +292,7 @@ export function ResourceForm<T extends FieldValues>({
                 <Checkbox
                   checked={Boolean(rhf.value)}
                   onCheckedChange={rhf.onChange}
-                  disabled={field.disabled || isSubmitting}
+                  disabled={readOnly || field.disabled || isSubmitting}
                 />
                 <span className="text-sm text-foreground">{field.label}</span>
               </label>
@@ -290,7 +302,7 @@ export function ResourceForm<T extends FieldValues>({
                 type={field.type ?? 'text'}
                 value={toInputValue(field.type, rhf.value)}
                 placeholder={field.placeholder}
-                disabled={field.disabled || isSubmitting}
+                disabled={readOnly || field.disabled || isSubmitting}
                 onChange={(e) => {
                   const raw = e.target.value
                   if (field.type === 'number') {
@@ -342,6 +354,9 @@ export function ResourceForm<T extends FieldValues>({
         {children}
 
         <div className="flex items-center gap-3 border-t border-border pt-5">
+          {/* No submit at all when read-only — a disabled Save still invites a
+              click and still says "you should be able to do this". */}
+          {readOnly ? null : (
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
@@ -352,6 +367,7 @@ export function ResourceForm<T extends FieldValues>({
               submitLabel
             )}
           </Button>
+          )}
           {cancel}
         </div>
       </form>

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { LuPlus } from 'react-icons/lu'
 import { ListSalaryStructuresUseCase, salaryStructureRepository } from '@/modules/payroll-config/server'
+import { can } from '@/modules/shared'
 import { PageHeader } from '@/components/resource/page-header'
 import { Button } from '@/components/ui/button'
 import { ErrorState } from '../_components/states'
@@ -9,6 +10,8 @@ import { StructuresTable } from './structures-table'
 
 export default async function SalaryStructuresPage() {
   const actor = await pageActor()
+  // hr_payroll_user reads salary configuration; only a manager may change it.
+  const canCreate = can(actor.role, 'salary_structure', 'create')
 
   const result = await load(async () => {
     const outcome = await new ListSalaryStructuresUseCase(salaryStructureRepository()).execute({
@@ -25,12 +28,14 @@ export default async function SalaryStructuresPage() {
         title="Salary Structures"
         description="An ordered set of salary rules. A payrun computes every payslip from the structure it was created with."
         actions={
-          <Button asChild>
-            <Link href="/payroll/structures/new">
-              <LuPlus className="size-4" aria-hidden />
-              New structure
-            </Link>
-          </Button>
+          canCreate ? (
+            <Button asChild>
+              <Link href="/payroll/structures/new">
+                <LuPlus className="size-4" aria-hidden />
+                New structure
+              </Link>
+            </Button>
+          ) : null
         }
       />
 

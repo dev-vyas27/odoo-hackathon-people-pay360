@@ -39,6 +39,7 @@ import {
   useUpdateResource,
   useDeleteResource,
 } from '@/hooks/use-resource'
+import { useCan } from '@/components/auth/current-user'
 import { PageHeader } from '@/components/resource/page-header'
 import { SmartButton } from '@/components/resource/smart-button'
 import { StatusBadge } from '@/components/resource/status-badge'
@@ -70,6 +71,13 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   // Next 16: route params arrive as a promise.
   const { id } = use(params)
   const router = useRouter()
+
+  /**
+   * An employee may open their OWN record (the use case scopes the read) but
+   * must not be offered Archive — the API refuses it, and a button that always
+   * 403s reads as a broken app rather than as a permission boundary.
+   */
+  const canArchive = useCan('employee', 'delete')
 
   const { data: employee, isLoading } = useResourceItem<EmployeeDetailView>('employees', id)
   const update = useUpdateResource<EmployeeDetailView, CreateEmployeeBody>('employees', {
@@ -119,17 +127,19 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 Back
               </Link>
             </Button>
-            <ConfirmDialog
-              title="Archive this employee?"
-              description="Their contracts, attendance and time off are preserved. They stop appearing in new payruns."
-              confirmLabel="Archive"
-              destructive
-              trigger={<Button variant="outline">Archive</Button>}
-              onConfirm={async () => {
-                await archive.mutateAsync(id)
-                router.push('/employees')
-              }}
-            />
+            {canArchive ? (
+              <ConfirmDialog
+                title="Archive this employee?"
+                description="Their contracts, attendance and time off are preserved. They stop appearing in new payruns."
+                confirmLabel="Archive"
+                destructive
+                trigger={<Button variant="outline">Archive</Button>}
+                onConfirm={async () => {
+                  await archive.mutateAsync(id)
+                  router.push('/employees')
+                }}
+              />
+            ) : null}
           </>
         }
       />

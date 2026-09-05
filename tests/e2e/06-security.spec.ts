@@ -1,4 +1,13 @@
-import { test, expect, uniq, uniqEmail, grantLogin, makeEmployee } from './_helpers/fixtures'
+import {
+  test,
+  expect,
+  uniq,
+  uniqEmail,
+  grantLogin,
+  makeEmployee,
+  QA_EMAIL,
+  QA_PASSWORD,
+} from './_helpers/fixtures'
 
 test.describe('Security — authentication', () => {
   const protectedPaths = [
@@ -230,6 +239,83 @@ test.describe('Security — authorization boundaries', () => {
     ).toBe(403)
 
     await ctx.dispose()
+  })
+})
+
+test.describe('Security — the UI offers only what the role may do', () => {
+  /**
+   * The API already refuses these, and every use case re-checks — so this is
+   * about not OFFERING an action that will 403. An employee shown
+   * "+ New employee" clicks it, gets a permission error and reads the app as
+   * broken rather than as correctly restricted.
+   *
+   * The buttons are gated with `can()` from the same permission table the
+   * server authorises against, which is why the screen and the API cannot
+   * drift apart.
+   */
+  test('a plain employee sees no create or destroy actions', async ({ api, page }) => {
+    const employee = await makeEmployee(api)
+    const { email, password } = await grantLogin(api, employee)
+
+    await page.goto('/login')
+    await page.getByLabel('Email').fill(email)
+    await page.getByLabel('Password').fill(password)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 30_000 })
+
+    // The reported bug: "+ New employee" on the employee list.
+    await page.goto('/employees')
+    await page.waitForLoadState('networkidle')
+    await expect(
+      page.getByRole('link', { name: /New employee/i }),
+      'an employee may not add employees',
+    ).toHaveCount(0)
+    await expect(page.getByRole('link', { name: /Add the first one/i })).toHaveCount(0)
+
+    // Their own record: readable, but not archivable.
+    await page.goto(`/employees/${employee.id}`)
+    await page.waitForLoadState('networkidle')
+    await expect(
+      page.getByRole('button', { name: 'Archive' }),
+      'an employee may not archive anybody, including themselves',
+    ).toHaveCount(0)
+
+    // Leave policy and allocations are HR configuration.
+    await page.goto('/time-off/types')
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByRole('link', { name: /New type/i })).toHaveCount(0)
+
+    await page.goto('/time-off/allocations')
+    await page.waitForLoadState('networkidle')
+    await expect(
+      page.getByRole('link', { name: /New allocation/i }),
+      'an employee sees their entitlement but cannot grant one',
+    ).toHaveCount(0)
+
+    /**
+     * ...but the things they CAN do must still be offered. A permission sweep
+     * that hides everything is its own bug.
+     */
+    await page.goto('/time-off/requests')
+    await page.waitForLoadState('networkidle')
+    await expect(
+      page.getByRole('link', { name: /New request/i }),
+      'raising leave is exactly what an employee is for',
+    ).not.toHaveCount(0)
+  })
+
+  test('an HR manager still sees the actions they are entitled to', async ({ page }) => {
+    // The QA account is an admin — the control that proves the gate is
+    // permission-driven rather than "hidden for everyone".
+    await page.goto('/login')
+    await page.getByLabel('Email').fill(QA_EMAIL)
+    await page.getByLabel('Password').fill(QA_PASSWORD)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 30_000 })
+
+    await page.goto('/employees')
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByRole('link', { name: /New employee/i })).not.toHaveCount(0)
   })
 })
 

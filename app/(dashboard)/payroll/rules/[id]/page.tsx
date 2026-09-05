@@ -4,6 +4,7 @@ import {
   ListSalaryRulesUseCase,
   salaryRuleRepository,
 } from '@/modules/payroll-config/server'
+import { can } from '@/modules/shared'
 import { PageHeader } from '@/components/resource/page-header'
 import { ErrorState } from '../../_components/states'
 import { load, pageActor } from '../../_lib/session'
@@ -54,12 +55,19 @@ export default async function EditSalaryRulePage({
       <PageHeader
         title={rule.name}
         description={`Code ${rule.code} · runs at sequence ${rule.sequence}`}
-        actions={<ArchiveRuleButton id={rule.id} name={rule.name} active={rule.active} />}
+        actions={
+          // hr_payroll_user reads salary configuration but may not archive it.
+          can(actor.role, 'salary_rule', 'delete') ? (
+            <ArchiveRuleButton id={rule.id} name={rule.name} active={rule.active} />
+          ) : null
+        }
       />
       <RuleForm
         rule={toSalaryRuleFormValues(rule)}
         ruleId={rule.id}
         availableCodes={availableCodes}
+        // hr_payroll_user reads salary configuration; only a manager edits it.
+        readOnly={!can(actor.role, 'salary_rule', 'update')}
       />
     </>
   )

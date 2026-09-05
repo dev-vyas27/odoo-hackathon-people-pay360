@@ -23,6 +23,7 @@ import { StatusBadge } from '@/components/resource/status-badge'
 import { FilterBar, useFilterParams } from '@/components/resource/filter-bar'
 import { Pagination } from '@/components/resource/pagination'
 import { Button } from '@/components/ui/button'
+import { useCan } from '@/components/auth/current-user'
 import { cn } from '@/lib/utils'
 import { EMPLOYEE_TYPE_OPTIONS, ACTIVE_OPTIONS } from '../_components/options'
 import { EmployeeKanban } from './_components/employee-kanban'
@@ -32,6 +33,9 @@ export default function EmployeesPage() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const view = searchParams.get('view') === 'kanban' ? 'kanban' : 'list'
+
+  // A plain `employee` may read the list (scoped to themselves) but not add to it.
+  const canCreate = useCan('employee', 'create')
 
   const params = useFilterParams(['employeeType', 'isActive'])
   const { page, isLoading } = useResourceList<EmployeeListItem>('employees', params)
@@ -96,12 +100,14 @@ export default function EmployeesPage() {
                 label="Kanban view"
               />
             </div>
-            <Button asChild>
-              <Link href="/employees/new">
-                <LuPlus aria-hidden />
-                New employee
-              </Link>
-            </Button>
+            {canCreate ? (
+              <Button asChild>
+                <Link href="/employees/new">
+                  <LuPlus aria-hidden />
+                  New employee
+                </Link>
+              </Button>
+            ) : null}
           </>
         }
       />
@@ -128,9 +134,11 @@ export default function EmployeesPage() {
           onRowClick={(row) => router.push(`/employees/${row.id}`)}
           emptyMessage="No employees match these filters"
           emptyAction={
-            <Button variant="outline" asChild>
-              <Link href="/employees/new">Add the first one</Link>
-            </Button>
+            canCreate ? (
+              <Button variant="outline" asChild>
+                <Link href="/employees/new">Add the first one</Link>
+              </Button>
+            ) : undefined
           }
         />
       )}

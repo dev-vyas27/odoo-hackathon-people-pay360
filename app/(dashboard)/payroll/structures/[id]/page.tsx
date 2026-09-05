@@ -1,4 +1,4 @@
-import { Money } from '@/modules/shared'
+import { can, Money } from '@/modules/shared'
 import { runRuleEngine, type SalaryStructureFormValues } from '@/modules/payroll-config'
 import {
   GetSalaryStructureDetailUseCase,
@@ -74,7 +74,13 @@ export default async function EditSalaryStructurePage({
       <StructurePreview lines={preview(rules)} />
 
       <div className="mt-8">
-        <StructureForm structure={values} structureId={structure.id} available={options} />
+        <StructureForm
+          structure={values}
+          structureId={structure.id}
+          available={options}
+          // hr_payroll_user reads salary configuration; only a manager edits it.
+          readOnly={!can(actor.role, 'salary_structure', 'update')}
+        />
       </div>
     </>
   )

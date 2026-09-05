@@ -25,11 +25,14 @@ import { FilterBar, useFilterParams } from '@/components/resource/filter-bar'
 import { Pagination } from '@/components/resource/pagination'
 import { useConfirm } from '@/components/resource/confirm-dialog'
 import { Button } from '@/components/ui/button'
+import { useCan } from '@/components/auth/current-user'
 import { formatDateRange, formatDuration } from '../_components/format'
 
 const RESOURCE = 'time-off/allocations'
 
 export default function AllocationsPage() {
+  // An employee may SEE their allocations but not grant one.
+  const canCreate = useCan('allocation', 'create')
   const params = useFilterParams(['status', 'timeOffTypeId'])
   const { page, isLoading } = useResourceList<AllocationListItem>(RESOURCE, params)
 
@@ -140,12 +143,14 @@ export default function AllocationsPage() {
         title="Allocations"
         description="Entitlements are not spendable until they are approved. Approved leave draws down from the matching allocation."
         actions={
-          <Button asChild>
-            <Link href="/time-off/allocations/new">
-              <LuPlus aria-hidden />
-              New allocation
-            </Link>
-          </Button>
+          canCreate ? (
+            <Button asChild>
+              <Link href="/time-off/allocations/new">
+                <LuPlus aria-hidden />
+                New allocation
+              </Link>
+            </Button>
+          ) : null
         }
       />
 
@@ -160,9 +165,11 @@ export default function AllocationsPage() {
         isLoading={isLoading}
         emptyMessage="No allocations yet"
         emptyAction={
-          <Button variant="outline" asChild>
-            <Link href="/time-off/allocations/new">Grant the first one</Link>
-          </Button>
+          canCreate ? (
+            <Button variant="outline" asChild>
+              <Link href="/time-off/allocations/new">Grant the first one</Link>
+            </Button>
+          ) : undefined
         }
       />
 

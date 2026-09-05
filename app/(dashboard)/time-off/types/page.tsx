@@ -24,6 +24,7 @@ import { FilterBar, useFilterParams } from '@/components/resource/filter-bar'
 import { Pagination } from '@/components/resource/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useCan } from '@/components/auth/current-user'
 
 const columns: ColumnDef<TimeOffTypeView, unknown>[] = [
   {
@@ -77,18 +78,23 @@ export default function TimeOffTypesPage() {
   const params = useFilterParams(['isActive'])
   const { page, isLoading } = useResourceList<TimeOffTypeView>('time-off/types', params)
 
+  // Leave policy is HR configuration; an employee only reads it.
+  const canCreate = useCan('time_off_type', 'create')
+
   return (
     <div>
       <PageHeader
         title="Time Off Types"
         description="Leave policies. The unit and allocation requirement decide how every request of this type behaves."
         actions={
-          <Button asChild>
-            <Link href="/time-off/types/new">
-              <LuPlus aria-hidden />
-              New type
-            </Link>
-          </Button>
+          canCreate ? (
+            <Button asChild>
+              <Link href="/time-off/types/new">
+                <LuPlus aria-hidden />
+                New type
+              </Link>
+            </Button>
+          ) : null
         }
       />
 
@@ -113,9 +119,11 @@ export default function TimeOffTypesPage() {
         onRowClick={(row) => router.push(`/time-off/types/${row.id}`)}
         emptyMessage="No leave types configured"
         emptyAction={
-          <Button variant="outline" asChild>
-            <Link href="/time-off/types/new">Configure the first one</Link>
-          </Button>
+          canCreate ? (
+            <Button variant="outline" asChild>
+              <Link href="/time-off/types/new">Configure the first one</Link>
+            </Button>
+          ) : undefined
         }
       />
 

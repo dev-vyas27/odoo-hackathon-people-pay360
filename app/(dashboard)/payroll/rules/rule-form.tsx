@@ -82,12 +82,15 @@ export function RuleForm({
   rule,
   ruleId,
   availableCodes,
+  readOnly = false,
 }: {
   rule: SalaryRuleFormValues
   /** Present when editing; absent when creating. */
   ruleId?: string
   /** Codes of other rules, offered as the base of a percentage. */
   availableCodes: string[]
+  /** A role that may read salary configuration but not change it. */
+  readOnly?: boolean
 }) {
   const router = useRouter()
 
@@ -111,6 +114,7 @@ export function RuleForm({
 
   return (
     <ResourceForm
+      readOnly={readOnly}
       schema={salaryRuleFormSchema}
       fields={fields}
       defaultValues={rule as never}
