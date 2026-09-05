@@ -105,6 +105,8 @@ Modules never import each other's classes. They communicate through **ports** re
 findApplicableContract(employeeId: string, period: Period): Promise<ContractSnapshot | null>
 ```
 
+See **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** for the context map, data model, request lifecycle and both end-to-end scenarios as diagrams.
+
 Patterns used deliberately: **Strategy + Registry** (salary rules — a new computation type is one class, the engine never changes), **State** (payrun `draft → computed → validated → paid`), **Specification** (payrun eligibility), **Repository**, and **Value Objects** (`Money` stores integer minor units, because a one-paise float drift across 500 payslips is unfindable).
 
 ---

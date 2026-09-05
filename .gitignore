@@ -54,6 +54,7 @@ next-env.d.ts
 /AGENTS.md
 /CLAUDE.md
 /PROJECT_STRUCTURE.md
-/docs/
+# Per-developer plans are internal scaffolding; architecture docs are not.
+/docs/plans/
 *.pdf
 *.patch
