@@ -1,38 +1,59 @@
 /**
- * Public surface of the "people" module.  ·  Owner: Dev B
+ * Public surface of the "people" module.
  *
- * Everything other modules may use is re-exported HERE. Internals under
- * domain/, application/, infrastructure/ and interface/ are private, and the
- * ESLint boundary rule rejects imports that reach into them.
+ * Everything other modules are allowed to use is re-exported HERE and nowhere
+ * else. Internals under domain/, application/, infrastructure/ and interface/
+ * are private and the ESLint boundary rule will reject imports that reach in.
  *
- * Consumers today: timeoff (Dev A), payroll-processing (Dev C), analytics (Dev A).
+ * Owner: see docs/plans/ — do not add exports for another team's module.
  */
+export type { EmployeeLookupPort, EmployeeSummary } from './application/ports/employee-lookup.port'
+export { createEmployeeLookup } from './infrastructure/employee-lookup.adapter'
+export { EMPLOYEE_TYPES, isEmployeeType, type EmployeeType } from './domain/employee-type'
 
-// --- Domain vocabulary shared across modules -------------------------------
+// --- HTTP-facing surface consumed by app/api/** route handlers only. ---
 export {
-  EMPLOYEE_TYPES,
-  EMPLOYEE_TYPE_LABELS,
-  isEmployeeType,
-  type EmployeeType,
-} from './domain/employee-type'
+  createEmployeeSchema,
+  updateEmployeeSchema,
+  employeeQuerySchema,
+  type CreateEmployeeBody,
+  type UpdateEmployeeBody,
+  type EmployeeQuery,
+} from './interface/employee.schema'
+export {
+  createEmployee,
+  updateEmployee,
+  listEmployees,
+  archiveEmployee,
+  getEmployeeDetail,
+} from './interface/employee.controller'
 
-// --- Published port (the contract other modules code against) --------------
-export type {
-  EmployeeLookupPort,
-  EmployeeSummary,
-  EligibilityFilter,
-} from './application/ports/employee-lookup.port'
+export {
+  createDepartmentSchema,
+  updateDepartmentSchema,
+  departmentQuerySchema,
+  type CreateDepartmentBody,
+  type UpdateDepartmentBody,
+} from './interface/department.schema'
+export {
+  createDepartment,
+  updateDepartment,
+  listDepartments,
+  getDepartment,
+  deleteDepartment,
+} from './interface/department.controller'
 
-// --- Implementation selection ----------------------------------------------
-import { StubEmployeeLookup } from './infrastructure/employee-lookup.stub'
-import type { EmployeeLookupPort } from './application/ports/employee-lookup.port'
-
-/**
- * Factory consumers call from the composition root.
- *
- * Swapping the stub for the Mongo adapter in Phase 3 changes this ONE line —
- * no consumer touches an import. That is the whole point of the port.
- */
-export function createEmployeeLookup(): EmployeeLookupPort {
-  return new StubEmployeeLookup()
-}
+export {
+  createJobPositionSchema,
+  updateJobPositionSchema,
+  jobPositionQuerySchema,
+  type CreateJobPositionBody,
+  type UpdateJobPositionBody,
+} from './interface/job-position.schema'
+export {
+  createJobPosition,
+  updateJobPosition,
+  listJobPositions,
+  getJobPosition,
+  deleteJobPosition,
+} from './interface/job-position.controller'

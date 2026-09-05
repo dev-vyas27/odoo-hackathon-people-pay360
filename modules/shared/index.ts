@@ -63,3 +63,10 @@ export {
   pageQuerySchema,
   type PageQueryInput,
 } from './contracts/schema'
+
+/**
+ * Persistence base class. Lives in shared/infrastructure but is published here
+ * because every module's repositories extend it - without this export they would
+ * have to reach into shared's internals, which the boundary rule forbids.
+ */
+export { BaseMongoRepository } from './infrastructure/mongo-repository'

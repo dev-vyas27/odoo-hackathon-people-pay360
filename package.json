@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "tsx scripts/seed.ts",
+    "db:check": "tsx scripts/pg-check.mts",
     "verify": "npm run typecheck && npm run lint && npm run test"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "next": "16.3.4",
     "nodemailer": "^10.0.0",
     "pdfkit": "^0.20.2",
+    "pg": "^8.23.0",
     "radix-ui": "^1.6.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -46,8 +48,10 @@
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.1",
     "@types/pdfkit": "^0.17.6",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
