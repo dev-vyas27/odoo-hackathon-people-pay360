@@ -26,3 +26,6 @@ export { amountInWords } from "./domain/money-words";
 
 /** Publishes MailerPort. `lib/bootstrap.ts` calls this once per process. */
 export { registerDelivery } from "./register";
+
+/** POST /api/payruns/[id]/send — bulk payslip delivery. */
+export { sendPayrunPayslips } from "./interface/payslip-pdf.controller";

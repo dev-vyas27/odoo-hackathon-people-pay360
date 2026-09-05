@@ -192,12 +192,27 @@ export interface AttendanceStatsPort {
  * Behind a port so `nodemailer` is imported in exactly one file and so a test
  * can assert on what would have been sent without an SMTP server.
  */
+export interface EmailAttachment {
+  filename: string
+  content: Uint8Array
+  contentType: string
+}
+
 export interface EmailMessage {
   to: string
   subject: string
   /** Plain text is required; HTML is the enhancement, not the other way round. */
   text: string
   html?: string
+  /**
+   * Files travelling WITH the message.
+   *
+   * A payslip is emailed as an attachment rather than only as a link because a
+   * signed download URL expires — seven days at the very most — and an email
+   * that outlives its own link is worse than no email. The archived copy in S3
+   * is the system of record; the attachment is what the person actually opens.
+   */
+  attachments?: EmailAttachment[]
 }
 
 export interface EmailResult {

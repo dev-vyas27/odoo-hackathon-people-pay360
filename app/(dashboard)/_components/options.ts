@@ -109,6 +109,12 @@ export function useEmployeeOptions(excludeId?: string) {
   const blocked = reportingSubtree(page.items, excludeId)
   return {
     isLoading,
+    /**
+     * The full records, not just labels. A contract copies the employee's
+     * department, position and schedule, and `{label, value}` cannot answer
+     * "which department is this person in".
+     */
+    items: page.items,
     options: page.items
       .filter((e) => !blocked.has(e.id))
       .map((e) => ({ value: e.id, label: e.name })),

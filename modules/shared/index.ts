@@ -98,6 +98,7 @@ export type {
   LeaveStatus,
   LeaveBalanceView,
   LeaveStatsPort,
+  EmailAttachment,
   EmailMessage,
   EmailResult,
   MailerPort,

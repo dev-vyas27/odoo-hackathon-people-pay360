@@ -52,6 +52,14 @@ const consoleMailer: MailerPort = {
         `  subject: ${message.subject}`,
         '',
         message.text.replace(/^/gm, '  '),
+        ...(message.attachments?.length
+          ? [
+              '',
+              `  attachments: ${message.attachments
+                .map((a) => `${a.filename} (${a.content.byteLength} bytes)`)
+                .join(', ')}`,
+            ]
+          : []),
         '─────────────────────────────────────────────────────────────',
         '',
       ].join('\n'),
@@ -69,6 +77,13 @@ const smtpMailer: MailerPort = {
         subject: message.subject,
         text: message.text,
         html: message.html,
+        // Buffer, not Uint8Array: nodemailer streams the former directly and
+        // stringifies the latter into a corrupt attachment.
+        attachments: message.attachments?.map((file) => ({
+          filename: file.filename,
+          content: Buffer.from(file.content),
+          contentType: file.contentType,
+        })),
       })
       return { to: message.to, sent: true }
     } catch (reason) {

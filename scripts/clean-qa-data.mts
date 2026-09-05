@@ -21,8 +21,12 @@ const QA_EMAIL = `'%@peoplepay360.test'`
 
 /** Employees and logins the suite minted, as a reusable subquery. */
 const QA_EMPLOYEES = `SELECT id FROM employees WHERE email LIKE ${QA_EMAIL}`
-const QA_PAYRUNS = `SELECT id FROM payruns WHERE name LIKE 'Payrun%' OR name LIKE 'RegPayrun-%'`
-const QA_STRUCTURES = `SELECT id FROM salary_structures WHERE name LIKE 'Struct-%' OR name LIKE 'RegStruct-%'`
+const QA_PAYRUNS =
+  `SELECT id FROM payruns WHERE name LIKE 'Payrun%' OR name LIKE 'RegPayrun-%'
+     OR name LIKE 'SendRun-%' OR name LIKE 'Send Test%'`
+const QA_STRUCTURES =
+  `SELECT id FROM salary_structures WHERE name LIKE 'Struct-%' OR name LIKE 'RegStruct-%'
+     OR name LIKE 'SendStruct%'`
 
 /**
  * Child-first. `payslip_lines` and `salary_structure_rules` cascade from their
@@ -41,11 +45,12 @@ const STEPS: Array<[label: string, sql: string]> = [
     'payrun_employees (QA employees)',
     `DELETE FROM payrun_employees WHERE employee_id IN (${QA_EMPLOYEES})`,
   ],
-  ['payruns', `DELETE FROM payruns WHERE name LIKE 'Payrun%' OR name LIKE 'RegPayrun-%'`],
+  ['payruns', `DELETE FROM payruns WHERE id IN (${QA_PAYRUNS})`],
   ['salary_structures', `DELETE FROM salary_structures WHERE id IN (${QA_STRUCTURES})`],
   [
     'salary_rules',
-    `DELETE FROM salary_rules WHERE name LIKE 'Rule-%' OR name LIKE 'RegBasic-%'`,
+    `DELETE FROM salary_rules WHERE name LIKE 'Rule-%' OR name LIKE 'RegBasic-%'
+       OR name LIKE 'SendBasic%'`,
   ],
   ['timeoff_requests', `DELETE FROM timeoff_requests WHERE employee_id IN (${QA_EMPLOYEES})`],
   ['timeoff_allocations', `DELETE FROM timeoff_allocations WHERE employee_id IN (${QA_EMPLOYEES})`],

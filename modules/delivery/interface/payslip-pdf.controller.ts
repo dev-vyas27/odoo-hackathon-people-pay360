@@ -10,14 +10,16 @@
  * inline, which is what the "Print PDF" button on the payslip screen wants.
  */
 import { after } from 'next/server'
-import { errorResponse } from '@/lib/http'
-import { getActor } from '@/lib/auth'
+import { errorResponse, respond } from '@/lib/http'
+import { getActor, requireActor } from '@/lib/auth'
 import { DomainError } from '@/modules/shared'
+import { SendPayrunPayslipsUseCase } from '../application/send-payrun-payslips.use-case'
 import { GeneratePayslipPdfUseCase } from '../application/generate-payslip-pdf.use-case'
 import {
   companyIdentity,
   documentStorage,
   employeeLookup,
+  mailer,
   payslipQuery,
   payslipRenderer,
 } from '../composition'
@@ -64,4 +66,26 @@ export async function getPayslipPdf(id: string, request: Request): Promise<Respo
       'Cache-Control': 'private, no-store',
     },
   })
+}
+
+/**
+ * POST /api/payruns/[id]/send — email every payslip in the run.
+ *
+ * Returns a per-employee report rather than a bare 200: "sent 23 of 25, two
+ * have no email address" is something an HR user can act on, and a bulk action
+ * that only says "done" hides exactly the cases that need chasing.
+ */
+export async function sendPayrunPayslips(payrunId: string): Promise<Response> {
+  const actor = await requireActor()
+
+  const result = await new SendPayrunPayslipsUseCase(
+    payslipQuery(),
+    employeeLookup(),
+    payslipRenderer(),
+    documentStorage(),
+    mailer(),
+    companyIdentity(),
+  ).execute({ actor, payrunId })
+
+  return respond(result)
 }

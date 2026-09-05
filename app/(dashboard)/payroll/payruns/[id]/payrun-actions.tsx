@@ -22,6 +22,17 @@ interface ComputeResponse {
   payslips: unknown[]
 }
 
+interface SendResponse {
+  sent: number
+  failed: number
+  deliveries: Array<{
+    employeeName: string
+    sent: boolean
+    archived: boolean
+    reason?: string
+  }>
+}
+
 export function PayrunActions({
   payrun,
   payslipCount,
@@ -46,23 +57,41 @@ export function PayrunActions({
   }
 
   /**
-   * Delivery is Dev A's module and its route may not exist yet. A 404 here is a
-   * known integration gap, not a payroll failure, so it is reported as such
-   * rather than as a generic error.
+   * Bulk delivery reports PER EMPLOYEE, so the toast does too.
+   *
+   * "Payslips sent" over a run where two people have no email address is a lie
+   * of omission — those two are the only ones anybody needed to hear about. The
+   * server returns a delivery per payslip; this surfaces the failures by name
+   * and keeps the message on screen long enough to read them.
    */
   async function sendPayslips() {
     setBusy('send')
     try {
-      await apiPost(`/api/payruns/${payrun.id}/send`)
-      toast.success('Payslips sent')
+      const result = (await apiPost(`/api/payruns/${payrun.id}/send`)) as SendResponse
+
+      if (result.failed === 0) {
+        toast.success(
+          `Sent ${result.sent} payslip${result.sent === 1 ? '' : 's'}${
+            result.deliveries.every((d) => d.archived) ? ' and archived them' : ''
+          }`,
+        )
+        return
+      }
+
+      const unsent = result.deliveries.filter((d) => !d.sent)
+      toast(
+        [
+          `Sent ${result.sent} of ${result.sent + result.failed}.`,
+          ...unsent.slice(0, 4).map((d) => `• ${d.employeeName}: ${d.reason ?? 'failed'}`),
+          unsent.length > 4 ? `…and ${unsent.length - 4} more` : '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        { duration: 10_000, icon: '⚠️' },
+      )
     } catch (reason) {
-      const notBuiltYet = reason instanceof ApiError && reason.status === 404
       toast.error(
-        notBuiltYet
-          ? 'Payslip delivery is not available yet.'
-          : reason instanceof ApiError
-            ? reason.message
-            : 'Could not send payslips',
+        reason instanceof ApiError ? reason.message : 'Could not send payslips',
       )
     } finally {
       setBusy(null)

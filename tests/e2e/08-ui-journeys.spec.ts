@@ -1,7 +1,10 @@
 import {
   test,
   expect,
+  makeDepartment,
   makeEmployee,
+  makeJobPosition,
+  makeSchedule,
   uniq,
   uniqEmail,
   QA_EMAIL,
@@ -255,6 +258,94 @@ test.describe('UI — employee detail rules', () => {
 
     const partTimeValue = (await selectFor(page, 'Working schedule').innerText()).trim()
     expect(partTimeValue, 'the full-time schedule must not have stuck').not.toBe(fullTimeValue)
+  })
+})
+
+test.describe('UI — contract inherits the employee’s placement', () => {
+  test('picking an employee fills department, position and schedule, all locked', async ({
+    page,
+  }) => {
+    await signIn(page)
+
+    const listed = await page.request.get('/api/employees?limit=200')
+    const items = (await listed.json()).data.items as any[]
+    const target = items.find(
+      (e) => e.departmentId && e.jobPositionId && e.workingScheduleId,
+    )
+    expect(target, 'need a fully-placed employee — run the demo seed').toBeTruthy()
+
+    await page.goto('/contracts/new')
+    await page.waitForLoadState('networkidle')
+
+    const schedule = page.getByRole('combobox', { name: 'Working schedule' })
+    const inherited = page.locator('text=From the employee record').locator('..')
+
+    // Nothing to inherit yet.
+    await expect(schedule).toContainText('Select an employee first')
+
+    await page.getByRole('combobox', { name: 'Employee' }).click()
+    await page.getByRole('option', { name: target.name, exact: true }).click()
+    await page.waitForTimeout(1000)
+
+    // The schedule is a real contract column, so it is a (locked) field.
+    await expect(schedule).not.toContainText('Select an employee first')
+    /**
+     * Locked is the point, not the polish: payroll prorates against
+     * `contract.workingScheduleId`, so a hand-edited schedule that disagrees
+     * with the employee's pays the wrong amount and nothing downstream notices.
+     */
+    await expect(schedule).toBeDisabled()
+    await expect(page.getByLabel('Wage'), 'the rest of the form still works').toBeEnabled()
+
+    /**
+     * Department and job position are NOT inputs — `contracts` has no such
+     * columns and payroll joins them from the employee. They are shown as
+     * read-only context, so there is nothing to type into and nothing to
+     * silently discard.
+     */
+    await expect(inherited).toContainText('Department')
+    await expect(inherited).toContainText('Job position')
+    expect(
+      await page.getByLabel('Department').count(),
+      'department must not be an editable contract field',
+    ).toBe(0)
+  })
+
+  test('a saved contract matches the employee it was created for', async ({ page, api }) => {
+    /**
+     * Builds its own employee rather than borrowing a seeded one. The seeded
+     * employees already hold OPEN-ENDED contracts, so any new contract for them
+     * overlaps and is refused with a 409 — a correct rejection that would make
+     * this test look like an auto-fill failure.
+     */
+    const department = await makeDepartment(api)
+    const position = await makeJobPosition(api, department.id)
+    void position
+    const schedule = await makeSchedule(api)
+    const employee = await makeEmployee(api, {
+      departmentId: department.id,
+      jobPositionId: position.id,
+      workingScheduleId: schedule.id,
+    })
+
+    await signIn(page)
+    await page.goto('/contracts/new')
+    await page.waitForLoadState('networkidle')
+
+    await page.getByRole('combobox', { name: 'Employee' }).click()
+    await page.getByRole('option', { name: employee.name, exact: true }).click()
+    await page.waitForTimeout(800)
+    await page.getByLabel('Wage').fill('54321')
+    await page.getByLabel('Start date').fill('2031-01-01')
+    await page.getByRole('button', { name: /Create|Save/ }).first().click()
+    await page.waitForTimeout(2500)
+
+    const saved = await api.get(`/api/contracts?employeeId=${employee.id}&limit=200`)
+    expect(saved.data.total, 'the contract should have been created').toBe(1)
+
+    const contract = saved.data.items[0]
+    expect(contract.workingScheduleId, 'schedule must match the employee').toBe(schedule.id)
+    expect(Number(contract.wage)).toBe(54321)
   })
 })
 

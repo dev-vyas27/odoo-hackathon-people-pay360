@@ -15,8 +15,10 @@ import {
   resolve,
   PORT_KEYS,
   type EmployeeLookupPort,
+  type MailerPort,
   type PayslipQueryPort,
 } from '@/modules/shared'
+import { createMailer } from './infrastructure/nodemailer-mailer'
 import type { CompanyIdentity } from './domain/payslip-document'
 import type { DocumentRendererPort } from './application/ports/document-renderer.port'
 import type { DocumentStoragePort } from './application/ports/document-storage.port'
@@ -55,6 +57,16 @@ export function employeeLookup(): EmployeeLookupPort {
 
 export function payslipRenderer(): DocumentRendererPort {
   return resolve('delivery.payslip-renderer', () => new PdfKitPayslipRenderer())
+}
+
+/**
+ * Resolved through the registry rather than constructed, so a test can bind a
+ * fake — and so the console mailer keeps working when SMTP is unset. Falls back
+ * to a directly-built one for the case where `registerDelivery` has not run
+ * (a script, a unit test).
+ */
+export function mailer(): MailerPort {
+  return portOr(PORT_KEYS.mailer, resolve('delivery.mailer', createMailer))
 }
 
 export function documentStorage(): DocumentStoragePort {

@@ -341,6 +341,55 @@ test.describe('Payroll processing — the full payrun lifecycle', () => {
     ).not.toContain('80000')
   })
 
+  test('sending payslips: refused until validated, then reported per employee', async ({
+    api,
+  }) => {
+    const employee = await makeEmployee(api, { bankAccount: '778899001122' })
+    await makeContract(api, employee.id, { wage: 48000, start: '2020-01-01', end: null })
+    const { structure } = await makeStructure(api)
+
+    const payrun = await api.post('/api/payruns', {
+      name: uniq('SendRun'),
+      structureId: structure.id,
+      periodStart: '2025-09-01',
+      periodEnd: '2025-09-30',
+      employeeIds: [employee.id],
+    })
+    expect(payrun.status, JSON.stringify(payrun.raw)).toBe(201)
+    const id = payrun.data.id
+
+    /**
+     * Nothing computed yet: there is no payslip to send, and saying so is more
+     * use than a silent success over an empty run.
+     */
+    const beforeCompute = await api.post(`/api/payruns/${id}/send`)
+    expect(beforeCompute.status).toBe(422)
+    expect(beforeCompute.error?.code).toBe('PAYRUN_HAS_NO_PAYSLIPS')
+
+    await api.post(`/api/payruns/${id}/compute`)
+
+    /**
+     * Computed but not validated. The figures can still change, and an email
+     * cannot be recalled — so this is the gate that matters.
+     */
+    const beforeValidate = await api.post(`/api/payruns/${id}/send`)
+    expect(beforeValidate.status).toBe(422)
+    expect(beforeValidate.error?.code).toBe('PAYRUN_NOT_VALIDATED')
+
+    const validated = await api.post(`/api/payruns/${id}/validate`)
+    expect(validated.status, JSON.stringify(validated.raw)).toBe(200)
+
+    const sent = await api.post(`/api/payruns/${id}/send`)
+    expect(sent.status, JSON.stringify(sent.raw)).toBe(200)
+    expect(sent.data.sent, 'the one employee should receive their payslip').toBe(1)
+    expect(sent.data.failed).toBe(0)
+
+    const delivery = sent.data.deliveries[0]
+    expect(delivery.employeeName).toBe(employee.name)
+    expect(delivery.email).toBe(employee.email)
+    expect(delivery.sent).toBe(true)
+  })
+
   test('rejects a payrun whose period ends before it starts', async ({ api }) => {
     const employee = await makeEmployee(api)
     const { structure } = await makeStructure(api)
