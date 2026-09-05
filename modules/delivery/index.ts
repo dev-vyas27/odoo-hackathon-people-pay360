@@ -20,6 +20,8 @@ export {
   type DocumentTotals,
   type PayslipDocument,
   type PayslipDocumentInput,
-} from './domain/payslip-document'
+} from "./domain/payslip-document";
 
-export { amountInWords } from './domain/money-words'
+export { amountInWords } from "./domain/money-words";
+
+export { registerDelivery } from "./register";
