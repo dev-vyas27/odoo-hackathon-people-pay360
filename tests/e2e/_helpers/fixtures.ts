@@ -73,11 +73,22 @@ export function uniqEmail(): string {
   return `${uniq('qa').toLowerCase()}@peoplepay360.test`
 }
 
-/** An uppercase code that satisfies RULE_CODE_PATTERN / time-off code rules. */
+/**
+ * An uppercase code that satisfies RULE_CODE_PATTERN / time-off code rules.
+ *
+ * Random rather than time-plus-counter. Codes are capped at 10 characters, and
+ * a timestamp in base36 already eats eight of them — so the counter that was
+ * supposed to disambiguate got truncated away, and four parallel workers
+ * generating a code in the same millisecond collided on the unique index.
+ */
 export function uniqCode(prefix = 'Q'): string {
   counter += 1
-  const tail = `${Date.now().toString(36)}${counter}`.replace(/[^a-z0-9]/gi, '').toUpperCase()
-  return `${prefix}${tail}`.slice(0, 10)
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let tail = ''
+  while (tail.length < 10 - prefix.length) {
+    tail += alphabet[Math.floor(Math.random() * alphabet.length)]
+  }
+  return `${prefix}${tail}`
 }
 
 export const test = base.extend<{ api: Api; anon: Api }>({

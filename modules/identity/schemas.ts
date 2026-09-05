@@ -19,7 +19,7 @@
  */
 export {
   loginSchema,
-  createUserSchema,
+  createAccountSchema,
   type LoginValues,
-  type CreateUserValues,
+  type CreateAccountValues,
 } from './interface/auth.schema'

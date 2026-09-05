@@ -107,7 +107,7 @@ export const timeoffSeed: SeedPart = {
         reason: 'Family holiday',
         status: 'approved',
         allocation_id: seedId('alc', 1),
-        decided_by_user_id: SEED.users.hrManager,
+        decided_by_employee_id: SEED.users.hrManager,
         decided_at: new Date(Date.UTC(year, 1, 20)),
       },
       {
@@ -122,7 +122,7 @@ export const timeoffSeed: SeedPart = {
         reason: 'Personal',
         status: 'to_approve',
         allocation_id: null,
-        decided_by_user_id: null,
+        decided_by_employee_id: null,
         decided_at: null,
       },
       {
@@ -136,7 +136,7 @@ export const timeoffSeed: SeedPart = {
         reason: 'Fever',
         status: 'to_approve',
         allocation_id: null,
-        decided_by_user_id: null,
+        decided_by_employee_id: null,
         decided_at: null,
       },
       {
@@ -152,7 +152,7 @@ export const timeoffSeed: SeedPart = {
         reason: 'Sabbatical request',
         status: 'refused',
         allocation_id: null,
-        decided_by_user_id: SEED.users.hrManager,
+        decided_by_employee_id: SEED.users.hrManager,
         decided_at: new Date(Date.UTC(year, 4, 20)),
       },
     ])

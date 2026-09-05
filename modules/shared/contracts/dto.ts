@@ -20,10 +20,17 @@ import type { Role } from './permissions'
 // Common — owner: Dev A
 // ---------------------------------------------------------------------------
 
-/** The authenticated user as every layer above the domain sees it. */
+/**
+ * The authenticated person as every layer above the domain sees it.
+ *
+ * One id, not two. `users` and `employees` were separate tables until 0010, so
+ * this carried both a `userId` and a nullable `employeeId` and every consumer
+ * had to know which one to use — and handle the null. The employee row is now
+ * the identity, so `employeeId` is the only id there is and it is always
+ * present.
+ */
 export interface CurrentUser {
-  userId: string
-  employeeId: string | null
+  employeeId: string
   role: Role
   email: string
   name: string

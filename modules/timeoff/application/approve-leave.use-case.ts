@@ -99,7 +99,7 @@ export class ApproveLeaveUseCase implements UseCase<ApproveLeaveInput, LeaveRequ
           allocationId = allocation.id
         }
 
-        request.approve(input.actor.userId, allocationId)
+        request.approve(input.actor.employeeId, allocationId)
         return repos.requests.save(request)
       })
 

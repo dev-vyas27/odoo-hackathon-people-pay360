@@ -98,7 +98,7 @@ function toRequest(row: LeaveRequestRow): LeaveRequest {
     reason: row.reason,
     status: row.status,
     allocationId: row.allocation_id,
-    decidedByUserId: row.decided_by_user_id,
+    decidedByEmployeeId: row.decided_by_employee_id,
     decidedAt: row.decided_at,
   })
 }
@@ -552,7 +552,7 @@ export class PostgresLeaveRequestRepository implements LeaveRequestRepositoryPor
       `UPDATE "${REQUESTS_TABLE}" SET
          timeoff_type_id = $2, starts_on = $3, ends_on = $4, unit = $5,
          duration = $6, reason = $7, status = $8, allocation_id = $9,
-         decided_by_user_id = $10, decided_at = $11
+         decided_by_employee_id = $10, decided_at = $11
        WHERE id = $1
        RETURNING ${REQ_COLS}`,
       [
@@ -565,7 +565,7 @@ export class PostgresLeaveRequestRepository implements LeaveRequestRepositoryPor
         props.reason ?? null,
         props.status,
         props.allocationId ?? null,
-        props.decidedByUserId ?? null,
+        props.decidedByEmployeeId ?? null,
         props.decidedAt ?? null,
       ],
     )

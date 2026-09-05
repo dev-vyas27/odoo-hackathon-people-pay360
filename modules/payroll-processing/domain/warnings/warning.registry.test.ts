@@ -200,7 +200,7 @@ describe('the registry', () => {
           code: 'CUSTOM',
           severity: 'warning' as const,
           message: 'hello',
-          employeeId: null,
+          employeeId: 'emp-actor',
           employeeName: null,
         },
       ],

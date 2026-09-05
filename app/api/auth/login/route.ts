@@ -15,8 +15,8 @@ export async function POST(request: Request) {
     const user = result.value
     await setAuthCookie(
       signToken({
-        sub: user.userId,
-        employeeId: user.employeeId,
+        // The employee id IS the identity since 0010.
+        sub: user.employeeId,
         role: user.role,
         email: user.email,
         name: user.name,

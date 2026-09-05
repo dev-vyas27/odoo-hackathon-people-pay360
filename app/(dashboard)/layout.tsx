@@ -16,7 +16,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!actor) redirect('/login')
 
   const user = {
-    userId: actor.userId,
     employeeId: actor.employeeId,
     role: actor.role,
     email: actor.email,

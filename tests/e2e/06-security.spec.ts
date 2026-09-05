@@ -174,19 +174,25 @@ test.describe('Security — injection and input abuse', () => {
 
 test.describe('Security — authorization boundaries', () => {
   test('the permission matrix is enforced for a plain employee role', async ({ api, playwright, baseURL }) => {
-    // Create a real employee + a user account bound to the `employee` role.
+    /**
+     * Create an employee, then give THAT employee a login.
+     *
+     * Since 0010 there is no separate user record to bind: posting the
+     * employee's own address to /api/users grants a login to the person who
+     * already has it. That is the whole point of the merged table.
+     */
     const employee = await makeEmployee(api)
-    const email = uniqEmail()
+    const email = employee.email
     const password = 'EmployeeTest!123'
-    const user = await api.post('/api/users', {
-      name: uniq('User'),
+    const account = await api.post('/api/users', {
+      name: employee.name,
       email,
       password,
       role: 'employee',
-      employeeId: employee.id,
       isActive: true,
     })
-    expect(user.status, `create user: ${JSON.stringify(user.raw)}`).toBe(201)
+    expect(account.status, `grant login: ${JSON.stringify(account.raw)}`).toBe(201)
+    expect(account.data.id, 'the login must land on the employee, not a new row').toBe(employee.id)
 
     const ctx = await playwright.request.newContext({ baseURL })
     const login = await ctx.post('/api/auth/login', { data: { email, password } })
@@ -214,17 +220,17 @@ test.describe('Security — authorization boundaries', () => {
   }) => {
     const mine = await makeEmployee(api)
     const theirs = await makeEmployee(api)
-    const email = uniqEmail()
+    const email = mine.email
     const password = 'EmployeeTest!123'
-    const user = await api.post('/api/users', {
-      name: uniq('User'),
+    const account = await api.post('/api/users', {
+      name: mine.name,
       email,
       password,
       role: 'employee',
-      employeeId: mine.id,
       isActive: true,
     })
-    expect(user.status).toBe(201)
+    expect(account.status, JSON.stringify(account.raw)).toBe(201)
+    expect(account.data.id).toBe(mine.id)
 
     // Someone else's attendance record, created by the admin.
     const theirAttendance = await api.post('/api/attendance', {

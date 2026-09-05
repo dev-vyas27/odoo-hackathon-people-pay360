@@ -70,7 +70,7 @@ export class RefuseLeaveUseCase implements UseCase<RefuseLeaveInput, LeaveReques
           request.releaseAllocation()
         }
 
-        request.refuse(input.actor.userId)
+        request.refuse(input.actor.employeeId)
         return repos.requests.save(request)
       })
 

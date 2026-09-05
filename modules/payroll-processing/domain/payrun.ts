@@ -50,17 +50,35 @@ export function createPayrun(input: PayrunInput): Payrun {
     )
   }
 
-  const employeeIds = [...new Set(input.employeeIds)]
-  if (!employeeIds.length) {
+  if (![...new Set(input.employeeIds)].length) {
     throw DomainError.validation(
       'PAYRUN_NO_EMPLOYEES',
       'Select at least one employee to include in this payrun.',
     )
   }
 
+  return reconstitutePayrun(input)
+}
+
+/**
+ * Rebuild a payrun from storage. Trusted — the rules above ran when it was
+ * created.
+ *
+ * This exists because the repository used to call `createPayrun` on every read,
+ * which re-applied CREATE-time validation to rows that already exist. A single
+ * payrun whose last employee had been removed then threw PAYRUN_NO_EMPLOYEES on
+ * load and took the entire payrun LIST down with it — one unusual row making
+ * every other row unreadable. A rule about what may be created is not a rule
+ * about what may be read back.
+ *
+ * Same split as `Attendance.checkIn()` vs `Attendance.reconstitute()`.
+ */
+export function reconstitutePayrun(input: PayrunInput): Payrun {
+  const employeeIds = [...new Set(input.employeeIds)]
+
   return {
     id: input.id,
-    name,
+    name: input.name.trim(),
     structureId: input.structureId,
     // Joined from salary_structures on read; empty only on a freshly built
     // aggregate that has not been persisted yet.

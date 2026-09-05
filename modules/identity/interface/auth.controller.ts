@@ -17,19 +17,19 @@ import {
   type Result,
 } from '@/modules/shared'
 import { LoginUseCase } from '../application/login.use-case'
-import { CreateUserUseCase } from '../application/create-user.use-case'
-import { ListUsersUseCase } from '../application/list-users.use-case'
-import { PostgresUserRepository } from '../infrastructure/postgres-user.repository'
+import { CreateAccountUseCase } from '../application/create-account.use-case'
+import { ListAccountsUseCase } from '../application/list-accounts.use-case'
+import { PostgresAccountRepository } from '../infrastructure/postgres-account.repository'
 import { BcryptHasher } from '../infrastructure/bcrypt-hasher'
-import type { UserView } from '../domain/user'
-import { createUserSchema, loginSchema } from './auth.schema'
+import type { AccountView } from '../domain/account'
+import { createAccountSchema, loginSchema } from './auth.schema'
 
 /**
  * Wiring, cached per process by `resolve`. Swapping in a fake repository for a
  * test is a matter of seeding the container, not of editing this file.
  */
 const deps = () => ({
-  users: resolve('identity.users', () => new PostgresUserRepository()),
+  accounts: resolve('identity.accounts', () => new PostgresAccountRepository()),
   hasher: resolve('identity.hasher', () => new BcryptHasher()),
 })
 
@@ -47,15 +47,14 @@ export async function login(body: unknown): Promise<Result<CurrentUser>> {
   const parsed = loginSchema.safeParse(body)
   if (!parsed.success) return Err(invalid(parsed.error.issues))
 
-  const { users, hasher } = deps()
-  return new LoginUseCase(users, hasher).execute(parsed.data)
+  const { accounts, hasher } = deps()
+  return new LoginUseCase(accounts, hasher).execute(parsed.data)
 }
 
 /** `me` needs no use case: the actor IS the answer, straight from the token. */
 export function me(actor: Actor | null): Result<CurrentUser> {
   if (!actor) return Err(DomainError.unauthorized('UNAUTHENTICATED', 'Sign in to continue'))
   return Ok({
-    userId: actor.userId,
     employeeId: actor.employeeId,
     role: actor.role,
     email: actor.email,
@@ -63,15 +62,18 @@ export function me(actor: Actor | null): Result<CurrentUser> {
   })
 }
 
-export async function createUser(actor: Actor, body: unknown): Promise<Result<UserView>> {
-  const parsed = createUserSchema.safeParse(body)
+export async function createAccount(actor: Actor, body: unknown): Promise<Result<AccountView>> {
+  const parsed = createAccountSchema.safeParse(body)
   if (!parsed.success) return Err(invalid(parsed.error.issues))
 
-  const { users, hasher } = deps()
-  return new CreateUserUseCase(users, hasher).execute({ actor, ...parsed.data })
+  const { accounts, hasher } = deps()
+  return new CreateAccountUseCase(accounts, hasher).execute({ actor, ...parsed.data })
 }
 
-export async function listUsers(actor: Actor, query: PageQuery): Promise<Result<Paged<UserView>>> {
-  const { users } = deps()
-  return new ListUsersUseCase(users).execute({ actor, query })
+export async function listAccounts(
+  actor: Actor,
+  query: PageQuery,
+): Promise<Result<Paged<AccountView>>> {
+  const { accounts } = deps()
+  return new ListAccountsUseCase(accounts).execute({ actor, query })
 }

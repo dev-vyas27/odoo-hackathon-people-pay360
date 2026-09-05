@@ -6,7 +6,7 @@
  * something the server will reject, because they are literally the same object.
  */
 import { z } from 'zod'
-import { ROLES, email, nonEmpty, optionalUuid } from '@/modules/shared'
+import { ROLES, email, nonEmpty } from '@/modules/shared'
 
 export const loginSchema = z.object({
   email,
@@ -17,7 +17,12 @@ export const loginSchema = z.object({
 
 export type LoginValues = z.infer<typeof loginSchema>
 
-export const createUserSchema = z.object({
+/**
+ * `employeeId` is gone: an account IS an employee since 0010, so there is no
+ * second record to point at. Supplying the email of someone already on file
+ * grants THAT person a login — see create-account.use-case.ts.
+ */
+export const createAccountSchema = z.object({
   name: nonEmpty('Name'),
   email,
   password: z
@@ -25,8 +30,7 @@ export const createUserSchema = z.object({
     .min(8, 'Use at least 8 characters')
     .max(72, 'bcrypt ignores anything past 72 characters'),
   role: z.enum(ROLES),
-  employeeId: optionalUuid,
   isActive: z.boolean().default(true),
 })
 
-export type CreateUserValues = z.infer<typeof createUserSchema>
+export type CreateAccountValues = z.infer<typeof createAccountSchema>

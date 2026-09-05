@@ -12,9 +12,15 @@ const SECRET = process.env.JWT_SECRET
 export const AUTH_COOKIE = 'pp360_token'
 const MAX_AGE_SECONDS = 60 * 60 * 12 // one hackathon shift
 
+/**
+ * `sub` is the employee id — the only identity there is since 0010 folded
+ * `users` into `employees`. Tokens issued before that migration carried a
+ * separate user id in `sub`, so they no longer resolve to anybody; they are
+ * rejected as unauthenticated, which is the correct outcome for a credential
+ * that names a row that has ceased to exist.
+ */
 export interface TokenPayload {
   sub: string
-  employeeId: string | null
   role: Role
   email: string
   name: string
@@ -39,8 +45,7 @@ export function verifyToken(token: string): TokenPayload | null {
 
 export function toActor(payload: TokenPayload): Actor {
   return {
-    userId: payload.sub,
-    employeeId: payload.employeeId,
+    employeeId: payload.sub,
     role: payload.role,
     email: payload.email,
     name: payload.name,
