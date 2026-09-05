@@ -204,3 +204,60 @@ test.describe('People — employees', () => {
     expect(r.status).toBe(200)
   })
 })
+
+test.describe('People — administrator accounts are not staff', () => {
+  test('the employee list hides administrators', async ({ api }) => {
+    const listed = await api.get('/api/employees?limit=200')
+    expect(listed.status).toBe(200)
+
+    const withAdmins = await api.get('/api/employees?limit=200&includeAdmins=true')
+    expect(withAdmins.status).toBe(200)
+
+    const hiddenIds = new Set(listed.data.items.map((e: any) => e.id))
+    const admins = withAdmins.data.items.filter((e: any) => !hiddenIds.has(e.id))
+
+    expect(admins.length, 'there is at least one administrator to hide').toBeGreaterThan(0)
+    for (const admin of admins) {
+      expect(
+        listed.data.items.some((e: any) => e.id === admin.id),
+        `${admin.email} is an administrator and must not appear on the employee list`,
+      ).toBe(false)
+    }
+  })
+
+  test('the paging total counts what the list actually shows', async ({ api }) => {
+    /**
+     * The reason the filter lives in the repository rather than the UI: a
+     * client-side filter leaves `total` counting rows the user cannot see, so
+     * page 2 of a 1-page list is reachable and empty.
+     */
+    const listed = await api.get('/api/employees?limit=200')
+    const withAdmins = await api.get('/api/employees?limit=200&includeAdmins=true')
+
+    expect(listed.data.total).toBe(listed.data.items.length)
+    expect(
+      listed.data.total,
+      'hiding rows must reduce the total, not just the page',
+    ).toBeLessThan(withAdmins.data.total)
+  })
+
+  test('an administrator is still reachable by id — hidden is not deleted', async ({ api }) => {
+    const withAdmins = await api.get('/api/employees?limit=200&includeAdmins=true')
+    const listed = await api.get('/api/employees?limit=200')
+    const hiddenIds = new Set(listed.data.items.map((e: any) => e.id))
+    const admin = withAdmins.data.items.find((e: any) => !hiddenIds.has(e.id))
+
+    expect(admin, 'need an administrator for this test').toBeTruthy()
+    const detail = await api.get(`/api/employees/${admin.id}`)
+    expect(detail.status, 'the record must still exist and be openable').toBe(200)
+  })
+
+  test('hiding administrators does not remove ordinary employees', async ({ api }) => {
+    const employee = await makeEmployee(api)
+    const listed = await api.get('/api/employees?limit=200')
+    expect(
+      listed.data.items.some((e: any) => e.id === employee.id),
+      'a normal employee must survive the admin filter',
+    ).toBe(true)
+  })
+})

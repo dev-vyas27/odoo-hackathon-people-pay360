@@ -41,13 +41,17 @@ export async function listEmployees(actor: Actor, rawQuery: Record<string, strin
   const query = parseWith(employeeQuerySchema, rawQuery)
   if (!query.ok) return query
   const repo = await repository()
-  const { departmentId, employeeType, isActive, ...page } = query.value
+  const { departmentId, employeeType, isActive, includeAdmins, ...page } = query.value
   const pageQuery: PageQuery = {
     ...page,
     filters: {
       ...(departmentId ? { departmentId } : {}),
       ...(employeeType ? { employeeType } : {}),
       ...(isActive !== undefined ? { isActive } : {}),
+      // Not a column — the repository reads it and decides whether to hide
+      // administrator accounts. `buildWhere` ignores filter keys that are not
+      // in the column allowlist, so it cannot leak into a WHERE clause.
+      ...(includeAdmins !== undefined ? { includeAdmins } : {}),
     },
   }
   return new ListEmployeesUseCase(repo).execute({ actor, query: pageQuery })

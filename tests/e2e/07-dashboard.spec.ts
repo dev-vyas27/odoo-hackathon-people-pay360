@@ -37,6 +37,53 @@ test.describe('Analytics — dashboard aggregation', () => {
     ).toBeGreaterThanOrEqual(start + 1)
   })
 
+  test('administrators appear in neither the headcount nor the alerts', async ({ api }) => {
+    /**
+     * An operator account is not a member of staff. It is hidden from the
+     * employee list, so counting it here would put a headcount of nine beside a
+     * list of eight — and it would sit in "missing required information"
+     * reporting a problem nobody can fix, because there is no bank account to
+     * add for a login.
+     */
+    const admins = await api.get('/api/employees?limit=200&includeAdmins=true')
+    const staff = await api.get('/api/employees?limit=200')
+    const staffIds = new Set(staff.data.items.map((e: any) => e.id))
+    const adminAccounts = admins.data.items.filter((e: any) => !staffIds.has(e.id))
+    expect(adminAccounts.length, 'need an administrator for this test').toBeGreaterThan(0)
+
+    const dashboard = await api.get('/api/dashboard?period=2026-07')
+    expect(dashboard.status).toBe(200)
+
+    // Exact, by id — this is the assertion that matters.
+    const flagged = JSON.stringify(dashboard.data.alerts?.missingBankDetails ?? [])
+    for (const admin of adminAccounts) {
+      expect(
+        flagged,
+        `${admin.email} is an operator and must not be chased for bank details`,
+      ).not.toContain(admin.id)
+    }
+
+    /**
+     * Headcount is bracketed rather than compared for equality. Four workers run
+     * in parallel and several of them create employees, so a sibling test can
+     * add one between two reads — an equality assertion here failed exactly that
+     * way, off by one, with nothing wrong.
+     *
+     * Bracketing is still a real test: the population only ever grows during a
+     * run, so a headcount read BEFORE the list can never legitimately exceed it.
+     * Counting administrators would push it over.
+     */
+    const after = await api.get('/api/employees?limit=200')
+    expect(
+      dashboard.data.headcount,
+      'headcount must not exceed the list the user is looking at',
+    ).toBeLessThanOrEqual(after.data.total)
+    expect(
+      dashboard.data.headcount,
+      'headcount must not silently drop real staff either',
+    ).toBeGreaterThanOrEqual(staff.data.total - adminAccounts.length)
+  })
+
   test('the missing-bank-details alert reacts to a real employee', async ({ api }) => {
     const before = await api.get('/api/dashboard?period=2025-06')
     const startCount = (before.data.alerts?.missingBankDetails ?? []).length

@@ -35,6 +35,13 @@ export { PostgresJobPositionRepository } from './infrastructure/postgres-job-pos
 export { PostgresEmployeeLookup } from './infrastructure/employee-lookup.adapter'
 
 /**
+ * "Administrators are not staff", so the dashboard's people statistics can
+ * apply the same rule the employee list does instead of restating it. See the
+ * note on the constant itself.
+ */
+export { NOT_AN_ADMIN } from './infrastructure/people.tables'
+
+/**
  * Publish our implementation of EmployeeLookupPort.
  *
  * Consumers (Time Off, Payroll, Analytics) call

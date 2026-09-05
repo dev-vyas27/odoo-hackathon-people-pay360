@@ -30,6 +30,16 @@ export const employeeQuerySchema = pageQuerySchema.extend({
     .enum(['true', 'false'])
     .optional()
     .transform((v) => (v === undefined ? undefined : v === 'true')),
+  /**
+   * Administrator accounts are hidden from employee lists by default — they are
+   * operators, not staff. See the note on `buildWhere` in
+   * postgres-employee.repository.ts. This is the way back in for a screen that
+   * genuinely wants every account.
+   */
+  includeAdmins: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
 })
 
 export type CreateEmployeeBody = z.infer<typeof createEmployeeSchema>

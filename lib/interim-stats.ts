@@ -16,6 +16,12 @@
  * Deleting this file is then the only cleanup.
  */
 import { query } from '@/lib/db'
+/**
+ * The one rule this file borrows rather than restates: an administrator is an
+ * operator, not a member of staff. The employee list applies the same constant,
+ * so a headcount here can never disagree with the list a judge is looking at.
+ */
+import { NOT_AN_ADMIN } from '@/modules/people'
 import {
   PORT_KEYS,
   container,
@@ -41,6 +47,7 @@ const employeeStats: EmployeeStatsPort = {
       `SELECT COUNT(*)::int AS count
          FROM employees
         WHERE is_active = true
+          AND ${NOT_AN_ADMIN}
           AND ($1::uuid IS NULL OR department_id = $1)
           AND ($2::text IS NULL OR employee_type = $2)`,
       [filter?.departmentId ?? null, filter?.employeeType ?? null],
@@ -62,6 +69,7 @@ const employeeStats: EmployeeStatsPort = {
          LEFT JOIN employees e
                 ON e.department_id = d.id
                AND e.is_active = true
+               AND e.${NOT_AN_ADMIN}
                AND ($1::text IS NULL OR e.employee_type = $1)
         WHERE d.is_active = true
         GROUP BY d.id, d.name
@@ -80,6 +88,7 @@ const employeeStats: EmployeeStatsPort = {
       `SELECT employee_type, COUNT(*)::int AS count
          FROM employees
         WHERE is_active = true
+          AND ${NOT_AN_ADMIN}
         GROUP BY employee_type
         ORDER BY count DESC`,
     )
@@ -87,12 +96,20 @@ const employeeStats: EmployeeStatsPort = {
   },
 
   async missingBankDetails() {
-    // Spec B9's "missing required information" alert. Dev C's payrun validation
-    // reads the same column before finalising.
+    /**
+     * Spec B9's "missing required information" alert. Dev C's payrun validation
+     * reads the same column before finalising.
+     *
+     * Administrators are excluded: the alert exists to catch someone who cannot
+     * be PAID, and an operator account was never going to be. Left in, it
+     * reported a problem nobody could fix — there is no bank account to add for
+     * a login.
+     */
     const rows = await query<{ id: string; name: string }>(
       `SELECT id, name
          FROM employees
         WHERE is_active = true
+          AND ${NOT_AN_ADMIN}
           AND (bank_account IS NULL OR btrim(bank_account) = '')
         ORDER BY name ASC`,
     )

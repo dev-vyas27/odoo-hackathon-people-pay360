@@ -25,7 +25,7 @@
  */
 import bcrypt from 'bcryptjs'
 import { ROLE_LABELS, type Role } from '@/modules/shared'
-import { SEED } from '../ids'
+import { SEED, seedId } from '../ids'
 import type { SeedCredential, SeedPart } from '../types'
 
 interface DemoAccount {
@@ -37,6 +37,23 @@ interface DemoAccount {
   password: string
   /** True when `people.seed` already created this employee. */
   existing: boolean
+  /**
+   * Where this person sits in the org. Only meaningful for the rows created
+   * here — an employee `people.seed` already made keeps the department it was
+   * given, because granting a login must not rewrite an HR record.
+   *
+   * Null for the administrator: an operator of the system rather than a member
+   * of a department, and hidden from the employee list for that reason.
+   */
+  departmentId: string | null
+  jobPositionId: string | null
+  /**
+   * Staff get paid, so they have one. The dashboard's "missing required
+   * information" alert lists every active employee without a bank account, and
+   * after the merge these rows are employees — leaving it blank puts three
+   * false alerts on the demo dashboard.
+   */
+  bankAccount: string | null
 }
 
 const DEMO_ACCOUNTS: DemoAccount[] = [
@@ -47,6 +64,9 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     role: 'admin',
     password: 'admin1234',
     existing: false,
+    departmentId: null,
+    jobPositionId: null,
+    bankAccount: null,
   },
   {
     id: SEED.users.hrManager,
@@ -55,6 +75,9 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     role: 'hr_manager',
     password: 'hr1234567',
     existing: false,
+    departmentId: SEED.departments.humanResources,
+    jobPositionId: seedId('job', 5),
+    bankAccount: 'HDFC0009900001',
   },
   {
     id: SEED.users.payrollUser,
@@ -63,6 +86,9 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     role: 'hr_payroll_user',
     password: 'payroll12',
     existing: false,
+    departmentId: SEED.departments.humanResources,
+    jobPositionId: seedId('job', 6),
+    bankAccount: 'HDFC0009900002',
   },
   {
     id: SEED.users.payrollManager,
@@ -71,6 +97,9 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     role: 'hr_payroll_manager',
     password: 'manager12',
     existing: false,
+    departmentId: SEED.departments.humanResources,
+    jobPositionId: seedId('job', 7),
+    bankAccount: 'HDFC0009900003',
   },
   {
     /**
@@ -84,6 +113,10 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     role: 'employee',
     password: 'employee1',
     existing: true,
+    // Untouched here: people.seed owns Priya's department, post and bank details.
+    departmentId: null,
+    jobPositionId: null,
+    bankAccount: null,
   },
 ]
 
@@ -135,6 +168,10 @@ export const identitySeed: SeedPart = {
         password_hash: hashes[DEMO_ACCOUNTS.indexOf(account)],
         is_active: true,
         employee_type: 'full_time',
+        department_id: account.departmentId,
+        job_position_id: account.jobPositionId,
+        working_schedule_id: SEED.schedules.standard40,
+        bank_account: account.bankAccount,
       })),
     )
 

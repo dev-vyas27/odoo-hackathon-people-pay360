@@ -32,6 +32,8 @@ export const peopleSeed: SeedPart = {
       { id: SEED.departments.engineering, name: 'Engineering', code: 'ENG', is_active: true },
       { id: SEED.departments.sales, name: 'Sales', code: 'SLS', is_active: true },
       { id: SEED.departments.operations, name: 'Operations', code: 'OPS', is_active: true },
+      // Where the HR and payroll logins sit — see identity.seed.
+      { id: SEED.departments.humanResources, name: 'Human Resources', code: 'HR', is_active: true },
     ])
     ctx.log(`${departments} departments`)
 
@@ -74,6 +76,10 @@ export const peopleSeed: SeedPart = {
       { id: seedId('job', 2), name: 'Engineering Manager', department_id: SEED.departments.engineering, is_active: true },
       { id: seedId('job', 3), name: 'Account Executive', department_id: SEED.departments.sales, is_active: true },
       { id: seedId('job', 4), name: 'Operations Analyst', department_id: SEED.departments.operations, is_active: true },
+      // The posts held by the staff logins in identity.seed.
+      { id: seedId('job', 5), name: 'HR Manager', department_id: SEED.departments.humanResources, is_active: true },
+      { id: seedId('job', 6), name: 'Payroll Specialist', department_id: SEED.departments.humanResources, is_active: true },
+      { id: seedId('job', 7), name: 'Payroll Manager', department_id: SEED.departments.humanResources, is_active: true },
     ])
     ctx.log(`${positions} job positions`)
 
