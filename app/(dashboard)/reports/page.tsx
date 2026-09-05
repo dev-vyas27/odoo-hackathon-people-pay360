@@ -373,33 +373,37 @@ function AlertGroup({
   items: Array<{ key: string; primary: string; secondary?: string }>
 }) {
   return (
-    <div>
-      <p className="flex items-center gap-1.5 text-sm">
-        {items.length > 0 ? (
-          <LuTriangleAlert className="size-3.5 text-warning-foreground" aria-hidden />
-        ) : null}
-        {title}
-      </p>
-      <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+    <div className="flex flex-col">
+      <div className="shrink-0">
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          {items.length > 0 ? (
+            <LuTriangleAlert className="size-3.5 text-warning-foreground" aria-hidden />
+          ) : null}
+          {title}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+      </div>
 
       {items.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">None</p>
       ) : (
-        <ul className="mt-3 space-y-1.5">
-          {items.map((item) => (
-            <li key={item.key} className="text-sm">
-              <span className="flex items-center gap-1.5">
-                <LuUsers className="size-3 shrink-0 text-muted-foreground" aria-hidden />
-                {item.primary}
-              </span>
-              {item.secondary ? (
-                <span className="ml-4.5 block text-xs text-muted-foreground">
-                  {item.secondary}
+        <div className="mt-3 max-h-72 overflow-y-auto pr-1.5">
+          <ul className="space-y-2">
+            {items.map((item) => (
+              <li key={item.key} className="text-sm">
+                <span className="flex items-center gap-1.5">
+                  <LuUsers className="size-3 shrink-0 text-muted-foreground" aria-hidden />
+                  {item.primary}
                 </span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+                {item.secondary ? (
+                  <span className="ml-4.5 block text-xs text-muted-foreground">
+                    {item.secondary}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   )
