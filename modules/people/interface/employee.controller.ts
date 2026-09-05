@@ -6,7 +6,6 @@
  * resolves the repository singleton from the composition root, and executes
  * the use case with the actor + validated input.
  */
-import { connectDB } from '@/lib/db'
 import { container, resolve } from '@/modules/shared/container'
 import type { Actor, PageQuery, Result } from '@/modules/shared'
 import type { Employee } from '../domain/employee'
@@ -16,13 +15,12 @@ import { UpdateEmployeeUseCase } from '../application/update-employee.use-case'
 import { ListEmployeesUseCase } from '../application/list-employees.use-case'
 import { ArchiveEmployeeUseCase } from '../application/archive-employee.use-case'
 import { GetEmployeeDetailUseCase } from '../application/get-employee-detail.use-case'
-import { MongoEmployeeRepository } from '../infrastructure/mongo-employee.repository'
+import { PostgresEmployeeRepository } from '../infrastructure/postgres-employee.repository'
 import { createEmployeeSchema, employeeQuerySchema, updateEmployeeSchema } from './employee.schema'
 import { parseWith } from './parse'
 
-async function repository(): Promise<MongoEmployeeRepository> {
-  await connectDB()
-  return resolve('people.employeeRepository', () => new MongoEmployeeRepository())
+async function repository(): Promise<PostgresEmployeeRepository> {
+  return resolve('people.employeeRepository', () => new PostgresEmployeeRepository())
 }
 
 export async function createEmployee(actor: Actor, rawBody: unknown): Promise<Result<Employee>> {

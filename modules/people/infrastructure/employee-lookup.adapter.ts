@@ -1,74 +1,107 @@
 /**
- * Real implementation of EmployeeLookupPort — the seam other modules depend
- * on (Employment, Time Off, Payroll, the dashboard).
+ * Postgres implementation of the shared EmployeeLookupPort.
  *
- * Queries Mongo directly (via `.populate`) rather than going through
- * MongoEmployeeRepository, because the port's shape is deliberately flatter
- * and denormalised (departmentName, jobPositionName) than the Employee
- * aggregate itself — that denormalisation is this adapter's job, not the
- * repository's.
+ * Other modules see this flat, denormalised summary and never our Employee
+ * aggregate, so our internal shape can change without rippling into Payroll,
+ * Time Off or the dashboard.
+ *
+ * Every method is a single query with LEFT JOINs. The join is the whole reason
+ * this adapter does not extend BaseSqlRepository: `departmentName` and
+ * `jobPositionName` live in other tables, and fetching them per row would turn
+ * a 200-employee payrun into 600 round trips.
  */
-import type { Types } from 'mongoose'
-import { EmployeeModel, type EmployeeDoc } from './employee.model'
-import type { DepartmentDoc } from './department.model'
-import type { JobPositionDoc } from './job-position.model'
-import type { EmployeeLookupPort, EmployeeSummary } from '../application/ports/employee-lookup.port'
+import { query, queryOne } from '@/lib/db'
+import type { EmployeeLookupPort, EmployeeSummary, EmployeeType } from '@/modules/shared'
 
-type PopulatedEmployeeDoc = Omit<EmployeeDoc, 'departmentId' | 'jobPositionId'> & {
-  departmentId: Pick<DepartmentDoc, '_id' | 'name'> | null
-  jobPositionId: Pick<JobPositionDoc, '_id' | 'title'> | null
+interface SummaryRow {
+  id: string
+  name: string
+  email: string
+  department_id: string | null
+  department_name: string | null
+  job_position_name: string | null
+  employee_type: EmployeeType
+  manager_id: string | null
+  working_schedule_id: string | null
+  bank_account: string | null
+  is_active: boolean
 }
 
-function toSummary(doc: PopulatedEmployeeDoc & { _id: Types.ObjectId }): EmployeeSummary {
+const SELECT_SUMMARY = `
+  SELECT e.id,
+         e.name,
+         e.email,
+         e.department_id,
+         d.name AS department_name,
+         j.name AS job_position_name,
+         e.employee_type,
+         e.manager_id,
+         e.working_schedule_id,
+         e.bank_account,
+         e.is_active
+    FROM employees e
+    LEFT JOIN departments   d ON d.id = e.department_id
+    LEFT JOIN job_positions j ON j.id = e.job_position_id
+`
+
+function toSummary(row: SummaryRow): EmployeeSummary {
   return {
-    id: doc._id.toString(),
-    name: doc.name,
-    email: doc.email,
-    departmentId: doc.departmentId ? doc.departmentId._id.toString() : null,
-    departmentName: doc.departmentId ? doc.departmentId.name : null,
-    jobPositionName: doc.jobPositionId ? doc.jobPositionId.title : null,
-    employeeType: doc.employeeType,
-    managerId: doc.managerId ? doc.managerId.toString() : null,
-    workingScheduleId: doc.workingScheduleId ? doc.workingScheduleId.toString() : null,
-    bankAccount: doc.bankAccount,
-    isActive: doc.isActive,
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    departmentId: row.department_id,
+    departmentName: row.department_name,
+    jobPositionName: row.job_position_name,
+    employeeType: row.employee_type,
+    managerId: row.manager_id,
+    workingScheduleId: row.working_schedule_id,
+    bankAccount: row.bank_account,
+    isActive: row.is_active,
   }
 }
 
-export class MongoEmployeeLookupAdapter implements EmployeeLookupPort {
+export class PostgresEmployeeLookup implements EmployeeLookupPort {
   async findById(employeeId: string): Promise<EmployeeSummary | null> {
-    const doc = await EmployeeModel.findById(employeeId)
-      .populate<{ departmentId: Pick<DepartmentDoc, '_id' | 'name'> | null }>('departmentId', 'name')
-      .populate<{ jobPositionId: Pick<JobPositionDoc, '_id' | 'title'> | null }>('jobPositionId', 'title')
-      .lean<PopulatedEmployeeDoc & { _id: Types.ObjectId }>()
-      .exec()
-    return doc ? toSummary(doc) : null
+    const row = await queryOne<SummaryRow>(`${SELECT_SUMMARY} WHERE e.id = $1`, [employeeId])
+    return row ? toSummary(row) : null
   }
 
+  /** Batch form: one query with = ANY($1), never a loop over ids. */
   async findManyByIds(ids: string[]): Promise<EmployeeSummary[]> {
     if (ids.length === 0) return []
-    const docs = await EmployeeModel.find({ _id: { $in: ids } })
-      .populate<{ departmentId: Pick<DepartmentDoc, '_id' | 'name'> | null }>('departmentId', 'name')
-      .populate<{ jobPositionId: Pick<JobPositionDoc, '_id' | 'title'> | null }>('jobPositionId', 'title')
-      .lean<(PopulatedEmployeeDoc & { _id: Types.ObjectId })[]>()
-      .exec()
-    return docs.map(toSummary)
+    const rows = await query<SummaryRow>(`${SELECT_SUMMARY} WHERE e.id = ANY($1::uuid[])`, [ids])
+    return rows.map(toSummary)
   }
 
-  async findEligible(filter: { departmentId?: string; employeeType?: string; activeOn: Date }): Promise<EmployeeSummary[]> {
-    const query: Record<string, unknown> = { isActive: true }
-    if (filter.departmentId) query.departmentId = filter.departmentId
-    if (filter.employeeType) query.employeeType = filter.employeeType
+  /**
+   * Who may be included in a payrun (spec B5, step 2).
+   *
+   * `activeOn` is accepted for the caller's clarity and to keep the door open
+   * for date-scoped employment history, but eligibility today is simply "is
+   * this employee active" — the employees table records no activation date, and
+   * inventing one here would be a lie about data we do not have.
+   */
+  async findEligible(filter: {
+    departmentId?: string
+    employeeType?: string
+    activeOn: Date
+  }): Promise<EmployeeSummary[]> {
+    const conditions = ['e.is_active = true']
+    const values: unknown[] = []
 
-    const docs = await EmployeeModel.find(query)
-      .populate<{ departmentId: Pick<DepartmentDoc, '_id' | 'name'> | null }>('departmentId', 'name')
-      .populate<{ jobPositionId: Pick<JobPositionDoc, '_id' | 'title'> | null }>('jobPositionId', 'title')
-      .lean<(PopulatedEmployeeDoc & { _id: Types.ObjectId })[]>()
-      .exec()
-    return docs.map(toSummary)
+    if (filter.departmentId) {
+      values.push(filter.departmentId)
+      conditions.push(`e.department_id = $${values.length}`)
+    }
+    if (filter.employeeType) {
+      values.push(filter.employeeType)
+      conditions.push(`e.employee_type = $${values.length}`)
+    }
+
+    const rows = await query<SummaryRow>(
+      `${SELECT_SUMMARY} WHERE ${conditions.join(' AND ')} ORDER BY e.name ASC`,
+      values,
+    )
+    return rows.map(toSummary)
   }
-}
-
-export function createEmployeeLookup(): EmployeeLookupPort {
-  return new MongoEmployeeLookupAdapter()
 }

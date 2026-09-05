@@ -1,9 +1,9 @@
 import { z } from 'zod'
-import { nonEmpty, optionalObjectId, pageQuerySchema } from '@/modules/shared'
+import { nonEmpty, optionalUuid, pageQuerySchema } from '@/modules/shared'
 
 export const createJobPositionSchema = z.object({
   title: nonEmpty('Job position title'),
-  departmentId: optionalObjectId,
+  departmentId: optionalUuid,
 })
 
 export const updateJobPositionSchema = createJobPositionSchema.partial()

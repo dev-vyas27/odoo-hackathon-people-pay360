@@ -1,5 +1,4 @@
 import type { NextRequest } from 'next/server'
-import { connectDB } from '@/lib/db'
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'
 import { updateContractSchema, getContract, updateContract, deleteContract } from '@/modules/employment'
@@ -10,7 +9,6 @@ interface RouteParams {
 
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   return handle(async () => {
-    await connectDB()
     const actor = await requireActor()
     const { id } = await params
     return respond(await getContract(actor, id))
@@ -19,7 +17,6 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   return handle(async () => {
-    await connectDB()
     const actor = await requireActor()
     const { id } = await params
     const body = updateContractSchema.parse(await req.json())
@@ -29,7 +26,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   return handle(async () => {
-    await connectDB()
     const actor = await requireActor()
     const { id } = await params
     return respond(await deleteContract(actor, id), 204)

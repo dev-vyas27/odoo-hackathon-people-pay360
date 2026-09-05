@@ -1,4 +1,3 @@
-import { connectDB } from '@/lib/db'
 import { resolve } from '@/modules/shared/container'
 import type { Actor } from '@/modules/shared'
 import {
@@ -8,13 +7,12 @@ import {
   ListDepartmentsUseCase,
   UpdateDepartmentUseCase,
 } from '../application/department-use-cases'
-import { MongoDepartmentRepository } from '../infrastructure/mongo-department.repository'
+import { PostgresDepartmentRepository } from '../infrastructure/postgres-department.repository'
 import { createDepartmentSchema, departmentQuerySchema, updateDepartmentSchema } from './department.schema'
 import { parseWith } from './parse'
 
-async function repository(): Promise<MongoDepartmentRepository> {
-  await connectDB()
-  return resolve('people.departmentRepository', () => new MongoDepartmentRepository())
+async function repository(): Promise<PostgresDepartmentRepository> {
+  return resolve('people.departmentRepository', () => new PostgresDepartmentRepository())
 }
 
 export async function createDepartment(actor: Actor, rawBody: unknown) {

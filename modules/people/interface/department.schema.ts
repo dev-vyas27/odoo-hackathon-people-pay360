@@ -1,10 +1,10 @@
 import { z } from 'zod'
-import { nonEmpty, optionalObjectId, pageQuerySchema } from '@/modules/shared'
+import { nonEmpty, optionalUuid, pageQuerySchema } from '@/modules/shared'
 
 export const createDepartmentSchema = z.object({
   name: nonEmpty('Department name'),
-  managerId: optionalObjectId,
-  parentDepartmentId: optionalObjectId,
+  managerId: optionalUuid,
+  parentDepartmentId: optionalUuid,
 })
 
 export const updateDepartmentSchema = createDepartmentSchema.partial()

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { email, nonEmpty, optionalObjectId, pageQuerySchema } from '@/modules/shared'
+import { email, nonEmpty, optionalUuid, pageQuerySchema } from '@/modules/shared'
 import { EMPLOYEE_TYPES } from '../domain/employee-type'
 
 /**
@@ -12,10 +12,10 @@ export const employeeTypeSchema = z.enum(EMPLOYEE_TYPES)
 export const createEmployeeSchema = z.object({
   name: nonEmpty('Name'),
   email,
-  departmentId: optionalObjectId,
-  managerId: optionalObjectId,
-  jobPositionId: optionalObjectId,
-  workingScheduleId: optionalObjectId,
+  departmentId: optionalUuid,
+  managerId: optionalUuid,
+  jobPositionId: optionalUuid,
+  workingScheduleId: optionalUuid,
   employeeType: employeeTypeSchema,
   bankAccount: z.string().trim().max(64).optional(),
   isActive: z.boolean().optional(),
@@ -24,7 +24,7 @@ export const createEmployeeSchema = z.object({
 export const updateEmployeeSchema = createEmployeeSchema.partial()
 
 export const employeeQuerySchema = pageQuerySchema.extend({
-  departmentId: optionalObjectId,
+  departmentId: optionalUuid,
   employeeType: employeeTypeSchema.optional(),
   isActive: z
     .enum(['true', 'false'])

@@ -3,11 +3,7 @@
  * Distinguishes auth / DNS / SSL / firewall failures, because each needs a
  * completely different fix and the raw driver error rarely makes that obvious.
  */
-import dotenv from 'dotenv'
 import { Client } from 'pg'
-
-dotenv.config({ path: '.env.local' })
-dotenv.config({ path: '.env' })
 
 const url = process.env.DATABASE_URL
 if (!url) {

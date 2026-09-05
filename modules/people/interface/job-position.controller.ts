@@ -1,4 +1,3 @@
-import { connectDB } from '@/lib/db'
 import { resolve } from '@/modules/shared/container'
 import type { Actor } from '@/modules/shared'
 import {
@@ -8,13 +7,12 @@ import {
   ListJobPositionsUseCase,
   UpdateJobPositionUseCase,
 } from '../application/job-position-use-cases'
-import { MongoJobPositionRepository } from '../infrastructure/mongo-job-position.repository'
+import { PostgresJobPositionRepository } from '../infrastructure/postgres-job-position.repository'
 import { createJobPositionSchema, jobPositionQuerySchema, updateJobPositionSchema } from './job-position.schema'
 import { parseWith } from './parse'
 
-async function repository(): Promise<MongoJobPositionRepository> {
-  await connectDB()
-  return resolve('people.jobPositionRepository', () => new MongoJobPositionRepository())
+async function repository(): Promise<PostgresJobPositionRepository> {
+  return resolve('people.jobPositionRepository', () => new PostgresJobPositionRepository())
 }
 
 export async function createJobPosition(actor: Actor, rawBody: unknown) {

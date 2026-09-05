@@ -1,102 +1,125 @@
 /**
- * AttendanceStatsAdapter — the real implementation of AttendanceStatsPort.
+ * Postgres implementation of the shared AttendanceStatsPort.
  *
- * Every method here is a single aggregation pipeline. `status` and
- * `workedHours` are pre-computed and stored on the document at write time
- * (see mongo-attendance.repository.ts), which is what makes summary() a
- * single $group with conditional accumulators instead of a fetch-then-count
- * in JavaScript.
+ * Everything here is an aggregate computed by the database. Payroll has no
+ * business iterating check-ins, and the dashboard should not pull 60 days of
+ * rows to count them in JavaScript.
+ *
+ * `worked_on` (a date column, unique per employee per day) is what makes these
+ * queries simple: "worked days" is a row count, not a date-truncation over
+ * timestamps.
+ *
+ * Department filtering joins `employees` — unlike the Mongo version, the
+ * attendances table does not denormalise department_id, and inventing a column
+ * is not ours to do.
  */
-import type { Period } from '@/modules/shared'
-import { AttendanceModel } from './attendance.model'
-import type { AttendanceStatsPort, AttendanceSummary } from '../application/ports/attendance-stats.port'
+import { query, queryOne } from '@/lib/db'
+import type { AttendanceStatsPort, AttendanceSummary, Period } from '@/modules/shared'
+import { ATTENDANCES_TABLE } from './attendance.table'
 
-/** Period is inclusive on both ends at day granularity; Mongo needs a half-open range. */
-function periodRange(period: Period): { $gte: Date; $lt: Date } {
-  const exclusiveEnd = new Date(period.end.getTime() + 24 * 60 * 60 * 1000)
-  return { $gte: period.start, $lt: exclusiveEnd }
-}
+/** A day counts as worked once it has a check-out; an open record is not yet a day worked. */
+const COMPLETED = 'a.checked_out_at IS NOT NULL'
 
-/** "YYYY-MM-DD" of checkIn, in UTC — used to count distinct worked days. */
-const DAY_KEY_EXPR = { $dateToString: { format: '%Y-%m-%d', date: '$checkIn', timezone: 'UTC' } }
-
-export class AttendanceStatsAdapter implements AttendanceStatsPort {
+export class PostgresAttendanceStats implements AttendanceStatsPort {
   async workedHours(employeeId: string, period: Period): Promise<number> {
-    const [row] = await AttendanceModel.aggregate<{ total: number }>([
-      { $match: { employeeId, checkIn: periodRange(period), workedHours: { $ne: null } } },
-      { $group: { _id: null, total: { $sum: '$workedHours' } } },
-    ]).exec()
+    const row = await queryOne<{ total: number }>(
+      `SELECT COALESCE(SUM(a.worked_hours), 0)::float8 AS total
+         FROM "${ATTENDANCES_TABLE}" a
+        WHERE a.employee_id = $1
+          AND a.worked_on BETWEEN $2::date AND $3::date`,
+      [employeeId, period.start, period.end],
+    )
     return row?.total ?? 0
   }
 
   async workedDays(employeeId: string, period: Period): Promise<number> {
-    const result = await this.workedDaysForMany([employeeId], period)
-    return result.get(employeeId) ?? 0
-  }
-
-  async workedDaysForMany(employeeIds: string[], period: Period): Promise<Map<string, number>> {
-    const map = new Map<string, number>(employeeIds.map((id) => [id, 0]))
-    if (employeeIds.length === 0) return map
-
-    const rows = await AttendanceModel.aggregate<{ _id: string; days: number }>([
-      {
-        $match: {
-          employeeId: { $in: employeeIds },
-          checkIn: periodRange(period),
-          checkOut: { $ne: null },
-        },
-      },
-      { $group: { _id: { employeeId: '$employeeId', day: DAY_KEY_EXPR } } },
-      { $group: { _id: '$_id.employeeId', days: { $sum: 1 } } },
-    ]).exec()
-
-    for (const row of rows) map.set(row._id, row.days)
-    return map
-  }
-
-  async summary(period: Period, departmentId?: string): Promise<AttendanceSummary> {
-    const match: Record<string, unknown> = { checkIn: periodRange(period) }
-    if (departmentId) match.departmentId = departmentId
-
-    const [row] = await AttendanceModel.aggregate<AttendanceSummary>([
-      { $match: match },
-      {
-        $group: {
-          _id: null,
-          present: { $sum: { $cond: [{ $eq: ['$status', 'present'] }, 1, 0] } },
-          late: { $sum: { $cond: [{ $eq: ['$status', 'late'] }, 1, 0] } },
-          absent: { $sum: { $cond: [{ $eq: ['$status', 'absent'] }, 1, 0] } },
-          overtimeHours: {
-            $sum: {
-              $cond: [{ $eq: ['$status', 'overtime'] }, { $ifNull: ['$workedHours', 0] }, 0],
-            },
-          },
-          missingCheckouts: { $sum: { $cond: [{ $eq: ['$status', 'missing_checkout'] }, 1, 0] } },
-          manualEdits: { $sum: { $cond: ['$manual', 1, 0] } },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          present: 1,
-          late: 1,
-          absent: 1,
-          overtimeHours: 1,
-          missingCheckouts: 1,
-          manualEdits: 1,
-        },
-      },
-    ]).exec()
-
-    return (
-      row ?? {
-        present: 0,
-        late: 0,
-        absent: 0,
-        overtimeHours: 0,
-        missingCheckouts: 0,
-        manualEdits: 0,
-      }
+    const row = await queryOne<{ days: number }>(
+      `SELECT COUNT(DISTINCT a.worked_on)::int AS days
+         FROM "${ATTENDANCES_TABLE}" a
+        WHERE a.employee_id = $1
+          AND a.worked_on BETWEEN $2::date AND $3::date
+          AND ${COMPLETED}`,
+      [employeeId, period.start, period.end],
     )
+    return row?.days ?? 0
+  }
+
+  /**
+   * ONE query for the whole payrun batch.
+   *
+   * A 200-employee payrun calling workedDays() in a loop would be 200 round
+   * trips to a hosted database — several seconds of a five-minute demo spent
+   * waiting. GROUP BY does it in one.
+   */
+  async workedDaysForMany(employeeIds: string[], period: Period): Promise<Map<string, number>> {
+    const result = new Map<string, number>()
+    if (employeeIds.length === 0) return result
+
+    const rows = await query<{ employee_id: string; days: number }>(
+      `SELECT a.employee_id, COUNT(DISTINCT a.worked_on)::int AS days
+         FROM "${ATTENDANCES_TABLE}" a
+        WHERE a.employee_id = ANY($1::uuid[])
+          AND a.worked_on BETWEEN $2::date AND $3::date
+          AND ${COMPLETED}
+        GROUP BY a.employee_id`,
+      [employeeIds, period.start, period.end],
+    )
+
+    for (const row of rows) result.set(row.employee_id, row.days)
+    // Employees with no attendance at all are absent from the result set, but
+    // callers expect a number for everyone they asked about.
+    for (const id of employeeIds) if (!result.has(id)) result.set(id, 0)
+
+    return result
+  }
+
+  /**
+   * The dashboard's Attendance Overview, as a single pass over the period.
+   *
+   * FILTER (WHERE ...) gives one conditional count per status without five
+   * separate queries or any client-side counting.
+   */
+  async summary(period: Period, departmentId?: string): Promise<AttendanceSummary> {
+    const values: unknown[] = [period.start, period.end]
+    let departmentJoin = ''
+    let departmentFilter = ''
+
+    if (departmentId) {
+      values.push(departmentId)
+      departmentJoin = 'JOIN employees e ON e.id = a.employee_id'
+      departmentFilter = `AND e.department_id = $${values.length}`
+    }
+
+    const row = await queryOne<{
+      present: number
+      late: number
+      absent: number
+      overtime_hours: number
+      missing_checkouts: number
+      manual_edits: number
+    }>(
+      `SELECT
+         COUNT(*) FILTER (WHERE a.status = 'present')::int          AS present,
+         COUNT(*) FILTER (WHERE a.status = 'late')::int             AS late,
+         COUNT(*) FILTER (WHERE a.status = 'absent')::int           AS absent,
+         COALESCE(SUM(a.worked_hours) FILTER (WHERE a.status = 'overtime'), 0)::float8
+                                                                    AS overtime_hours,
+         COUNT(*) FILTER (WHERE a.status = 'missing_checkout')::int AS missing_checkouts,
+         COUNT(*) FILTER (WHERE a.is_manual)::int                   AS manual_edits
+       FROM "${ATTENDANCES_TABLE}" a
+       ${departmentJoin}
+       WHERE a.worked_on BETWEEN $1::date AND $2::date
+       ${departmentFilter}`,
+      values,
+    )
+
+    return {
+      present: row?.present ?? 0,
+      late: row?.late ?? 0,
+      absent: row?.absent ?? 0,
+      overtimeHours: row?.overtime_hours ?? 0,
+      missingCheckouts: row?.missing_checkouts ?? 0,
+      manualEdits: row?.manual_edits ?? 0,
+    }
   }
 }

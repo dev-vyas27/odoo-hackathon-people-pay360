@@ -1,83 +1,67 @@
 /**
- * Public surface of the "attendance" module.
+ * Public surface of the "attendance" module.  ·  Owner: Dev B
  *
- * Everything other modules (and route handlers under app/) are allowed to
- * use is re-exported HERE and nowhere else. Internals under domain/,
- * application/, infrastructure/ and interface/ are private and the ESLint
- * boundary rule will reject imports that reach in.
+ * Exposes aggregates only — never raw attendance rows. Payroll has no business
+ * iterating check-ins, and the dashboard should not count rows client-side.
  *
- * Owner: see docs/plans/ — do not add exports for another team's module.
+ * The cross-module port TYPES (AttendanceStatsPort, AttendanceSummary) live in
+ * modules/shared/contracts/dto.ts; consumers get the implementation from the
+ * container.
  */
+import { providePort, PORT_KEYS, type AttendanceStatsPort } from '@/modules/shared'
+import { PostgresAttendanceStats } from './infrastructure/attendance-stats.adapter'
+
+// --- Domain, for callers that need the rules -------------------------------
+export { deriveStatus, type AttendanceStatus, type DailySchedule } from './domain/exception'
+export { computeWorkedHours } from './domain/worked-hours.service'
+export { Attendance } from './domain/attendance'
+
+// --- Interface layer, for the route handlers in app/api --------------------
+export * from './interface/attendance.schema'
+
+// --- Persistence, for scripts/seed and the composition root ----------------
+export { PostgresAttendanceRepository } from './infrastructure/postgres-attendance.repository'
+export { PostgresAttendanceStats } from './infrastructure/attendance-stats.adapter'
+
+/** Publish this module's cross-module port. */
+export function registerAttendancePorts(): void {
+  providePort<AttendanceStatsPort>(
+    PORT_KEYS.attendanceStats,
+    () => new PostgresAttendanceStats(),
+  )
+}
+
+export function createAttendanceStats(): AttendanceStatsPort {
+  return new PostgresAttendanceStats()
+}
+
+// --- Composition root for this module ---------------------------------------
+import { resolve } from '@/modules/shared'
+import { PostgresAttendanceRepository } from './infrastructure/postgres-attendance.repository'
+import { EmployeeDirectoryAdapter } from './infrastructure/employee-directory.adapter'
+import { ScheduleLookupAdapter } from './infrastructure/schedule-lookup.adapter'
+import type { AttendanceRepositoryPort } from './application/ports/attendance-repository.port'
+import type { ScheduleLookupPort } from './application/ports/schedule-lookup.port'
 import { CheckInUseCase } from './application/check-in.use-case'
 import { CheckOutUseCase } from './application/check-out.use-case'
 import { CorrectAttendanceUseCase } from './application/correct-attendance.use-case'
 import { ListAttendanceUseCase } from './application/list-attendance.use-case'
 import { GetAttendanceUseCase } from './application/get-attendance.use-case'
 import { DeleteAttendanceUseCase } from './application/delete-attendance.use-case'
-import { MongoAttendanceRepository } from './infrastructure/mongo-attendance.repository'
-import { ScheduleLookupAdapter } from './infrastructure/schedule-lookup.adapter'
-import { EmployeeDirectoryAdapter } from './infrastructure/employee-directory.adapter'
-import { AttendanceStatsAdapter } from './infrastructure/attendance-stats.adapter'
-import type { AttendanceRepositoryPort } from './application/ports/attendance-repository.port'
-import type { ScheduleLookupPort } from './application/ports/schedule-lookup.port'
-import type { AttendanceStatsPort } from './application/ports/attendance-stats.port'
 
-// --- Types other modules / route handlers are allowed to see -------------
-
-export type { Attendance } from './domain/attendance'
-export type { AttendanceStatus, DailySchedule } from './domain/exception'
-export type { AttendanceStatsPort, AttendanceSummary } from './application/ports/attendance-stats.port'
-export type { AttendanceFilter, AttendanceRepositoryPort } from './application/ports/attendance-repository.port'
-export type { ScheduleLookupPort } from './application/ports/schedule-lookup.port'
-export type { EmployeeDirectoryPort } from './application/ports/employee-directory.port'
-
-export {
-  ATTENDANCE_STATUSES,
-  checkInSchema,
-  checkOutSchema,
-  correctAttendanceSchema,
-  listAttendanceQuerySchema,
-  type CheckInBody,
-  type CheckOutBody,
-  type CorrectAttendanceBody,
-  type ListAttendanceQuery,
-} from './interface/attendance.schema'
-
-// --- Composition -------------------------------------------------------
-//
-// Lazily built, cached on globalThis so Next's dev hot-reload does not
-// rebuild the graph on every edit (same reasoning as modules/shared/container.ts,
-// kept local because that file's `resolve` helper is not part of shared's
-// public surface).
-
-interface AttendanceComposition {
-  employeeDirectory: EmployeeDirectoryAdapter
-  repository: AttendanceRepositoryPort
-  scheduleLookup: ScheduleLookupPort
-  stats: AttendanceStatsPort
-}
-
-declare global {
-  var __pp360_attendance: AttendanceComposition | undefined
-}
-
-function composition(): AttendanceComposition {
-  if (!global.__pp360_attendance) {
-    const employeeDirectory = new EmployeeDirectoryAdapter()
-    const repository = new MongoAttendanceRepository(employeeDirectory)
-    const scheduleLookup = new ScheduleLookupAdapter((employeeId) => employeeDirectory.workingScheduleIdFor(employeeId))
-    const stats = new AttendanceStatsAdapter()
-    global.__pp360_attendance = { employeeDirectory, repository, scheduleLookup, stats }
-  }
-  return global.__pp360_attendance
-}
-
+/**
+ * Collaborators are cached on the container rather than rebuilt per request, so
+ * a hot-reload in dev does not leak a new adapter graph on every edit.
+ */
 function attendanceRepository(): AttendanceRepositoryPort {
-  return composition().repository
+  return resolve('attendance.repository', () => new PostgresAttendanceRepository())
 }
 
 function scheduleLookup(): ScheduleLookupPort {
-  return composition().scheduleLookup
+  return resolve('attendance.schedule-lookup', () => {
+    const directory = new EmployeeDirectoryAdapter()
+    return new ScheduleLookupAdapter((employeeId) => directory.workingScheduleIdFor(employeeId))
+  })
 }
 
 export function createCheckInUseCase(): CheckInUseCase {
@@ -102,9 +86,4 @@ export function createGetAttendanceUseCase(): GetAttendanceUseCase {
 
 export function createDeleteAttendanceUseCase(): DeleteAttendanceUseCase {
   return new DeleteAttendanceUseCase(attendanceRepository())
-}
-
-/** The real AttendanceStatsPort adapter — payroll's "Worked Days" and the dashboard depend on this. */
-export function createAttendanceStats(): AttendanceStatsPort {
-  return composition().stats
 }

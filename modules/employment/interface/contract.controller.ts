@@ -7,7 +7,7 @@
  */
 import type { Actor, PageQuery, Paged, Result } from '@/modules/shared'
 import type { Contract } from '../domain/contract'
-import { MongoContractRepository } from '../infrastructure/mongo-contract.repository'
+import { PostgresContractRepository } from '../infrastructure/postgres-contract.repository'
 import { CreateContractUseCase, type CreateContractInput } from '../application/create-contract.use-case'
 import { UpdateContractUseCase, type UpdateContractInput } from '../application/update-contract.use-case'
 import { ListContractsUseCase } from '../application/list-contracts.use-case'
@@ -15,7 +15,7 @@ import { GetContractUseCase } from '../application/get-contract.use-case'
 import { DeleteContractUseCase } from '../application/delete-contract.use-case'
 
 function repository() {
-  return new MongoContractRepository()
+  return new PostgresContractRepository()
 }
 
 export async function listContracts(actor: Actor, query: PageQuery): Promise<Result<Paged<Contract>>> {

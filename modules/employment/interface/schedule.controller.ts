@@ -1,6 +1,6 @@
 import type { Actor, PageQuery, Paged, Result } from '@/modules/shared'
 import type { WorkingSchedule } from '../domain/working-schedule'
-import { MongoScheduleRepository } from '../infrastructure/mongo-schedule.repository'
+import { PostgresScheduleRepository } from '../infrastructure/postgres-schedule.repository'
 import { CreateScheduleUseCase, type CreateScheduleInput } from '../application/create-schedule.use-case'
 import { UpdateScheduleUseCase, type UpdateScheduleInput } from '../application/update-schedule.use-case'
 import { ListSchedulesUseCase } from '../application/list-schedules.use-case'
@@ -8,7 +8,7 @@ import { GetScheduleUseCase } from '../application/get-schedule.use-case'
 import { DeleteScheduleUseCase } from '../application/delete-schedule.use-case'
 
 function repository() {
-  return new MongoScheduleRepository()
+  return new PostgresScheduleRepository()
 }
 
 export async function listSchedules(actor: Actor, query: PageQuery): Promise<Result<Paged<WorkingSchedule>>> {

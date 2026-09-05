@@ -4,7 +4,7 @@
  * there is no separate "form schema" here because this module ships no UI.
  */
 import { z } from 'zod'
-import { dateField, objectId, optionalObjectId, pageQuerySchema } from '@/modules/shared'
+import { dateField, uuid, optionalUuid, pageQuerySchema } from '@/modules/shared'
 
 export const ATTENDANCE_STATUSES = [
   'present',
@@ -16,7 +16,7 @@ export const ATTENDANCE_STATUSES = [
 ] as const
 
 export const checkInSchema = z.object({
-  employeeId: objectId,
+  employeeId: uuid,
   checkIn: dateField.optional(),
   breakMinutes: z.number().nonnegative().optional(),
 })
@@ -36,7 +36,7 @@ export const correctAttendanceSchema = z.object({
 export type CorrectAttendanceBody = z.infer<typeof correctAttendanceSchema>
 
 export const listAttendanceQuerySchema = pageQuerySchema.extend({
-  employeeId: optionalObjectId,
+  employeeId: optionalUuid,
   from: dateField.optional(),
   to: dateField.optional(),
   status: z.enum(ATTENDANCE_STATUSES).optional(),

@@ -1,59 +1,51 @@
 /**
- * Public surface of the "people" module.
+ * Public surface of the "people" module.  ·  Owner: Dev B
  *
- * Everything other modules are allowed to use is re-exported HERE and nowhere
- * else. Internals under domain/, application/, infrastructure/ and interface/
- * are private and the ESLint boundary rule will reject imports that reach in.
+ * Everything other modules may use is re-exported HERE. Internals under
+ * domain/, application/, infrastructure/ and interface/ are private, and the
+ * ESLint boundary rule rejects imports that reach into them.
  *
- * Owner: see docs/plans/ — do not add exports for another team's module.
+ * The cross-module port types (EmployeeSummary, EmployeeLookupPort) now live in
+ * modules/shared/contracts/dto.ts — consumers import them from '@/modules/shared'
+ * and get the implementation through the container, not from here.
  */
-export type { EmployeeLookupPort, EmployeeSummary } from './application/ports/employee-lookup.port'
-export { createEmployeeLookup } from './infrastructure/employee-lookup.adapter'
-export { EMPLOYEE_TYPES, isEmployeeType, type EmployeeType } from './domain/employee-type'
+import { providePort, PORT_KEYS, type EmployeeLookupPort } from '@/modules/shared'
+import { PostgresEmployeeLookup } from './infrastructure/employee-lookup.adapter'
 
-// --- HTTP-facing surface consumed by app/api/** route handlers only. ---
+// --- Domain vocabulary shared across modules -------------------------------
 export {
-  createEmployeeSchema,
-  updateEmployeeSchema,
-  employeeQuerySchema,
-  type CreateEmployeeBody,
-  type UpdateEmployeeBody,
-  type EmployeeQuery,
-} from './interface/employee.schema'
-export {
-  createEmployee,
-  updateEmployee,
-  listEmployees,
-  archiveEmployee,
-  getEmployeeDetail,
-} from './interface/employee.controller'
+  EMPLOYEE_TYPES,
+  EMPLOYEE_TYPE_LABELS,
+  isEmployeeType,
+  type EmployeeType,
+} from './domain/employee-type'
 
-export {
-  createDepartmentSchema,
-  updateDepartmentSchema,
-  departmentQuerySchema,
-  type CreateDepartmentBody,
-  type UpdateDepartmentBody,
-} from './interface/department.schema'
-export {
-  createDepartment,
-  updateDepartment,
-  listDepartments,
-  getDepartment,
-  deleteDepartment,
-} from './interface/department.controller'
+// --- Interface layer, for the route handlers in app/api ---------------------
+export * from './interface/employee.controller'
+export * from './interface/department.controller'
+export * from './interface/job-position.controller'
+export * from './interface/employee.schema'
+export * from './interface/department.schema'
+export * from './interface/job-position.schema'
 
-export {
-  createJobPositionSchema,
-  updateJobPositionSchema,
-  jobPositionQuerySchema,
-  type CreateJobPositionBody,
-  type UpdateJobPositionBody,
-} from './interface/job-position.schema'
-export {
-  createJobPosition,
-  updateJobPosition,
-  listJobPositions,
-  getJobPosition,
-  deleteJobPosition,
-} from './interface/job-position.controller'
+// --- Persistence, for scripts/seed and the composition root -----------------
+export { PostgresEmployeeRepository } from './infrastructure/postgres-employee.repository'
+export { PostgresDepartmentRepository } from './infrastructure/postgres-department.repository'
+export { PostgresJobPositionRepository } from './infrastructure/postgres-job-position.repository'
+export { PostgresEmployeeLookup } from './infrastructure/employee-lookup.adapter'
+
+/**
+ * Publish our implementation of EmployeeLookupPort.
+ *
+ * Consumers (Time Off, Payroll, Analytics) call
+ * `getPort(PORT_KEYS.employeeLookup)` and never import this module's classes,
+ * so swapping the implementation touches this one line.
+ */
+export function registerPeoplePorts(): void {
+  providePort<EmployeeLookupPort>(PORT_KEYS.employeeLookup, () => new PostgresEmployeeLookup())
+}
+
+/** Direct construction, for callers that are inside the composition root. */
+export function createEmployeeLookup(): EmployeeLookupPort {
+  return new PostgresEmployeeLookup()
+}

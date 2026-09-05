@@ -4,14 +4,14 @@
  * validation cannot drift apart.
  */
 import { z } from 'zod'
-import { objectId, optionalObjectId, nonEmpty, money, dateField } from '@/modules/shared'
+import { uuid, optionalUuid, nonEmpty, money, dateField } from '@/modules/shared'
 
 const contractShape = {
-  employeeId: objectId,
+  employeeId: uuid,
   wage: money,
-  salaryStructureId: optionalObjectId,
-  workingScheduleId: optionalObjectId,
-  departmentId: optionalObjectId,
+  salaryStructureId: optionalUuid,
+  workingScheduleId: optionalUuid,
+  departmentId: optionalUuid,
   jobPositionName: nonEmpty('Job position').optional(),
   start: dateField,
   end: dateField.nullable().optional(),

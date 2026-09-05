@@ -1,39 +1,59 @@
 /**
- * ScheduleQueryAdapter — implements ScheduleQueryPort for other modules
- * (payroll proration, mainly). `expectedHours`/`expectedDays` delegate to the
- * pure domain functions in weekly-hours.service.ts -- one implementation of
- * "how much of this period does the schedule cover", shared by the unit
- * tests and by real Mongo-backed data.
+ * Postgres implementation of the shared ScheduleQueryPort.
+ *
+ * `expectedHours`/`expectedDays` are payroll's proration denominators. The
+ * arithmetic stays in the pure weekly-hours service; this adapter only fetches
+ * the day pattern and delegates, so there is one implementation under test.
  */
-import type { Period } from '@/modules/shared'
-import { expectedDays as computeExpectedDays, expectedHours as computeExpectedHours } from '../domain/weekly-hours.service'
-import type { ScheduleQueryPort, ScheduleSnapshot } from '../application/ports/schedule-query.port'
-import { WorkingScheduleModel, type WorkingScheduleDoc } from './schedule.model'
+import { query, queryOne } from '@/lib/db'
+import type { Period, ScheduleQueryPort, ScheduleSnapshot } from '@/modules/shared'
+import {
+  expectedDays as expectedDaysPure,
+  expectedHours as expectedHoursPure,
+  type ScheduleDayPattern,
+} from '../domain/weekly-hours.service'
+import {
+  SCHEDULES_TABLE,
+  SCHEDULE_DAYS_TABLE,
+  toClock,
+  type ScheduleDayRow,
+  type ScheduleRow,
+} from './employment.tables'
 
-function toSnapshot(doc: WorkingScheduleDoc): ScheduleSnapshot {
-  return {
-    id: String(doc._id),
-    name: doc.name,
-    weeklyHours: doc.weeklyHours,
-    days: doc.days,
-  }
+async function loadDays(scheduleId: string): Promise<ScheduleDayPattern[]> {
+  const rows = await query<ScheduleDayRow>(
+    `SELECT * FROM "${SCHEDULE_DAYS_TABLE}" WHERE working_schedule_id = $1 ORDER BY day_of_week`,
+    [scheduleId],
+  )
+  return rows.map((d) => ({
+    day: d.day_of_week as ScheduleDayPattern['day'],
+    start: toClock(d.starts_at),
+    end: toClock(d.ends_at),
+    breakMinutes: d.break_minutes,
+  }))
 }
 
-export class ScheduleQueryAdapter implements ScheduleQueryPort {
+export class PostgresScheduleQuery implements ScheduleQueryPort {
   async findById(id: string): Promise<ScheduleSnapshot | null> {
-    const doc = await WorkingScheduleModel.findById(id).lean<WorkingScheduleDoc>().exec()
-    return doc ? toSnapshot(doc) : null
+    const row = await queryOne<ScheduleRow>(
+      `SELECT id, name, weekly_hours FROM "${SCHEDULES_TABLE}" WHERE id = $1`,
+      [id],
+    )
+    if (!row) return null
+
+    return {
+      id: row.id,
+      name: row.name,
+      weeklyHours: Number(row.weekly_hours),
+      days: await loadDays(row.id),
+    }
   }
 
   async expectedHours(scheduleId: string, period: Period): Promise<number> {
-    const schedule = await this.findById(scheduleId)
-    if (!schedule) return 0
-    return computeExpectedHours(schedule.days, period)
+    return expectedHoursPure(await loadDays(scheduleId), period)
   }
 
   async expectedDays(scheduleId: string, period: Period): Promise<number> {
-    const schedule = await this.findById(scheduleId)
-    if (!schedule) return 0
-    return computeExpectedDays(schedule.days, period)
+    return expectedDaysPure(await loadDays(scheduleId), period)
   }
 }
