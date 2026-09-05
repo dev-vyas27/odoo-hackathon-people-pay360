@@ -7,9 +7,9 @@
  * the use case with the actor + validated input.
  */
 import { container, resolve } from '@/modules/shared/container'
-import type { Actor, PageQuery, Result } from '@/modules/shared'
+import { Ok, type Actor, type PageQuery, type Result } from '@/modules/shared'
 import type { Employee } from '../domain/employee'
-import type { EmployeeDetail } from '../application/get-employee-detail.use-case'
+import type { EmployeeDetailView } from '../schemas'
 import { CreateEmployeeUseCase } from '../application/create-employee.use-case'
 import { UpdateEmployeeUseCase } from '../application/update-employee.use-case'
 import { ListEmployeesUseCase } from '../application/list-employees.use-case'
@@ -62,7 +62,39 @@ export async function archiveEmployee(actor: Actor, id: string): Promise<Result<
   return new ArchiveEmployeeUseCase(repo, container().eventBus).execute({ actor, id })
 }
 
-export async function getEmployeeDetail(actor: Actor, id: string): Promise<Result<EmployeeDetail>> {
+/**
+ * The detail screen's payload, flattened onto `EmployeeDetailView`.
+ *
+ * The use case returns `{ employee, counts }` because that is a convenient
+ * shape to build. The screen is typed against a FLAT record with a `counts`
+ * field, and nothing bridged the two — so `employee.name` was `undefined` on
+ * the client and every input rendered empty while every select fell back to its
+ * placeholder. `counts` lined up by coincidence, which is why the smart buttons
+ * looked fine and made the bug read as a form problem.
+ *
+ * Same lesson as the attendance list: a use case's return shape is not a wire
+ * format. The mapping belongs here, at the interface boundary.
+ */
+export async function getEmployeeDetail(
+  actor: Actor,
+  id: string,
+): Promise<Result<EmployeeDetailView>> {
   const repo = await repository()
-  return new GetEmployeeDetailUseCase(repo).execute({ actor, id })
+  const result = await new GetEmployeeDetailUseCase(repo).execute({ actor, id })
+  if (!result.ok) return result
+
+  const { employee, counts } = result.value
+  return Ok({
+    id: employee.id,
+    name: employee.name,
+    email: employee.email,
+    departmentId: employee.departmentId ?? null,
+    jobPositionId: employee.jobPositionId ?? null,
+    managerId: employee.managerId ?? null,
+    workingScheduleId: employee.workingScheduleId ?? null,
+    employeeType: employee.employeeType,
+    bankAccount: employee.bankAccount ?? null,
+    isActive: employee.isActive,
+    counts,
+  })
 }

@@ -101,6 +101,51 @@ test.describe('UI — employee creation journey', () => {
   })
 })
 
+test.describe('UI — employee detail screen', () => {
+  test('shows the saved values, not the placeholders', async ({ page }) => {
+    await signIn(page)
+
+    // Pick a seeded employee that actually has its relations populated.
+    const listed = await page.request.get('/api/employees?limit=200')
+    const items = (await listed.json()).data.items as any[]
+    const target = items.find((e) => e.departmentId && e.jobPositionId && e.workingScheduleId)
+    expect(target, 'need a fully-populated employee — run the demo seed').toBeTruthy()
+
+    await page.goto(`/employees/${target.id}`)
+    await page.waitForLoadState('networkidle')
+
+    await expect(page.getByLabel('Name')).toHaveValue(target.name)
+    await expect(page.getByLabel('Email')).toHaveValue(target.email)
+
+    // Every select must display a chosen value rather than its "Select ..." hint.
+    const combos = await page.locator('button[role="combobox"]').all()
+    expect(combos.length).toBeGreaterThan(0)
+    for (const combo of combos) {
+      const text = (await combo.innerText()).trim()
+      expect(text, 'a populated field must not render its placeholder').not.toMatch(
+        /^Select\b|^Loading\.\.\.$/,
+      )
+    }
+  })
+
+  test('groups the form under section headings', async ({ page }) => {
+    await signIn(page)
+    const listed = await page.request.get('/api/employees?limit=200')
+    const target = (await listed.json()).data.items[0]
+
+    await page.goto(`/employees/${target.id}`)
+    await page.waitForLoadState('networkidle')
+
+    const headings = await page.locator('h2').allInnerTexts()
+    for (const expected of ['Identity', 'Organisation', 'Pay and hours', 'Status']) {
+      expect(
+        headings.some((h) => h.toLowerCase() === expected.toLowerCase()),
+        `missing section heading: ${expected} (got ${headings.join(', ')})`,
+      ).toBe(true)
+    }
+  })
+})
+
 test.describe('UI — schedule creation journey', () => {
   test('creates a working schedule through the form', async ({ page }) => {
     await signIn(page)

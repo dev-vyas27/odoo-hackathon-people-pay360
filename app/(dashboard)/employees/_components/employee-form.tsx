@@ -44,14 +44,21 @@ export function EmployeeForm({
       cancel={cancel}
       onSubmit={onSubmit}
       fields={[
-        { name: 'name', label: 'Name', placeholder: 'Priya Sharma' },
-        { name: 'email', label: 'Email', type: 'email', placeholder: 'priya@company.com' },
+        { name: 'name', label: 'Name', placeholder: 'Priya Sharma', section: 'Identity' },
+        {
+          name: 'email',
+          label: 'Email',
+          type: 'email',
+          placeholder: 'priya@company.com',
+          section: 'Identity',
+        },
         {
           name: 'employeeType',
           label: 'Employee type',
           type: 'select',
           options: EMPLOYEE_TYPE_OPTIONS,
           description: 'Drives dashboard filtering and payroll eligibility.',
+          section: 'Organisation',
         },
         {
           name: 'departmentId',
@@ -59,6 +66,7 @@ export function EmployeeForm({
           type: 'select',
           options: departments.options,
           placeholder: departments.isLoading ? 'Loading...' : 'Select department',
+          section: 'Organisation',
         },
         {
           name: 'jobPositionId',
@@ -66,6 +74,7 @@ export function EmployeeForm({
           type: 'select',
           options: positions.options,
           placeholder: positions.isLoading ? 'Loading...' : 'Select position',
+          section: 'Organisation',
         },
         {
           name: 'managerId',
@@ -73,6 +82,7 @@ export function EmployeeForm({
           type: 'select',
           options: managers.options,
           placeholder: managers.isLoading ? 'Loading...' : 'Select manager',
+          section: 'Organisation',
         },
         {
           name: 'workingScheduleId',
@@ -81,12 +91,14 @@ export function EmployeeForm({
           options: schedules.options,
           placeholder: schedules.isLoading ? 'Loading...' : 'Select schedule',
           description: 'Attendance judges lateness and overtime against this.',
+          section: 'Pay and hours',
         },
         {
           name: 'bankAccount',
           label: 'Bank account',
           placeholder: 'Account number',
           description: 'Payroll warns before finalising a payrun when this is missing.',
+          section: 'Pay and hours',
         },
         {
           name: 'isActive',
@@ -94,6 +106,7 @@ export function EmployeeForm({
           type: 'checkbox',
           span: 2,
           description: 'Archived employees keep their history but are excluded from payruns.',
+          section: 'Status',
         },
       ]}
     />

@@ -143,6 +143,31 @@ test.describe('People — employees', () => {
     expect(second.status).toBeLessThan(500)
   })
 
+  test('the detail endpoint returns a FLAT record, not the use case shape', async ({ api }) => {
+    /**
+     * It used to return `{ employee: {...}, counts: {...} }` while the screen
+     * was typed against a flat `EmployeeDetailView`. Every field read as
+     * undefined, so the form rendered empty and every select fell back to its
+     * placeholder — while `counts` lined up by coincidence and made it look
+     * like a form bug rather than a contract bug.
+     */
+    const dept = await makeDepartment(api)
+    const employee = await makeEmployee(api, { departmentId: dept.id, bankAccount: '5555' })
+
+    const detail = await api.get(`/api/employees/${employee.id}`)
+    expect(detail.status).toBe(200)
+
+    expect(detail.data.employee, 'the aggregate must not be nested under a key').toBeUndefined()
+    expect(detail.data.id).toBe(employee.id)
+    expect(detail.data.name).toBe(employee.name)
+    expect(detail.data.email).toBe(employee.email)
+    expect(detail.data.departmentId).toBe(dept.id)
+    expect(detail.data.bankAccount).toBe('5555')
+    expect(detail.data.employeeType).toBe('full_time')
+    expect(detail.data.isActive).toBe(true)
+    expect(detail.data.counts, 'the smart-button counts still travel with it').toBeTruthy()
+  })
+
   test('updates an employee and reads the change back', async ({ api }) => {
     const employee = await makeEmployee(api)
     const newName = uniq('Renamed')

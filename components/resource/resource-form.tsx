@@ -63,6 +63,19 @@ export interface FieldConfig<T extends FieldValues> {
   disabled?: boolean
   /** Grid span out of 2 columns. Long fields want 2. */
   span?: 1 | 2
+  /**
+   * Optional heading this field belongs under.
+   *
+   * Nine inputs in one undifferentiated grid is a wall: the reader has to
+   * discover for themselves that four of them are about where someone sits in
+   * the organisation and two are about paying them. Grouping states it.
+   *
+   * Entirely opt-in — a form that names no sections renders exactly as before,
+   * so every existing form is untouched. Fields are grouped in the order the
+   * sections first appear, not alphabetically, because the order IS the
+   * reading order.
+   */
+  section?: string
 }
 
 export interface ResourceFormProps<T extends FieldValues> {
@@ -104,6 +117,94 @@ export function ResourceForm<T extends FieldValues>({
 
   const { isSubmitting } = form.formState
 
+  /**
+   * Fields in declaration order, bucketed by section. One bucket keyed
+   * `undefined` when nothing is sectioned, which renders as today's single grid
+   * with no heading — that is what keeps this change invisible to every form
+   * that has not opted in.
+   */
+  const sections = fields.reduce<Array<{ title?: string; items: FieldConfig<T>[] }>>(
+    (acc, field) => {
+      const last = acc[acc.length - 1]
+      if (last && last.title === field.section) last.items.push(field)
+      else acc.push({ title: field.section, items: [field] })
+      return acc
+    },
+    [],
+  )
+
+  const renderField = (field: FieldConfig<T>) => (
+    <FormField
+      key={field.name}
+      control={form.control}
+      name={field.name}
+      render={({ field: rhf }) => (
+        <FormItem className={cn(field.span === 2 && 'sm:col-span-2')}>
+          {field.type !== 'checkbox' && <FormLabel>{field.label}</FormLabel>}
+          <FormControl>
+            {field.type === 'textarea' ? (
+              <Textarea
+                {...rhf}
+                value={rhf.value ?? ''}
+                placeholder={field.placeholder}
+                disabled={field.disabled || isSubmitting}
+                rows={4}
+              />
+            ) : field.type === 'select' ? (
+              <Select
+                onValueChange={rhf.onChange}
+                value={rhf.value ? String(rhf.value) : undefined}
+                disabled={field.disabled || isSubmitting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={field.placeholder ?? 'Select...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {field.options?.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : field.type === 'checkbox' ? (
+              <label className="flex items-center gap-2.5 pt-1">
+                <Checkbox
+                  checked={Boolean(rhf.value)}
+                  onCheckedChange={rhf.onChange}
+                  disabled={field.disabled || isSubmitting}
+                />
+                <span className="text-sm text-foreground">{field.label}</span>
+              </label>
+            ) : (
+              <Input
+                {...rhf}
+                type={field.type ?? 'text'}
+                value={rhf.value ?? ''}
+                placeholder={field.placeholder}
+                disabled={field.disabled || isSubmitting}
+                // Keep numbers as numbers so zod does not see "42".
+                onChange={(e) =>
+                  rhf.onChange(
+                    field.type === 'number'
+                      ? e.target.value === ''
+                        ? undefined
+                        : Number(e.target.value)
+                      : e.target.value,
+                  )
+                }
+              />
+            )}
+          </FormControl>
+          {field.description ? (
+            <FormDescription>{field.description}</FormDescription>
+          ) : null}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+
   return (
     <Form {...form}>
       <form
@@ -113,79 +214,18 @@ export function ResourceForm<T extends FieldValues>({
         className={cn('space-y-6', className)}
         noValidate
       >
-        <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-          {fields.map((field) => (
-            <FormField
-              key={field.name}
-              control={form.control}
-              name={field.name}
-              render={({ field: rhf }) => (
-                <FormItem className={cn(field.span === 2 && 'sm:col-span-2')}>
-                  {field.type !== 'checkbox' && <FormLabel>{field.label}</FormLabel>}
-                  <FormControl>
-                    {field.type === 'textarea' ? (
-                      <Textarea
-                        {...rhf}
-                        value={rhf.value ?? ''}
-                        placeholder={field.placeholder}
-                        disabled={field.disabled || isSubmitting}
-                        rows={4}
-                      />
-                    ) : field.type === 'select' ? (
-                      <Select
-                        onValueChange={rhf.onChange}
-                        value={rhf.value ? String(rhf.value) : undefined}
-                        disabled={field.disabled || isSubmitting}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder={field.placeholder ?? 'Select...'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {field.options?.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>
-                              {o.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : field.type === 'checkbox' ? (
-                      <label className="flex items-center gap-2.5 pt-1">
-                        <Checkbox
-                          checked={Boolean(rhf.value)}
-                          onCheckedChange={rhf.onChange}
-                          disabled={field.disabled || isSubmitting}
-                        />
-                        <span className="text-sm text-foreground">{field.label}</span>
-                      </label>
-                    ) : (
-                      <Input
-                        {...rhf}
-                        type={field.type ?? 'text'}
-                        value={rhf.value ?? ''}
-                        placeholder={field.placeholder}
-                        disabled={field.disabled || isSubmitting}
-                        // Keep numbers as numbers so zod does not see "42".
-                        onChange={(e) =>
-                          rhf.onChange(
-                            field.type === 'number'
-                              ? e.target.value === ''
-                                ? undefined
-                                : Number(e.target.value)
-                              : e.target.value,
-                          )
-                        }
-                      />
-                    )}
-                  </FormControl>
-                  {field.description ? (
-                    <FormDescription>{field.description}</FormDescription>
-                  ) : null}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
-        </div>
+        {sections.map((section, index) => (
+          <div key={section.title ?? `__unsectioned-${index}`} className="space-y-4">
+            {section.title ? (
+              <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {section.title}
+              </h2>
+            ) : null}
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+              {section.items.map(renderField)}
+            </div>
+          </div>
+        ))}
 
         {children}
 
