@@ -51,8 +51,8 @@ export {
   type Permission,
 } from './contracts/permissions'
 export {
-  objectId,
-  optionalObjectId,
+  uuid,
+  optionalUuid,
   nonEmpty,
   email,
   money,
@@ -65,8 +65,52 @@ export {
 } from './contracts/schema'
 
 /**
- * Persistence base class. Lives in shared/infrastructure but is published here
- * because every module's repositories extend it - without this export they would
- * have to reach into shared's internals, which the boundary rule forbids.
+ * Cross-module contracts. Values (the `as const` unions) and types both, so a
+ * module can build a <select> from `EMPLOYEE_TYPES` without a second source of
+ * truth.
  */
-export { BaseMongoRepository } from './infrastructure/mongo-repository'
+export {
+  EMPLOYEE_TYPES,
+  LEAVE_UNITS,
+  LEAVE_STATUSES,
+  SALARY_CATEGORIES,
+  PAYSLIP_STATUSES,
+  PAYRUN_STATUSES,
+} from './contracts/dto'
+export type {
+  CurrentUser,
+  ListEnvelope,
+  SeriesPoint,
+  EmployeeType,
+  EmployeeSummary,
+  EmployeeLookupPort,
+  EmployeeStatsPort,
+  ContractSnapshot,
+  ContractQueryPort,
+  ScheduleSnapshot,
+  ScheduleQueryPort,
+  AttendanceSummary,
+  AttendanceStatsPort,
+  LeaveUnit,
+  LeaveStatus,
+  LeaveBalanceView,
+  LeaveStatsPort,
+  SalaryCategory,
+  PayslipStatus,
+  PayrunStatus,
+  PayslipLineView,
+  PayslipView,
+  PayslipQueryPort,
+  PayrollTotals,
+  PayrollStatsPort,
+} from './contracts/dto'
+
+export { PORT_KEYS, type PortKey } from './contracts/port-keys'
+export {
+  container,
+  resolve,
+  providePort,
+  getPort,
+  portOr,
+  type Container,
+} from './container'
