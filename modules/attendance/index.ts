@@ -1,23 +1,89 @@
 /**
  * Public surface of the "attendance" module.  ·  Owner: Dev B
  *
- * Exposes aggregates only — never raw attendance records. Payroll has no
- * business iterating check-ins, and the dashboard should not count rows client
- * side.
+ * Exposes aggregates only — never raw attendance rows. Payroll has no business
+ * iterating check-ins, and the dashboard should not count rows client-side.
  *
- * Consumers today: payroll-processing (Dev C), analytics (Dev A).
+ * The cross-module port TYPES (AttendanceStatsPort, AttendanceSummary) live in
+ * modules/shared/contracts/dto.ts; consumers get the implementation from the
+ * container.
  */
+import { providePort, PORT_KEYS, type AttendanceStatsPort } from '@/modules/shared'
+import { PostgresAttendanceStats } from './infrastructure/attendance-stats.adapter'
 
-// --- Published port ---------------------------------------------------------
-export type {
-  AttendanceStatsPort,
-  AttendanceSummary,
-} from './application/ports/attendance-stats.port'
+// --- Domain, for callers that need the rules -------------------------------
+export { deriveStatus, type AttendanceStatus, type DailySchedule } from './domain/exception'
+export { computeWorkedHours } from './domain/worked-hours.service'
+export { Attendance } from './domain/attendance'
 
-// --- Implementation selection ----------------------------------------------
-import { StubAttendanceStats } from './infrastructure/attendance-stats.stub'
-import type { AttendanceStatsPort } from './application/ports/attendance-stats.port'
+// --- Interface layer, for the route handlers in app/api --------------------
+export * from './interface/attendance.schema'
+
+// --- Persistence, for scripts/seed and the composition root ----------------
+export { PostgresAttendanceRepository } from './infrastructure/postgres-attendance.repository'
+export { PostgresAttendanceStats } from './infrastructure/attendance-stats.adapter'
+
+/** Publish this module's cross-module port. */
+export function registerAttendancePorts(): void {
+  providePort<AttendanceStatsPort>(
+    PORT_KEYS.attendanceStats,
+    () => new PostgresAttendanceStats(),
+  )
+}
 
 export function createAttendanceStats(): AttendanceStatsPort {
-  return new StubAttendanceStats()
+  return new PostgresAttendanceStats()
+}
+
+// --- Composition root for this module ---------------------------------------
+import { resolve } from '@/modules/shared'
+import { PostgresAttendanceRepository } from './infrastructure/postgres-attendance.repository'
+import { EmployeeDirectoryAdapter } from './infrastructure/employee-directory.adapter'
+import { ScheduleLookupAdapter } from './infrastructure/schedule-lookup.adapter'
+import type { AttendanceRepositoryPort } from './application/ports/attendance-repository.port'
+import type { ScheduleLookupPort } from './application/ports/schedule-lookup.port'
+import { CheckInUseCase } from './application/check-in.use-case'
+import { CheckOutUseCase } from './application/check-out.use-case'
+import { CorrectAttendanceUseCase } from './application/correct-attendance.use-case'
+import { ListAttendanceUseCase } from './application/list-attendance.use-case'
+import { GetAttendanceUseCase } from './application/get-attendance.use-case'
+import { DeleteAttendanceUseCase } from './application/delete-attendance.use-case'
+
+/**
+ * Collaborators are cached on the container rather than rebuilt per request, so
+ * a hot-reload in dev does not leak a new adapter graph on every edit.
+ */
+function attendanceRepository(): AttendanceRepositoryPort {
+  return resolve('attendance.repository', () => new PostgresAttendanceRepository())
+}
+
+function scheduleLookup(): ScheduleLookupPort {
+  return resolve('attendance.schedule-lookup', () => {
+    const directory = new EmployeeDirectoryAdapter()
+    return new ScheduleLookupAdapter((employeeId) => directory.workingScheduleIdFor(employeeId))
+  })
+}
+
+export function createCheckInUseCase(): CheckInUseCase {
+  return new CheckInUseCase(attendanceRepository(), scheduleLookup())
+}
+
+export function createCheckOutUseCase(): CheckOutUseCase {
+  return new CheckOutUseCase(attendanceRepository(), scheduleLookup())
+}
+
+export function createCorrectAttendanceUseCase(): CorrectAttendanceUseCase {
+  return new CorrectAttendanceUseCase(attendanceRepository(), scheduleLookup())
+}
+
+export function createListAttendanceUseCase(): ListAttendanceUseCase {
+  return new ListAttendanceUseCase(attendanceRepository())
+}
+
+export function createGetAttendanceUseCase(): GetAttendanceUseCase {
+  return new GetAttendanceUseCase(attendanceRepository())
+}
+
+export function createDeleteAttendanceUseCase(): DeleteAttendanceUseCase {
+  return new DeleteAttendanceUseCase(attendanceRepository())
 }

@@ -19,8 +19,14 @@ import type { SeedPart } from '../types'
 
 export const peopleSeed: SeedPart = {
   name: 'people',
-  // Order matters for --reset, which empties these in reverse.
-  tables: ['working_schedule_days', 'working_schedules', 'job_positions', 'departments', 'employees'],
+  // Parents first; --reset empties them in reverse. See SeedPart.tables.
+  tables: [
+    'departments',
+    'job_positions',
+    'working_schedules',
+    'working_schedule_days',
+    'employees',
+  ],
   async run(ctx) {
     const departments = await ctx.upsert('departments', [
       { id: SEED.departments.engineering, name: 'Engineering', code: 'ENG', is_active: true },

@@ -5,8 +5,12 @@
  * domain/, application/, infrastructure/ and interface/ are private, and the
  * ESLint boundary rule rejects imports that reach into them.
  *
- * Consumers today: timeoff (Dev A), payroll-processing (Dev C), analytics (Dev A).
+ * The cross-module port types (EmployeeSummary, EmployeeLookupPort) now live in
+ * modules/shared/contracts/dto.ts — consumers import them from '@/modules/shared'
+ * and get the implementation through the container, not from here.
  */
+import { providePort, PORT_KEYS, type EmployeeLookupPort } from '@/modules/shared'
+import { PostgresEmployeeLookup } from './infrastructure/employee-lookup.adapter'
 
 // --- Domain vocabulary shared across modules -------------------------------
 export {
@@ -16,23 +20,32 @@ export {
   type EmployeeType,
 } from './domain/employee-type'
 
-// --- Published port (the contract other modules code against) --------------
-export type {
-  EmployeeLookupPort,
-  EmployeeSummary,
-  EligibilityFilter,
-} from './application/ports/employee-lookup.port'
+// --- Interface layer, for the route handlers in app/api ---------------------
+export * from './interface/employee.controller'
+export * from './interface/department.controller'
+export * from './interface/job-position.controller'
+export * from './interface/employee.schema'
+export * from './interface/department.schema'
+export * from './interface/job-position.schema'
 
-// --- Implementation selection ----------------------------------------------
-import { StubEmployeeLookup } from './infrastructure/employee-lookup.stub'
-import type { EmployeeLookupPort } from './application/ports/employee-lookup.port'
+// --- Persistence, for scripts/seed and the composition root -----------------
+export { PostgresEmployeeRepository } from './infrastructure/postgres-employee.repository'
+export { PostgresDepartmentRepository } from './infrastructure/postgres-department.repository'
+export { PostgresJobPositionRepository } from './infrastructure/postgres-job-position.repository'
+export { PostgresEmployeeLookup } from './infrastructure/employee-lookup.adapter'
 
 /**
- * Factory consumers call from the composition root.
+ * Publish our implementation of EmployeeLookupPort.
  *
- * Swapping the stub for the Mongo adapter in Phase 3 changes this ONE line —
- * no consumer touches an import. That is the whole point of the port.
+ * Consumers (Time Off, Payroll, Analytics) call
+ * `getPort(PORT_KEYS.employeeLookup)` and never import this module's classes,
+ * so swapping the implementation touches this one line.
  */
+export function registerPeoplePorts(): void {
+  providePort<EmployeeLookupPort>(PORT_KEYS.employeeLookup, () => new PostgresEmployeeLookup())
+}
+
+/** Direct construction, for callers that are inside the composition root. */
 export function createEmployeeLookup(): EmployeeLookupPort {
-  return new StubEmployeeLookup()
+  return new PostgresEmployeeLookup()
 }

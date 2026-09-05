@@ -1,19 +1,11 @@
 /**
- * EmployeeLookupPort — what the rest of the system is allowed to know about an
- * employee.
+ * EmployeeLookupPort — the contract other modules depend on.
  *
- * PUBLISHED BY: people (Dev B)
- * CONSUMED BY:  timeoff (Dev A), payroll-processing (Dev C), analytics (Dev A)
- *
- * This is deliberately a read-only projection, not the Employee aggregate.
- * Other modules get the fields they genuinely need and nothing more, so People
- * can restructure its internals without breaking Payroll (Interface Segregation
- * and Dependency Inversion doing real work).
- *
- * CHANGING THIS INTERFACE BREAKS TWO OTHER DEVELOPERS. Announce it first.
+ * Employment, Time Off, Payroll and the dashboard never touch our repository
+ * or domain types directly (the ESLint boundary rule would reject that
+ * anyway). They see this flat, denormalised summary instead, so a change to
+ * our aggregate's internal shape never ripples outward.
  */
-import type { EmployeeType } from '../../domain/employee-type'
-
 export interface EmployeeSummary {
   id: string
   name: string
@@ -21,27 +13,19 @@ export interface EmployeeSummary {
   departmentId: string | null
   departmentName: string | null
   jobPositionName: string | null
-  employeeType: EmployeeType
+  employeeType: 'full_time' | 'part_time' | 'contract' | 'intern'
   managerId: string | null
   workingScheduleId: string | null
-  /** Null when unset — Payroll raises the "missing bank details" warning on it. */
-  bankAccount: string | null
+  bankAccount: string | null // Dev C needs this for the missing-bank-details warning
   isActive: boolean
-}
-
-export interface EligibilityFilter {
-  departmentId?: string
-  employeeType?: EmployeeType
-  /** Only employees active on this date are eligible. */
-  activeOn: Date
 }
 
 export interface EmployeeLookupPort {
   findById(employeeId: string): Promise<EmployeeSummary | null>
-
-  /** Batch form — avoids N+1 lookups when Payroll builds a run of 200 payslips. */
   findManyByIds(ids: string[]): Promise<EmployeeSummary[]>
-
-  /** Drives step 2 of the Payrun wizard: who may be included in this run. */
-  findEligible(filter: EligibilityFilter): Promise<EmployeeSummary[]>
+  findEligible(filter: {
+    departmentId?: string
+    employeeType?: string
+    activeOn: Date
+  }): Promise<EmployeeSummary[]> // drives the Payrun wizard step 2
 }

@@ -107,7 +107,7 @@ export class RequestLeaveUseCase implements UseCase<RequestLeaveInput, LeaveRequ
 
       return Ok(saved.toView())
     } catch (reason) {
-      if (reason instanceof DomainError) return Err(reason)
+      if (DomainError.is(reason)) return Err(reason)
       throw reason
     }
   }

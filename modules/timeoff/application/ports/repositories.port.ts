@@ -26,6 +26,11 @@ export interface TimeOffTypeRepositoryPort {
 
 export interface AllocationRepositoryPort {
   findById(id: string): Promise<Allocation | null>
+  /**
+   * Read with a row lock, so the read-modify-write of `taken` is serialised.
+   * Only meaningful inside a transaction — see UnitOfWorkPort.
+   */
+  findByIdForUpdate(id: string): Promise<Allocation | null>
   findMany(query: PageQuery): Promise<Paged<Allocation>>
   /** Every allocation belonging to one employee, optionally for one type. */
   findForEmployee(employeeId: string, timeOffTypeId?: string): Promise<Allocation[]>
@@ -37,6 +42,8 @@ export interface AllocationRepositoryPort {
 
 export interface LeaveRequestRepositoryPort {
   findById(id: string): Promise<LeaveRequest | null>
+  /** Row-locked read. Stops two approvals racing on the same request. */
+  findByIdForUpdate(id: string): Promise<LeaveRequest | null>
   findMany(query: PageQuery): Promise<Paged<LeaveRequest>>
   findForEmployee(employeeId: string, timeOffTypeId?: string): Promise<LeaveRequest[]>
   /** Approved requests intersecting a period — the dashboard's leave figure. */

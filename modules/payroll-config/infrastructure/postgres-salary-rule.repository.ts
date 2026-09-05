@@ -7,7 +7,7 @@
  * valid as anything created through the API, even if it was seeded or edited by
  * hand in psql.
  */
-import { BaseSqlRepository, type SqlValue } from '@/modules/shared/infrastructure/sql-repository'
+import { BaseSqlRepository, type SqlValue } from '@/modules/shared/server'
 import { query } from '@/lib/db'
 import type { SalaryRuleRepositoryPort } from '../application/ports/salary-rule-repository.port'
 import { createSalaryRule, type SalaryRule } from '../domain/salary-rule'

@@ -1,44 +1,21 @@
 /**
- * ScheduleQueryPort — working-schedule facts other modules need.
+ * ScheduleQueryPort — read-only view of working schedules for OTHER modules.
  *
- * PUBLISHED BY: employment (Dev B)
- * CONSUMED BY:  payroll-processing (Dev C, proration), attendance (exception
- *               detection), analytics (Dev A, attendance coverage)
- *
- * `expectedHours` is what makes proration honest: a payslip for a part-time
- * employee must be measured against that employee's own schedule, not against
- * an assumed 40-hour week.
+ * `expectedHours`/`expectedDays` are payroll's proration denominators: how
+ * much of a payroll period a schedule actually covers. Both count only the
+ * weekdays the schedule's day pattern covers, never a flat calendar count.
  */
 import type { Period } from '@/modules/shared'
-
-/** 0 = Sunday ... 6 = Saturday, matching JavaScript's getUTCDay(). */
-export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
-
-export interface ScheduleDay {
-  day: Weekday
-  /** "HH:mm", 24-hour. */
-  start: string
-  end: string
-  breakMinutes: number
-}
 
 export interface ScheduleSnapshot {
   id: string
   name: string
-  /** DERIVED from `days` — never entered by hand (spec A3). */
   weeklyHours: number
-  days: ScheduleDay[]
+  days: Array<{ day: 0 | 1 | 2 | 3 | 4 | 5 | 6; start: string; end: string; breakMinutes: number }>
 }
 
 export interface ScheduleQueryPort {
   findById(id: string): Promise<ScheduleSnapshot | null>
-
-  /**
-   * Hours this schedule expects across `period`, counting only the weekdays the
-   * schedule actually covers. Used as the denominator when payroll prorates.
-   */
   expectedHours(scheduleId: string, period: Period): Promise<number>
-
-  /** Working days in the period — the denominator for day-based proration. */
   expectedDays(scheduleId: string, period: Period): Promise<number>
 }

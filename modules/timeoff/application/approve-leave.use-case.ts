@@ -1,14 +1,21 @@
 /**
- * Approve a leave request AND deduct the allocation. One use case, on purpose.
+ * Approve a leave request AND deduct the allocation. One transaction.
  *
- * This is the rule the whole module exists to protect: approving a request whose
- * type `requiresAllocation` draws down the matching allocation, and FAILS when
- * the balance is insufficient. If approval lived in one place and the deduction
- * in another — a controller, an event handler, a UI callback — they would
- * eventually diverge and the system would show approved leave that nobody paid
- * for. Keeping them in a single transaction script makes divergence impossible.
+ * This is the rule the whole module exists to protect, and the spec states it
+ * twice: "Approved leave requests automatically deduct from assigned
+ * allocations" (A4) and "Approved requests automatically reduce balances for
+ * leave types requiring allocation" (B4).
  *
- * Order matters: the allocation is consumed FIRST. Consuming throws when the
+ * Three things make it hold:
+ *
+ *   1. Approval and deduction are ONE use case. If they lived apart — a
+ *      controller, an event handler, a UI callback — they would eventually
+ *      diverge and the system would show approved leave nobody paid for.
+ *   2. They are ONE transaction. Either both writes land or neither does.
+ *   3. Both rows are read FOR UPDATE, so two approvers clicking at once are
+ *      serialised rather than both reading the same "before" balance.
+ *
+ * Order matters: the allocation is consumed FIRST. `consume()` throws when the
  * balance is short, so the request is never marked approved against a balance
  * that could not fund it.
  */
@@ -24,11 +31,7 @@ import {
 } from '@/modules/shared'
 import type { LeaveRequestView } from '../domain/leave-request'
 import { selectAllocation } from '../domain/balance.service'
-import type {
-  AllocationRepositoryPort,
-  LeaveRequestRepositoryPort,
-  TimeOffTypeRepositoryPort,
-} from './ports/repositories.port'
+import type { UnitOfWorkPort } from './ports/unit-of-work.port'
 
 export interface ApproveLeaveInput {
   actor: Actor
@@ -37,9 +40,7 @@ export interface ApproveLeaveInput {
 
 export class ApproveLeaveUseCase implements UseCase<ApproveLeaveInput, LeaveRequestView> {
   constructor(
-    private readonly requests: LeaveRequestRepositoryPort,
-    private readonly allocations: AllocationRepositoryPort,
-    private readonly types: TimeOffTypeRepositoryPort,
+    private readonly uow: UnitOfWorkPort,
     private readonly events: IEventBus,
   ) {}
 
@@ -47,53 +48,66 @@ export class ApproveLeaveUseCase implements UseCase<ApproveLeaveInput, LeaveRequ
     const allowed = authorize(input.actor, 'leave_request', 'approve')
     if (!allowed.ok) return allowed
 
-    const request = await this.requests.findById(input.requestId)
-    if (!request) {
-      return Err(DomainError.notFound('LEAVE_NOT_FOUND', 'That leave request does not exist'))
-    }
-
-    // Nobody approves their own leave. The permission table cannot express this
-    // because it is about the relationship between actor and row, not the role.
-    if (input.actor.employeeId && input.actor.employeeId === request.employeeId) {
-      return Err(
-        DomainError.forbidden(
-          'LEAVE_SELF_APPROVAL',
-          'You cannot approve your own leave request',
-        ),
-      )
-    }
-
-    const type = await this.types.findById(request.timeOffTypeId)
-    if (!type) {
-      return Err(DomainError.notFound('TIME_OFF_TYPE_NOT_FOUND', 'That leave type does not exist'))
-    }
-
     try {
-      let allocationId: string | null = null
+      const saved = await this.uow.transaction(async (repos) => {
+        const request = await repos.requests.findByIdForUpdate(input.requestId)
+        if (!request) {
+          throw DomainError.notFound('LEAVE_NOT_FOUND', 'That leave request does not exist')
+        }
 
-      if (type.requiresAllocation) {
-        const allocation = selectAllocation(
-          await this.allocations.findForEmployee(request.employeeId, type.id),
-          {
-            employeeId: request.employeeId,
-            timeOffTypeId: type.id,
-            period: request.period,
-            duration: request.duration,
-          },
-        )
+        /**
+         * Nobody approves their own leave. The permission table cannot express
+         * this: it is about the relationship between the actor and the row, not
+         * about the role.
+         */
+        if (input.actor.employeeId && input.actor.employeeId === request.employeeId) {
+          throw DomainError.forbidden(
+            'LEAVE_SELF_APPROVAL',
+            'You cannot approve your own leave request',
+          )
+        }
 
-        // Throws on insufficient balance — before the request is touched.
-        allocation.consume(request.duration)
-        await this.allocations.save(allocation)
-        allocationId = allocation.id
-      }
+        const type = await repos.types.findById(request.timeOffTypeId)
+        if (!type) {
+          throw DomainError.notFound('TIME_OFF_TYPE_NOT_FOUND', 'That leave type does not exist')
+        }
 
-      request.approve(input.actor.userId, allocationId)
-      const saved = await this.requests.save(request)
+        let allocationId: string | null = null
+
+        if (type.requiresAllocation) {
+          // Choose the funding allocation from the employee's current set, then
+          // re-read it under a lock. Selecting first keeps the pure rule (which
+          // allocation, and why) in the domain where it is unit-tested.
+          const candidate = selectAllocation(
+            await repos.allocations.findForEmployee(request.employeeId, type.id),
+            {
+              employeeId: request.employeeId,
+              timeOffTypeId: type.id,
+              period: request.period,
+              duration: request.duration,
+            },
+          )
+
+          const allocation = await repos.allocations.findByIdForUpdate(candidate.id)
+          if (!allocation) {
+            throw DomainError.notFound('ALLOCATION_NOT_FOUND', 'That allocation no longer exists')
+          }
+
+          // Throws on insufficient balance — before the request is touched.
+          allocation.consume(request.duration)
+          await repos.allocations.save(allocation)
+          allocationId = allocation.id
+        }
+
+        request.approve(input.actor.userId, allocationId)
+        return repos.requests.save(request)
+      })
 
       /**
-       * Fire and forget. Payroll and analytics react to this; none of them may
-       * roll back the approval, which is why the bus swallows handler errors.
+       * Published AFTER the commit, deliberately. A subscriber that reads the
+       * request back must not see a row that is still uncommitted, and a
+       * subscriber that throws must not be able to roll back an approval that
+       * has already been granted.
        */
       await this.events.publish({
         type: 'leave_request.approved',
@@ -107,7 +121,7 @@ export class ApproveLeaveUseCase implements UseCase<ApproveLeaveInput, LeaveRequ
 
       return Ok(saved.toView())
     } catch (reason) {
-      if (reason instanceof DomainError) return Err(reason)
+      if (DomainError.is(reason)) return Err(reason)
       throw reason
     }
   }

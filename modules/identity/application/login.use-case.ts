@@ -40,7 +40,7 @@ export class LoginUseCase implements UseCase<LoginInput, CurrentUser> {
     try {
       user.assertCanSignIn()
     } catch (reason) {
-      if (reason instanceof DomainError) return Err(reason)
+      if (DomainError.is(reason)) return Err(reason)
       throw reason
     }
 

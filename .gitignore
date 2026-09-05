@@ -40,5 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Claude Code agent worktrees and local session state
+.claude/
 # ...but the template IS committed: it is the only record of what to set.
 !.env.example

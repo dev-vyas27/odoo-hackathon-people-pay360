@@ -1,0 +1,23 @@
+/**
+ * POST /api/attendance/[id]/check-out — the employee's own self-service
+ * check-out. Kept distinct from PATCH /api/attendance/[id] because that
+ * route is a correction (always flags `manual`); this one is the normal,
+ * unflagged completion of the day's attendance.
+ */
+import { requireActor } from '@/lib/auth'
+import { handle, respond } from '@/lib/http'
+import { checkOutSchema, createCheckOutUseCase } from '@/modules/attendance'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+export async function POST(request: Request, { params }: RouteParams) {
+  return handle(async () => {
+    const { id } = await params
+    const actor = await requireActor()
+    const body = checkOutSchema.parse(await request.json())
+    const result = await createCheckOutUseCase().execute({ actor, attendanceId: id, ...body })
+    return respond(result)
+  })
+}

@@ -10,7 +10,7 @@
  * or not at all. A structure that saved its name but lost half its rules would
  * compute wrong payslips and look fine on screen.
  */
-import { BaseSqlRepository, type SqlValue } from '@/modules/shared/infrastructure/sql-repository'
+import { BaseSqlRepository, type SqlValue } from '@/modules/shared/server'
 import { query, transaction, type PoolClient } from '@/lib/db'
 import type { PageQuery, Paged } from '@/modules/shared'
 import type { SalaryStructureRepositoryPort } from '../application/ports/salary-structure-repository.port'

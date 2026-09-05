@@ -1,34 +1,57 @@
 /**
  * Public surface of the "employment" module.  ·  Owner: Dev B
  *
- * Holds Contracts and Working Schedules. Internals are private; the ESLint
- * boundary rule enforces it.
+ * Contracts and Working Schedules. Internals are private; the ESLint boundary
+ * rule enforces it.
  *
- * Consumers today: payroll-processing (Dev C), attendance (Dev B), analytics (Dev A).
+ * The cross-module port TYPES (ContractSnapshot, ContractQueryPort,
+ * ScheduleSnapshot, ScheduleQueryPort) now live in modules/shared/contracts/dto.ts.
+ * Consumers import them from '@/modules/shared' and obtain the implementation
+ * through the container.
  */
+import {
+  providePort,
+  PORT_KEYS,
+  type ContractQueryPort,
+  type ScheduleQueryPort,
+} from '@/modules/shared'
+import { PostgresContractQuery } from './infrastructure/contract-query.adapter'
+import { PostgresScheduleQuery } from './infrastructure/schedule-query.adapter'
 
-// --- Published ports --------------------------------------------------------
-export type {
-  ContractQueryPort,
-  ContractSnapshot,
-} from './application/ports/contract-query.port'
+// --- Domain, for callers that legitimately need the rules ------------------
+export { resolveApplicableContract, contractsOverlap } from './domain/contract-resolution'
+export {
+  computeWeeklyHours,
+  expectedDays,
+  expectedHours,
+  type ScheduleDayPattern,
+  type Weekday,
+} from './domain/weekly-hours.service'
+export type { Contract } from './domain/contract'
+export type { WorkingSchedule } from './domain/working-schedule'
 
-export type {
-  ScheduleQueryPort,
-  ScheduleSnapshot,
-  ScheduleDay,
-  Weekday,
-} from './application/ports/schedule-query.port'
+// --- Interface layer, for the route handlers in app/api -------------------
+export * from './interface/contract.controller'
+export * from './interface/schedule.controller'
+export * from './interface/contract.schema'
+export * from './interface/schedule.schema'
 
-// --- Implementation selection ----------------------------------------------
-import { StubContractQuery, StubScheduleQuery } from './infrastructure/contract-query.stub'
-import type { ContractQueryPort } from './application/ports/contract-query.port'
-import type { ScheduleQueryPort } from './application/ports/schedule-query.port'
+// --- Persistence, for scripts/seed and the composition root ---------------
+export { PostgresContractRepository } from './infrastructure/postgres-contract.repository'
+export { PostgresScheduleRepository } from './infrastructure/postgres-schedule.repository'
+export { PostgresContractQuery } from './infrastructure/contract-query.adapter'
+export { PostgresScheduleQuery } from './infrastructure/schedule-query.adapter'
+
+/** Publish this module's cross-module ports. */
+export function registerEmploymentPorts(): void {
+  providePort<ContractQueryPort>(PORT_KEYS.contractQuery, () => new PostgresContractQuery())
+  providePort<ScheduleQueryPort>(PORT_KEYS.scheduleQuery, () => new PostgresScheduleQuery())
+}
 
 export function createContractQuery(): ContractQueryPort {
-  return new StubContractQuery()
+  return new PostgresContractQuery()
 }
 
 export function createScheduleQuery(): ScheduleQueryPort {
-  return new StubScheduleQuery()
+  return new PostgresScheduleQuery()
 }
