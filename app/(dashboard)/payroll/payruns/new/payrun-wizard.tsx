@@ -214,6 +214,7 @@ export function PayrunWizard({ structures }: { structures: StructureOption[] }) 
                     <FormControl>
                       <Input {...field} type="date" value={toIso(field.value)} />
                     </FormControl>
+                    <FormDescription>First day of the payroll period.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -228,9 +229,7 @@ export function PayrunWizard({ structures }: { structures: StructureOption[] }) 
                     <FormControl>
                       <Input {...field} type="date" value={toIso(field.value)} />
                     </FormControl>
-                    <FormDescription>
-                      The contract that applies to this period is the one each payslip uses.
-                    </FormDescription>
+                    <FormDescription>Last day of the payroll period.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -1,11 +1,12 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'
-import { SALARY_CATEGORY_LABELS, type SalaryCategory } from '@/modules/payroll-config'
+import { SALARY_CATEGORIES, SALARY_CATEGORY_LABELS, type SalaryCategory } from '@/modules/payroll-config'
 import { ResourceTable } from '@/components/resource/resource-table'
 import { StatusBadge } from '@/components/resource/status-badge'
+import { FilterBar } from '@/components/resource/filter-bar'
 import { Button } from '@/components/ui/button'
 
 export interface RuleRow {
@@ -18,10 +19,11 @@ export interface RuleRow {
   active: boolean
 }
 
-/**
- * Sequence is the first column on purpose: it is the order the rules actually
- * run in, and reading the list top to bottom should read like a payslip.
- */
+const CATEGORY_OPTIONS = SALARY_CATEGORIES.map((cat) => ({
+  value: cat,
+  label: SALARY_CATEGORY_LABELS[cat] ?? cat,
+}))
+
 const columns: ColumnDef<RuleRow, unknown>[] = [
   {
     accessorKey: 'sequence',
@@ -35,7 +37,11 @@ const columns: ColumnDef<RuleRow, unknown>[] = [
       <span className="font-mono text-xs tracking-tight text-foreground">{row.original.code}</span>
     ),
   },
-  { accessorKey: 'name', header: 'Name' },
+  {
+    accessorKey: 'name',
+    header: 'Name',
+    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+  },
   {
     accessorKey: 'category',
     header: 'Category',
@@ -55,18 +61,46 @@ const columns: ColumnDef<RuleRow, unknown>[] = [
 
 export function RulesTable({ rules }: { rules: RuleRow[] }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const search = (searchParams.get('search') ?? '').toLowerCase()
+  const category = searchParams.get('category')
+
+  const filteredRules = rules.filter((item) => {
+    if (category && item.category !== category) return false
+    if (search) {
+      const matchName = item.name.toLowerCase().includes(search)
+      const matchCode = item.code.toLowerCase().includes(search)
+      if (!matchName && !matchCode) return false
+    }
+    return true
+  })
 
   return (
-    <ResourceTable
-      data={rules}
-      columns={columns}
-      onRowClick={(row) => router.push(`/payroll/rules/${row.id}`)}
-      emptyMessage="No salary rules yet. Add BASIC, HRA and NET to get a payslip computing."
-      emptyAction={
-        <Button asChild variant="outline">
-          <Link href="/payroll/rules/new">Create the first rule</Link>
-        </Button>
-      }
-    />
+    <div>
+      <FilterBar
+        searchPlaceholder="Search rules..."
+        filters={[{ name: 'category', label: 'Category', options: CATEGORY_OPTIONS }]}
+      />
+
+      <ResourceTable
+        data={filteredRules}
+        columns={columns}
+        onRowClick={(row) => router.push(`/payroll/rules/${row.id}`)}
+        emptyMessage={
+          rules.length === 0
+            ? 'No salary rules yet. Add BASIC, HRA and NET to get a payslip computing.'
+            : 'No salary rules match these filters.'
+        }
+        emptyAction={
+          rules.length === 0 ? (
+            <Button asChild variant="outline">
+              <Link href="/payroll/rules/new">Create the first rule</Link>
+            </Button>
+          ) : undefined
+        }
+      />
+    </div>
   )
 }
+

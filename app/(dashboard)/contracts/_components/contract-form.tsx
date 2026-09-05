@@ -133,24 +133,25 @@ export function ContractForm({
           placeholder: employees.isLoading ? 'Loading...' : 'Select employee',
           description: employeeLocked
             ? 'A contract cannot be moved to another employee.'
-            : 'Their department, position and schedule come with them.',
+            : 'Inherits department, position & schedule.',
         },
         {
           name: 'wage',
           label: 'Wage',
           type: 'number',
-          description: 'Gross monthly wage. Payroll prorates it by worked days.',
+          description: 'Gross monthly wage, prorated by worked days.',
         },
         {
           name: 'start',
           label: 'Start date',
           type: 'date',
+          description: 'First day this contract takes effect.',
         },
         {
           name: 'end',
           label: 'End date',
           type: 'date',
-          description: 'Leave empty for an open-ended contract.',
+          description: 'Leave empty for open-ended contract.',
         },
         {
           name: 'workingScheduleId',
