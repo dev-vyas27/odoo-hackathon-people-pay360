@@ -1,4 +1,4 @@
-import { test, expect, uniq, uniqEmail, makeEmployee } from './_helpers/fixtures'
+import { test, expect, uniq, uniqEmail, grantLogin, makeEmployee } from './_helpers/fixtures'
 
 test.describe('Security — authentication', () => {
   const protectedPaths = [
@@ -175,24 +175,14 @@ test.describe('Security — injection and input abuse', () => {
 test.describe('Security — authorization boundaries', () => {
   test('the permission matrix is enforced for a plain employee role', async ({ api, playwright, baseURL }) => {
     /**
-     * Create an employee, then give THAT employee a login.
+     * Create an employee, then give THAT employee a working login.
      *
-     * Since 0010 there is no separate user record to bind: posting the
-     * employee's own address to /api/users grants a login to the person who
-     * already has it. That is the whole point of the merged table.
+     * Since 0010 there is no separate user record to bind, and an account is
+     * born WITHOUT a password — `grantLogin` walks the real invite ->
+     * set-password path rather than pretending a shortcut exists.
      */
     const employee = await makeEmployee(api)
-    const email = employee.email
-    const password = 'EmployeeTest!123'
-    const account = await api.post('/api/users', {
-      name: employee.name,
-      email,
-      password,
-      role: 'employee',
-      isActive: true,
-    })
-    expect(account.status, `grant login: ${JSON.stringify(account.raw)}`).toBe(201)
-    expect(account.data.id, 'the login must land on the employee, not a new row').toBe(employee.id)
+    const { email, password } = await grantLogin(api, employee)
 
     const ctx = await playwright.request.newContext({ baseURL })
     const login = await ctx.post('/api/auth/login', { data: { email, password } })
@@ -220,17 +210,7 @@ test.describe('Security — authorization boundaries', () => {
   }) => {
     const mine = await makeEmployee(api)
     const theirs = await makeEmployee(api)
-    const email = mine.email
-    const password = 'EmployeeTest!123'
-    const account = await api.post('/api/users', {
-      name: mine.name,
-      email,
-      password,
-      role: 'employee',
-      isActive: true,
-    })
-    expect(account.status, JSON.stringify(account.raw)).toBe(201)
-    expect(account.data.id).toBe(mine.id)
+    const { email, password } = await grantLogin(api, mine)
 
     // Someone else's attendance record, created by the admin.
     const theirAttendance = await api.post('/api/attendance', {

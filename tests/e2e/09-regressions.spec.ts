@@ -271,6 +271,102 @@ test.describe('Regression — F10 "Load demo data" must actually load', () => {
   })
 })
 
+test.describe('Account invitations', () => {
+  test('an account is born with no login until the link is redeemed', async ({ api, anon }) => {
+    const employee = await makeEmployee(api)
+    const password = 'QaInvite!2026'
+
+    const account = await api.post('/api/users', {
+      name: employee.name,
+      email: employee.email,
+      role: 'employee',
+      isActive: true,
+    })
+    expect(account.status, JSON.stringify(account.raw)).toBe(201)
+    expect(account.data.hasLogin, 'nobody but the holder chooses the password').toBe(false)
+
+    // Before redeeming, that address cannot sign in with anything.
+    const early = await anon.post('/api/auth/login', { email: employee.email, password })
+    expect(early.status, 'an un-redeemed account must not authenticate').toBe(401)
+
+    const invite = await api.post(`/api/users/${employee.id}/invite`)
+    expect(invite.status, JSON.stringify(invite.raw)).toBe(200)
+    const token = new URL(invite.data.link).searchParams.get('token')
+    expect(token).toBeTruthy()
+
+    // The link reports whose it is before it is spent.
+    const status = await anon.get(`/api/auth/set-password?token=${token}`)
+    expect(status.status).toBe(200)
+
+    const redeemed = await anon.post('/api/auth/set-password', {
+      token,
+      password,
+      confirmPassword: password,
+    })
+    expect(redeemed.status, JSON.stringify(redeemed.raw)).toBe(200)
+
+    const login = await anon.post('/api/auth/login', { email: employee.email, password })
+    expect(login.status, 'redeeming the link must produce a working login').toBe(200)
+    expect(login.data.employeeId).toBe(employee.id)
+  })
+
+  test('a set-password link is single use', async ({ api, anon }) => {
+    const employee = await makeEmployee(api)
+    await api.post('/api/users', {
+      name: employee.name,
+      email: employee.email,
+      role: 'employee',
+      isActive: true,
+    })
+    const invite = await api.post(`/api/users/${employee.id}/invite`)
+    const token = new URL(invite.data.link).searchParams.get('token')
+
+    const first = await anon.post('/api/auth/set-password', {
+      token,
+      password: 'QaFirst!2026aa',
+      confirmPassword: 'QaFirst!2026aa',
+    })
+    expect(first.status).toBe(200)
+
+    const second = await anon.post('/api/auth/set-password', {
+      token,
+      password: 'QaSecond!2026a',
+      confirmPassword: 'QaSecond!2026a',
+    })
+    expect(second.status, 'a spent token must not work twice').toBeGreaterThanOrEqual(400)
+    expect(second.status).toBeLessThan(500)
+
+    // The first password still works — the second attempt changed nothing.
+    const login = await anon.post('/api/auth/login', {
+      email: employee.email,
+      password: 'QaFirst!2026aa',
+    })
+    expect(login.status).toBe(200)
+  })
+
+  test('mismatched confirmation is refused by the API, not just the form', async ({
+    api,
+    anon,
+  }) => {
+    const employee = await makeEmployee(api)
+    await api.post('/api/users', {
+      name: employee.name,
+      email: employee.email,
+      role: 'employee',
+      isActive: true,
+    })
+    const invite = await api.post(`/api/users/${employee.id}/invite`)
+    const token = new URL(invite.data.link).searchParams.get('token')
+
+    const mismatched = await anon.post('/api/auth/set-password', {
+      token,
+      password: 'QaOne!2026aaaa',
+      confirmPassword: 'QaTwo!2026aaaa',
+    })
+    expect(mismatched.status).toBe(400)
+  })
+})
+
 test.describe('Regression — F8 a dangling reference is the caller’s error', () => {
   test('a contract for a non-existent employee is a 4xx, not a 500', async ({ api }) => {
     const r = await api.post('/api/contracts', {

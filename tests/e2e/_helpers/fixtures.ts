@@ -161,6 +161,49 @@ export async function makeEmployee(
   return r.data
 }
 
+/**
+ * Give an existing employee a working login, the way the product actually does
+ * it: create the account, send an invitation, redeem the link.
+ *
+ * There is no "create with a password" shortcut any more, deliberately — an
+ * account is born without one and the holder sets it from a single-use link.
+ * The invite response carries the full `link` "so an admin can hand it over
+ * when mail is down", which is what makes this testable without an inbox.
+ *
+ * Returns the credentials so the caller can sign in as that person.
+ */
+export async function grantLogin(
+  api: Api,
+  employee: { id: string; name: string; email: string },
+  role = 'employee',
+) {
+  const password = 'QaEmployee!2026'
+
+  const account = await api.post('/api/users', {
+    name: employee.name,
+    email: employee.email,
+    role,
+    isActive: true,
+  })
+  expect(account.status, `create account: ${JSON.stringify(account.raw)}`).toBe(201)
+  expect(account.data.id, 'the login must land on the employee row').toBe(employee.id)
+
+  const invite = await api.post(`/api/users/${employee.id}/invite`)
+  expect(invite.status, `invite: ${JSON.stringify(invite.raw)}`).toBe(200)
+
+  const token = new URL(invite.data.link).searchParams.get('token')
+  expect(token, `no token in ${invite.data.link}`).toBeTruthy()
+
+  const redeemed = await api.post('/api/auth/set-password', {
+    token,
+    password,
+    confirmPassword: password,
+  })
+  expect(redeemed.status, `set password: ${JSON.stringify(redeemed.raw)}`).toBe(200)
+
+  return { email: employee.email, password }
+}
+
 export async function makeContract(
   api: Api,
   employeeId: string,
