@@ -1,10 +1,23 @@
 /**
- * Public surface of the "attendance" module.
+ * Public surface of the "attendance" module.  ·  Owner: Dev B
  *
- * Everything other modules are allowed to use is re-exported HERE and nowhere
- * else. Internals under domain/, application/, infrastructure/ and interface/
- * are private and the ESLint boundary rule will reject imports that reach in.
+ * Exposes aggregates only — never raw attendance records. Payroll has no
+ * business iterating check-ins, and the dashboard should not count rows client
+ * side.
  *
- * Owner: see docs/plans/ — do not add exports for another team's module.
+ * Consumers today: payroll-processing (Dev C), analytics (Dev A).
  */
-export {}
+
+// --- Published port ---------------------------------------------------------
+export type {
+  AttendanceStatsPort,
+  AttendanceSummary,
+} from './application/ports/attendance-stats.port'
+
+// --- Implementation selection ----------------------------------------------
+import { StubAttendanceStats } from './infrastructure/attendance-stats.stub'
+import type { AttendanceStatsPort } from './application/ports/attendance-stats.port'
+
+export function createAttendanceStats(): AttendanceStatsPort {
+  return new StubAttendanceStats()
+}
