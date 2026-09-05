@@ -218,7 +218,7 @@ test.describe('Security — authorization boundaries', () => {
       checkIn: '2025-03-10T09:00:00.000Z',
     })
     expect(theirAttendance.status).toBe(201)
-    const id = theirAttendance.data.attendance.id
+    const id = theirAttendance.data.id
 
     const ctx = await playwright.request.newContext({ baseURL })
     await ctx.post('/api/auth/login', { data: { email, password } })

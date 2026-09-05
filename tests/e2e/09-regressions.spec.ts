@@ -136,7 +136,7 @@ test.describe('Regression — F5 attendance must return its DTO, not the aggrega
       checkIn: '2025-04-07T09:00:00.000Z',
     })
     expect(created.status).toBe(201)
-    await api.post(`/api/attendance/${created.data.attendance.id}/check-out`, {
+    await api.post(`/api/attendance/${created.data.id}/check-out`, {
       checkOut: '2025-04-07T17:00:00.000Z',
     })
 
@@ -151,6 +151,75 @@ test.describe('Regression — F5 attendance must return its DTO, not the aggrega
     expect(item.status, 'StatusBadge calls .replace() on this').toBeTruthy()
     expect(typeof item.workedHours, 'the Worked Hours column reads this').toBe('number')
     expect(item.workedHours).toBe(8)
+  })
+
+  /**
+   * The list was fixed first and the other three endpoints were not, so the
+   * detail screen kept dying the same way — `status.replace()` on undefined.
+   * Every attendance endpoint now returns the same view; this walks all four.
+   */
+  test('EVERY attendance endpoint returns the same shape', async ({ api }) => {
+    const employee = await makeEmployee(api)
+
+    const shapeOf = (data: any) => ({
+      flat: data?.props === undefined && data?.attendance === undefined,
+      hasId: typeof data?.id === 'string',
+      hasStatus: typeof data?.status === 'string',
+      hasEmployeeId: data?.employeeId === employee.id,
+      workedHoursType: data?.workedHours === null ? 'null' : typeof data?.workedHours,
+    })
+
+    // 1. check-in
+    const created = await api.post('/api/attendance', {
+      employeeId: employee.id,
+      checkIn: '2025-04-09T09:00:00.000Z',
+    })
+    expect(created.status).toBe(201)
+    expect(shapeOf(created.data), 'POST /api/attendance').toEqual({
+      flat: true,
+      hasId: true,
+      hasStatus: true,
+      hasEmployeeId: true,
+      workedHoursType: 'null',
+    })
+
+    // 2. check-out
+    const out = await api.post(`/api/attendance/${created.data.id}/check-out`, {
+      checkOut: '2025-04-09T17:00:00.000Z',
+    })
+    expect(out.status).toBe(200)
+    expect(shapeOf(out.data), 'POST .../check-out').toEqual({
+      flat: true,
+      hasId: true,
+      hasStatus: true,
+      hasEmployeeId: true,
+      workedHoursType: 'number',
+    })
+
+    // 3. detail — the one that was crashing the screen
+    const detail = await api.get(`/api/attendance/${created.data.id}`)
+    expect(detail.status).toBe(200)
+    expect(shapeOf(detail.data), 'GET /api/attendance/[id]').toEqual({
+      flat: true,
+      hasId: true,
+      hasStatus: true,
+      hasEmployeeId: true,
+      workedHoursType: 'number',
+    })
+
+    // 4. correction
+    const corrected = await api.patch(`/api/attendance/${created.data.id}`, {
+      breakMinutes: 30,
+    })
+    expect(corrected.status).toBe(200)
+    expect(shapeOf(corrected.data), 'PATCH /api/attendance/[id]').toEqual({
+      flat: true,
+      hasId: true,
+      hasStatus: true,
+      hasEmployeeId: true,
+      workedHoursType: 'number',
+    })
+    expect(corrected.data.manual, 'a correction always flags manual').toBe(true)
   })
 })
 
@@ -213,7 +282,7 @@ test.describe('Regression — F7 a night shift must be recordable', () => {
     })
     expect(created.status).toBe(201)
 
-    const out = await api.post(`/api/attendance/${created.data.attendance.id}/check-out`, {
+    const out = await api.post(`/api/attendance/${created.data.id}/check-out`, {
       checkOut: '2025-04-08T06:00:00.000Z',
     })
     expect(

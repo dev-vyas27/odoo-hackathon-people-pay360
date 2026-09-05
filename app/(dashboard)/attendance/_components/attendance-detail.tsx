@@ -97,8 +97,15 @@ export function AttendanceDetail({ id, canCorrect }: { id: string; canCorrect: b
             await update.mutateAsync({ id, values })
           }}
           fields={[
-            { name: 'checkIn', label: 'Check in', type: 'date' },
-            { name: 'checkOut', label: 'Check out', type: 'date' },
+            /**
+             * `datetime-local`, not `date`. These are timestamps — worked hours
+             * are the difference between them — and a date input cannot carry a
+             * time, so saving a correction through one reset the clock to
+             * midnight and rewrote the hours a payslip prorates against. Shown
+             * in UTC, matching every other time on these screens.
+             */
+            { name: 'checkIn', label: 'Check in (UTC)', type: 'datetime-local' },
+            { name: 'checkOut', label: 'Check out (UTC)', type: 'datetime-local' },
             {
               name: 'breakMinutes',
               label: 'Break (minutes)',

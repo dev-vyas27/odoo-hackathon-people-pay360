@@ -87,3 +87,6 @@ export function createGetAttendanceUseCase(): GetAttendanceUseCase {
 export function createDeleteAttendanceUseCase(): DeleteAttendanceUseCase {
   return new DeleteAttendanceUseCase(attendanceRepository())
 }
+
+/** The one wire shape every attendance route returns. */
+export { toAttendanceView } from './interface/attendance.view'

@@ -34,7 +34,13 @@ export interface AttendanceRecord {
 }
 
 export interface AttendanceRepositoryPort {
-  findById(id: string): Promise<Attendance | null>
+  /**
+   * Returns the RECORD, not the bare aggregate — same reason as `findMany`.
+   * `late` and `overtime` cannot be derived without the employee's schedule,
+   * which only `save` had; the stored status is the honest answer, and a
+   * caller that only wants the aggregate reads `.attendance`.
+   */
+  findById(id: string): Promise<AttendanceRecord | null>
   /** The employee's most recent open (no check-out yet) record, if any. */
   findOpenForEmployee(employeeId: string): Promise<Attendance | null>
   /**

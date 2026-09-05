@@ -47,7 +47,8 @@ export default function NewAttendancePage() {
             options: employees.options,
             placeholder: employees.isLoading ? 'Loading...' : 'Select employee',
           },
-          { name: 'checkIn', label: 'Check in', type: 'date' },
+          // A timestamp, not a date — see attendance-detail.tsx.
+          { name: 'checkIn', label: 'Check in (UTC)', type: 'datetime-local' },
           {
             name: 'breakMinutes',
             label: 'Break (minutes)',

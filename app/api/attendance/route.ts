@@ -5,8 +5,13 @@
 import { requireActor } from '@/lib/auth'
 import { handle, parseQuery, respond } from '@/lib/http'
 import { Ok } from '@/modules/shared'
-import type { AttendanceListItem } from '@/modules/attendance/schemas'
-import { checkInSchema, createCheckInUseCase, createListAttendanceUseCase, listAttendanceQuerySchema } from '@/modules/attendance'
+import {
+  checkInSchema,
+  createCheckInUseCase,
+  createListAttendanceUseCase,
+  listAttendanceQuerySchema,
+  toAttendanceView,
+} from '@/modules/attendance'
 
 export async function GET(request: Request) {
   return handle(async () => {
@@ -30,19 +35,9 @@ export async function GET(request: Request) {
     return respond(
       Ok({
         ...result.value,
-        items: result.value.items.map(({ attendance, status }): AttendanceListItem => {
-          const props = attendance.toProps()
-          return {
-            id: props.id,
-            employeeId: props.employeeId,
-            checkIn: props.checkIn.toISOString(),
-            checkOut: props.checkOut ? props.checkOut.toISOString() : null,
-            breakMinutes: props.breakMinutes,
-            workedHours: attendance.workedHoursOrNull(),
-            status,
-            manual: props.manual,
-          }
-        }),
+        items: result.value.items.map(({ attendance, status }) =>
+          toAttendanceView(attendance, status),
+        ),
       }),
     )
   })
@@ -53,6 +48,7 @@ export async function POST(request: Request) {
     const actor = await requireActor()
     const body = checkInSchema.parse(await request.json())
     const result = await createCheckInUseCase().execute({ actor, ...body })
-    return respond(result, 201)
+    if (!result.ok) return respond(result)
+    return respond(Ok(toAttendanceView(result.value.attendance, result.value.status)), 201)
   })
 }

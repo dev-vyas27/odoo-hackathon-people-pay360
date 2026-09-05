@@ -50,12 +50,13 @@ function toDomain(row: AttendanceRow): Attendance {
 }
 
 export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
-  async findById(id: string): Promise<Attendance | null> {
+  async findById(id: string): Promise<AttendanceRecord | null> {
     const row = await queryOne<AttendanceRow>(
       `SELECT ${SELECTION} FROM "${ATTENDANCES_TABLE}" WHERE id = $1`,
       [id],
     )
-    return row ? toDomain(row) : null
+    if (!row) return null
+    return { attendance: toDomain(row), status: toDomainStatus(row.status, row.is_manual) }
   }
 
   /** The employee's outstanding check-in, if any — drives check-out. */

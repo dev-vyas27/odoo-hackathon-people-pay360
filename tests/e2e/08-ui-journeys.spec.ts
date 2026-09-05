@@ -349,6 +349,95 @@ test.describe('UI — contract inherits the employee’s placement', () => {
   })
 })
 
+test.describe('UI — stored dates reach their inputs', () => {
+  /**
+   * `<input type="date">` accepts only `YYYY-MM-DD`. Every screen holding a
+   * Date in `defaultValues` handed it an object, which the input silently
+   * rendered as blank — so an existing record opened with empty date boxes and
+   * the real value invisible in form state.
+   */
+  test('an attendance record shows its check-in and check-out times', async ({ page, api }) => {
+    const employee = await makeEmployee(api)
+    const created = await api.post('/api/attendance', {
+      employeeId: employee.id,
+      checkIn: '2025-05-06T09:00:00.000Z',
+    })
+    expect(created.status).toBe(201)
+    await api.post(`/api/attendance/${created.data.id}/check-out`, {
+      checkOut: '2025-05-06T17:30:00.000Z',
+    })
+
+    await signIn(page)
+    const errors: string[] = []
+    page.on('pageerror', (e) => errors.push(e.message))
+    page.on('console', (m) => {
+      if (m.type() === 'error') errors.push(m.text())
+    })
+
+    await page.goto(`/attendance/${created.data.id}`)
+    await page.waitForLoadState('networkidle')
+
+    // The crash that started this: StatusBadge calling .replace() on undefined.
+    expect(errors.filter((e) => !e.includes('favicon'))).toEqual([])
+
+    /**
+     * datetime-local, not date: these are timestamps, and a date input cannot
+     * carry a time — saving through one reset the clock to midnight and rewrote
+     * the hours a payslip prorates against.
+     */
+    const checkIn = page.getByLabel('Check in (UTC)')
+    const checkOut = page.getByLabel('Check out (UTC)')
+    await expect(checkIn).toHaveValue('2025-05-06T09:00')
+    await expect(checkOut).toHaveValue('2025-05-06T17:30')
+  })
+
+  test('a contract shows its stored start date', async ({ page, api }) => {
+    const employee = await makeEmployee(api)
+    const contract = await api.post('/api/contracts', {
+      employeeId: employee.id,
+      wage: 41000,
+      start: '2029-02-01',
+      end: '2029-11-30',
+    })
+    expect(contract.status, JSON.stringify(contract.raw)).toBe(201)
+
+    await signIn(page)
+    await page.goto(`/contracts/${contract.data.id}`)
+    await page.waitForLoadState('networkidle')
+
+    await expect(page.getByLabel('Start date')).toHaveValue('2029-02-01')
+    await expect(page.getByLabel('End date')).toHaveValue('2029-11-30')
+  })
+
+  test('correcting a record keeps the time of day', async ({ page, api }) => {
+    const employee = await makeEmployee(api)
+    const created = await api.post('/api/attendance', {
+      employeeId: employee.id,
+      checkIn: '2025-05-07T08:00:00.000Z',
+    })
+    await api.post(`/api/attendance/${created.data.id}/check-out`, {
+      checkOut: '2025-05-07T16:00:00.000Z',
+    })
+
+    await signIn(page)
+    await page.goto(`/attendance/${created.data.id}`)
+    await page.waitForLoadState('networkidle')
+
+    // Change only the break, then save. The timestamps must survive untouched.
+    await page.getByLabel('Break (minutes)').fill('45')
+    await page.getByRole('button', { name: 'Save correction' }).click()
+    await page.waitForTimeout(2000)
+
+    const after = await api.get(`/api/attendance/${created.data.id}`)
+    expect(after.data.breakMinutes).toBe(45)
+    expect(
+      new Date(after.data.checkIn).toISOString(),
+      'the check-in clock must not be reset to midnight',
+    ).toBe('2025-05-07T08:00:00.000Z')
+    expect(new Date(after.data.checkOut).toISOString()).toBe('2025-05-07T16:00:00.000Z')
+  })
+})
+
 test.describe('UI — schedule creation journey', () => {
   test('creates a working schedule through the form', async ({ page }) => {
     await signIn(page)

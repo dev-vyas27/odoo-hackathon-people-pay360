@@ -13,7 +13,7 @@ test.describe('Attendance — check in / check out', () => {
       breakMinutes: 60,
     })
     expect(checkIn.status, JSON.stringify(checkIn.raw)).toBe(201)
-    const id = checkIn.data.attendance.id
+    const id = checkIn.data.id
     expect(id).toBeTruthy()
 
     const checkOut = await api.post(`/api/attendance/${id}/check-out`, {
@@ -49,7 +49,7 @@ test.describe('Attendance — check in / check out', () => {
       employeeId: employee.id,
       checkIn: `${DAY}T09:00:00.000Z`,
     })
-    const id = created.data.attendance.id
+    const id = created.data.id
 
     const first = await api.post(`/api/attendance/${id}/check-out`, {
       checkOut: `${DAY}T17:00:00.000Z`,
@@ -68,7 +68,7 @@ test.describe('Attendance — check in / check out', () => {
       employeeId: employee.id,
       checkIn: `${DAY}T23:00:00.000Z`,
     })
-    const id = created.data.attendance.id
+    const id = created.data.id
 
     const out = await api.post(`/api/attendance/${id}/check-out`, {
       checkOut: `${DAY}T06:00:00.000Z`,
@@ -86,7 +86,7 @@ test.describe('Attendance — check in / check out', () => {
       employeeId: employee.id,
       checkIn: `${DAY}T09:00:00.000Z`,
     })
-    const id = created.data.attendance.id
+    const id = created.data.id
 
     const out = await api.post(`/api/attendance/${id}/check-out`, {
       checkOut: `${DAY}T10:00:00.000Z`,
@@ -128,7 +128,7 @@ test.describe('Attendance — corrections', () => {
       employeeId: employee.id,
       checkIn: `${DAY}T09:00:00.000Z`,
     })
-    const id = created.data.attendance.id
+    const id = created.data.id
 
     const corrected = await api.patch(`/api/attendance/${id}`, {
       checkIn: `${DAY}T08:30:00.000Z`,
@@ -148,7 +148,7 @@ test.describe('Attendance — corrections', () => {
       employeeId: employee.id,
       checkIn: `${DAY}T09:00:00.000Z`,
     })
-    const id = created.data.attendance.id
+    const id = created.data.id
 
     const bad = await api.patch(`/api/attendance/${id}`, {
       checkIn: `${DAY}T09:00:00.000Z`,
@@ -165,7 +165,7 @@ test.describe('Attendance — corrections', () => {
       employeeId: employee.id,
       checkIn: `${DAY}T09:00:00.000Z`,
     })
-    const id = created.data.attendance.id
+    const id = created.data.id
 
     const removed = await api.del(`/api/attendance/${id}`)
     expect([200, 204]).toContain(removed.status)

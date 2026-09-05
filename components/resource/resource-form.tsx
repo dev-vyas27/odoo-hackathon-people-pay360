@@ -59,7 +59,17 @@ export interface SelectOption {
 export interface FieldConfig<T extends FieldValues> {
   name: Path<T>
   label: string
-  type?: 'text' | 'email' | 'password' | 'number' | 'date' | 'time' | 'textarea' | 'select' | 'checkbox'
+  type?:
+    | 'text'
+    | 'email'
+    | 'password'
+    | 'number'
+    | 'date'
+    | 'datetime-local'
+    | 'time'
+    | 'textarea'
+    | 'select'
+    | 'checkbox'
   placeholder?: string
   description?: string
   options?: SelectOption[]
@@ -108,6 +118,43 @@ export interface ResourceFormProps<T extends FieldValues> {
   /** Rendered above the buttons — warnings, computed totals, related records. */
   children?: React.ReactNode
   className?: string
+}
+
+/**
+ * A form value as the DOM input for `type` expects to receive it.
+ *
+ * `<input type="date">` accepts ONLY `YYYY-MM-DD`; hand it a Date object and it
+ * silently renders blank. Every screen holding a Date in `defaultValues` was
+ * therefore showing an empty date box with the real value still in form state —
+ * a contract's start date, an attendance check-in. Bridging here rather than in
+ * each caller means no form has to remember.
+ *
+ * Everything is read and written in UTC, matching the app's formatters
+ * (`timeZone: 'UTC'`) and `worked_on`. Rendering local time would shift the day
+ * across midnight for anyone east or west of Greenwich.
+ */
+function toInputValue(type: FieldConfig<FieldValues>['type'], value: unknown): string {
+  if (value === null || value === undefined || value === '') return ''
+  if (type !== 'date' && type !== 'datetime-local') return String(value)
+
+  const iso = value instanceof Date ? value.toISOString() : String(value)
+  // `YYYY-MM-DD` is 10 characters, `YYYY-MM-DDTHH:mm` is 16.
+  const width = type === 'date' ? 10 : 16
+  return iso.length >= width ? iso.slice(0, width) : ''
+}
+
+/**
+ * The inverse: what the input gives back, anchored to UTC.
+ *
+ * A `datetime-local` value carries no zone, so `new Date('2026-08-26T09:00')`
+ * is parsed as LOCAL time — which would shift a stored check-in by the reader's
+ * offset every time somebody opened and saved the form. Appending `Z` pins it
+ * to the zone the value was displayed in.
+ */
+function fromInputValue(type: FieldConfig<FieldValues>['type'], raw: string): string | undefined {
+  if (raw === '') return undefined
+  if (type === 'datetime-local') return `${raw}:00.000Z`
+  return raw
 }
 
 export function ResourceForm<T extends FieldValues>({
@@ -241,19 +288,22 @@ export function ResourceForm<T extends FieldValues>({
               <Input
                 {...rhf}
                 type={field.type ?? 'text'}
-                value={rhf.value ?? ''}
+                value={toInputValue(field.type, rhf.value)}
                 placeholder={field.placeholder}
                 disabled={field.disabled || isSubmitting}
-                // Keep numbers as numbers so zod does not see "42".
-                onChange={(e) =>
+                onChange={(e) => {
+                  const raw = e.target.value
+                  if (field.type === 'number') {
+                    // Keep numbers as numbers so zod does not see "42".
+                    rhf.onChange(raw === '' ? undefined : Number(raw))
+                    return
+                  }
                   rhf.onChange(
-                    field.type === 'number'
-                      ? e.target.value === ''
-                        ? undefined
-                        : Number(e.target.value)
-                      : e.target.value,
+                    field.type === 'date' || field.type === 'datetime-local'
+                      ? fromInputValue(field.type, raw)
+                      : raw,
                   )
-                }
+                }}
               />
             )}
           </FormControl>

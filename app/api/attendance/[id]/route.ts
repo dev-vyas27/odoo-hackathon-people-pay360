@@ -5,11 +5,13 @@
  */
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'
+import { Ok } from '@/modules/shared'
 import {
   correctAttendanceSchema,
   createCorrectAttendanceUseCase,
   createDeleteAttendanceUseCase,
   createGetAttendanceUseCase,
+  toAttendanceView,
 } from '@/modules/attendance'
 
 interface RouteParams {
@@ -21,7 +23,8 @@ export async function GET(_request: Request, { params }: RouteParams) {
     const { id } = await params
     const actor = await requireActor()
     const result = await createGetAttendanceUseCase().execute({ actor, attendanceId: id })
-    return respond(result)
+    if (!result.ok) return respond(result)
+    return respond(Ok(toAttendanceView(result.value.attendance, result.value.status)))
   })
 }
 
@@ -31,7 +34,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const actor = await requireActor()
     const body = correctAttendanceSchema.parse(await request.json())
     const result = await createCorrectAttendanceUseCase().execute({ actor, attendanceId: id, ...body })
-    return respond(result)
+    if (!result.ok) return respond(result)
+    return respond(Ok(toAttendanceView(result.value.attendance, result.value.status)))
   })
 }
 

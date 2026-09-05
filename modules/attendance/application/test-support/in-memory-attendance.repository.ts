@@ -24,8 +24,8 @@ let nextId = 1
 export class InMemoryAttendanceRepository implements AttendanceRepositoryPort {
   private rows = new Map<string, Row>()
 
-  async findById(id: string): Promise<Attendance | null> {
-    return this.rows.get(id)?.attendance ?? null
+  async findById(id: string): Promise<AttendanceRecord | null> {
+    return this.rows.get(id) ?? null
   }
 
   async findOpenForEmployee(employeeId: string): Promise<Attendance | null> {
