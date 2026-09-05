@@ -20,7 +20,7 @@
 | Rule | Why |
 |---|---|
 | Import other modules **only** from `@/modules/<name>` | ESLint enforces it. |
-| `domain/` and `application/` never import `next/*`, `mongoose`, `react`, `@/lib/*` | Keeps your logic unit-testable with no database. |
+| `domain/` and `application/` never import `next/*`, `pg`, `react`, `@/lib/*` | Keeps your logic unit-testable with no database. |
 | `await params`, `await searchParams`, `await cookies()` | Next 16 removed synchronous access. |
 | Route handlers stay about 5 lines | Parse, call use case, `respond(result)`. |
 | Use `Money` and `Period` from `@/modules/shared` | Never raw floats, never ad-hoc date maths. |
@@ -133,8 +133,8 @@ modules/people/
     archive-employee.use-case.ts     publishes EmployeeArchived
     get-employee-detail.use-case.ts  includes the smart-button counts
   infrastructure/
-    employee.model.ts  department.model.ts  job-position.model.ts
-    mongo-employee.repository.ts     extends BaseMongoRepository
+    employee.table.ts  department.table.ts  job-position.table.ts
+    postgres-employee.repository.ts  extends BaseSqlRepository
     employee-lookup.adapter.ts       implements EmployeeLookupPort
   interface/employee.controller.ts
   index.ts                           exports the ports + adapter factory

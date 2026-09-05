@@ -1,7 +1,7 @@
 /**
  * Repository and UseCase contracts.
  *
- * Application code depends on IRepository, never on Mongoose. Swapping storage
+ * Application code depends on IRepository, never on the SQL driver. Swapping storage
  * (or faking it in a unit test) touches one file in infrastructure/ and nothing
  * else — that is the Dependency Inversion Principle doing actual work rather
  * than being quoted in a README.

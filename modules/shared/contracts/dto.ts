@@ -1,0 +1,230 @@
+/**
+ * Cross-module DTOs — the output of the H0 contract hour.
+ *
+ * A DTO belongs here when it CROSSES a module boundary. Anything used by only
+ * one module stays inside that module. Keeping the crossing shapes in one file
+ * means a change to them is visible to everyone in one diff, and it means each
+ * module's port file can `import type` the shape rather than re-declaring it.
+ *
+ * The file is deliberately split into owner-labelled sections. Each developer
+ * edits only their own section, so three people can extend it in parallel and
+ * git merges the regions independently instead of fighting over one blob.
+ *
+ * Rule: types only. No classes, no runtime logic, no imports from outside
+ * `@/modules/shared` — otherwise this becomes a dependency magnet.
+ */
+import type { Period } from '../domain/period'
+import type { Role } from './permissions'
+
+// ---------------------------------------------------------------------------
+// Common — owner: Dev A
+// ---------------------------------------------------------------------------
+
+/** The authenticated user as every layer above the domain sees it. */
+export interface CurrentUser {
+  userId: string
+  employeeId: string | null
+  role: Role
+  email: string
+  name: string
+}
+
+/** Envelope every list endpoint returns. Mirrors `Paged<T>` from the kernel. */
+export interface ListEnvelope<T> {
+  items: T[]
+  total: number
+  page: number
+  limit: number
+  pages: number
+}
+
+/** A single named quantity for charts and KPI tiles. */
+export interface SeriesPoint {
+  label: string
+  value: number
+}
+
+// ---------------------------------------------------------------------------
+// People / Employment / Attendance — owner: Dev B
+//
+// Consumed by Time Off (Dev A), the dashboard (Dev A) and payroll computation
+// (Dev C). Dev B's port files should import these shapes from here rather than
+// re-declaring them, so a field rename is one edit instead of four.
+// ---------------------------------------------------------------------------
+
+export const EMPLOYEE_TYPES = ['full_time', 'part_time', 'contract', 'intern'] as const
+export type EmployeeType = (typeof EMPLOYEE_TYPES)[number]
+
+export interface EmployeeSummary {
+  id: string
+  name: string
+  email: string
+  departmentId: string | null
+  departmentName: string | null
+  jobPositionName: string | null
+  employeeType: EmployeeType
+  managerId: string | null
+  workingScheduleId: string | null
+  /** Dev C needs this for the missing-bank-details pre-finalisation warning. */
+  bankAccount: string | null
+  isActive: boolean
+}
+
+export interface EmployeeLookupPort {
+  findById(employeeId: string): Promise<EmployeeSummary | null>
+  findManyByIds(ids: string[]): Promise<EmployeeSummary[]>
+  findEligible(filter: {
+    departmentId?: string
+    employeeType?: string
+    activeOn: Date
+  }): Promise<EmployeeSummary[]>
+}
+
+export interface EmployeeStatsPort {
+  headcount(filter?: { departmentId?: string; employeeType?: string }): Promise<number>
+  headcountByDepartment(): Promise<
+    Array<{ departmentId: string; departmentName: string; count: number }>
+  >
+  headcountByEmployeeType(): Promise<Array<{ employeeType: EmployeeType; count: number }>>
+  /** Employees with no bank account on file — an operational alert on the dashboard. */
+  missingBankDetails(): Promise<Array<{ employeeId: string; name: string }>>
+}
+
+export interface ContractSnapshot {
+  id: string
+  employeeId: string
+  /** Major units. Convert with `Money.of()` at the domain boundary. */
+  wage: number
+  salaryStructureId: string | null
+  workingScheduleId: string | null
+  departmentId: string | null
+  jobPositionName: string | null
+  start: Date
+  /** null = open ended. */
+  end: Date | null
+}
+
+export interface ContractQueryPort {
+  /** The contract that applies to a PAYROLL PERIOD, not "the current one". */
+  findApplicableContract(employeeId: string, period: Period): Promise<ContractSnapshot | null>
+  findByEmployee(employeeId: string): Promise<ContractSnapshot[]>
+}
+
+export interface ScheduleSnapshot {
+  id: string
+  name: string
+  weeklyHours: number
+  days: Array<{ day: 0 | 1 | 2 | 3 | 4 | 5 | 6; start: string; end: string; breakMinutes: number }>
+}
+
+export interface ScheduleQueryPort {
+  findById(id: string): Promise<ScheduleSnapshot | null>
+  expectedHours(scheduleId: string, period: Period): Promise<number>
+}
+
+export interface AttendanceSummary {
+  present: number
+  late: number
+  absent: number
+  overtimeHours: number
+  missingCheckouts: number
+  manualEdits: number
+}
+
+export interface AttendanceStatsPort {
+  workedHours(employeeId: string, period: Period): Promise<number>
+  workedDays(employeeId: string, period: Period): Promise<number>
+  summary(period: Period, departmentId?: string): Promise<AttendanceSummary>
+}
+
+// ---------------------------------------------------------------------------
+// Time Off — owner: Dev A
+// ---------------------------------------------------------------------------
+
+export const LEAVE_UNITS = ['day', 'hour'] as const
+export type LeaveUnit = (typeof LEAVE_UNITS)[number]
+
+export const LEAVE_STATUSES = ['draft', 'to_approve', 'approved', 'refused'] as const
+export type LeaveStatus = (typeof LEAVE_STATUSES)[number]
+
+export interface LeaveBalanceView {
+  timeOffTypeId: string
+  timeOffTypeName: string
+  unit: LeaveUnit
+  allocated: number
+  taken: number
+  pending: number
+  remaining: number
+}
+
+export interface LeaveStatsPort {
+  /** Duration approved inside the period, optionally narrowed to departments. */
+  approvedInPeriod(period: Period, departmentIds?: string[]): Promise<number>
+  pendingCount(): Promise<number>
+  balancesFor(employeeId: string, on: Date): Promise<LeaveBalanceView[]>
+}
+
+// ---------------------------------------------------------------------------
+// Payroll — owner: Dev C
+//
+// Consumed by Dev A: `PayslipQueryPort` for PDF and bulk email,
+// `PayrollStatsPort` for the dashboard.
+// ---------------------------------------------------------------------------
+
+export const SALARY_CATEGORIES = ['basic', 'allowance', 'gross', 'deduction', 'net'] as const
+export type SalaryCategory = (typeof SALARY_CATEGORIES)[number]
+
+export const PAYSLIP_STATUSES = ['draft', 'computed', 'validated', 'paid', 'cancelled'] as const
+export type PayslipStatus = (typeof PAYSLIP_STATUSES)[number]
+
+export const PAYRUN_STATUSES = ['draft', 'computed', 'validated', 'paid', 'cancelled'] as const
+export type PayrunStatus = (typeof PAYRUN_STATUSES)[number]
+
+export interface PayslipLineView {
+  code: string
+  name: string
+  category: SalaryCategory
+  sequence: number
+  amount: number
+}
+
+export interface PayslipView {
+  id: string
+  employeeId: string
+  employeeName: string
+  /** Needed by bulk email. Null when the employee record has no address. */
+  employeeEmail?: string | null
+  payrunId: string
+  payrunName: string
+  periodStart: Date
+  periodEnd: Date
+  structureName: string
+  workedDays: number
+  lines: PayslipLineView[]
+  basic: number
+  gross: number
+  deductions: number
+  net: number
+  status: PayslipStatus
+}
+
+export interface PayslipQueryPort {
+  findById(payslipId: string): Promise<PayslipView | null>
+  findByPayrun(payrunId: string): Promise<PayslipView[]>
+}
+
+export interface PayrollTotals {
+  totalNet: number
+  payslipCount: number
+  averageSalary: number
+}
+
+export interface PayrollStatsPort {
+  totals(period: Period, departmentId?: string): Promise<PayrollTotals>
+  costByDepartment(period: Period): Promise<Array<{ departmentId: string; total: number }>>
+  monthlyTrend(months: number): Promise<Array<{ month: string; total: number }>>
+  /** Same employee paid twice inside one period — an operational alert. */
+  duplicatePayslips(
+    period: Period,
+  ): Promise<Array<{ employeeId: string; employeeName: string; count: number }>>
+}

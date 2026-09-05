@@ -1,7 +1,7 @@
 /**
  * Actor — the authenticated caller, as the domain sees it.
  *
- * Deliberately NOT a Next.js session, a JWT, or a Mongoose user document. Use
+ * Deliberately NOT a Next.js session, a JWT, or a database row. Use
  * cases receive this plain object, so they can be tested with a literal and
  * remain ignorant of how authentication happened.
  */

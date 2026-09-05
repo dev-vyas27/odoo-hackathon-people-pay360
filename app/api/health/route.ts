@@ -2,10 +2,12 @@
  * Liveness + database reachability.
  *
  * First thing to hit when something looks broken: it separates "the app is
- * down" from "Mongo is unreachable", which are very different 3am problems.
+ * down" from "Postgres is unreachable", which are very different 3am problems.
  */
-import { connectDB } from '@/lib/db'
+import { ping } from '@/lib/db'
 import { handle } from '@/lib/http'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   return handle(async () => {
@@ -13,8 +15,7 @@ export async function GET() {
     let detail: string | undefined
 
     try {
-      const conn = await connectDB()
-      database = conn.connection.readyState === 1 ? 'up' : 'down'
+      database = (await ping()) ? 'up' : 'down'
     } catch (reason) {
       detail = reason instanceof Error ? reason.message : String(reason)
     }

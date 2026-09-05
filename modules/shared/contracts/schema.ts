@@ -12,14 +12,19 @@
  */
 import { z } from 'zod'
 
-/** A Mongo ObjectId as it arrives from JSON. */
-export const objectId = z
-  .string()
-  .regex(/^[0-9a-fA-F]{24}$/, 'Not a valid id')
+/**
+ * Every primary key in this schema is a uuid (`gen_random_uuid()`).
+ *
+ * Validating the format at the edge matters: passing a malformed string into
+ * a `uuid` column raises
+ * `22P02 invalid input syntax`, which surfaces as a 500. Catching it here turns
+ * that into a 400 with a field-level message.
+ */
+export const uuid = z.string().uuid('Not a valid id')
 
 /** Optional reference: empty select values arrive as '' and must become undefined. */
-export const optionalObjectId = z
-  .union([objectId, z.literal('')])
+export const optionalUuid = z
+  .union([uuid, z.literal('')])
   .optional()
   .transform((v) => (v === '' ? undefined : v))
 
