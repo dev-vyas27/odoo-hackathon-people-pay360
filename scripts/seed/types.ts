@@ -34,9 +34,12 @@ export interface SeedPart {
   /** Shown in the run summary. */
   name: string
   /**
-   * Tables this part owns, in dependency order. `--reset` truncates exactly
-   * these, so one part can be re-seeded from scratch without touching anybody
-   * else's data.
+   * Tables this part owns, PARENTS FIRST — the order you would create them in.
+   *
+   * `--reset` empties them in reverse, which is the order you must delete them
+   * in: a row cannot go while another still references it. Listing them
+   * child-first looks harmless and fails with a RESTRICT violation the first
+   * time somebody runs `--reset` on a populated database.
    */
   tables: string[]
   run(ctx: SeedContext): Promise<void>

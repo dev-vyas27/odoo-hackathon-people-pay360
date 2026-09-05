@@ -16,7 +16,8 @@ const day = (year: number, month: number, date: number) =>
 
 export const timeoffSeed: SeedPart = {
   name: 'timeoff',
-  tables: ['timeoff_requests', 'timeoff_allocations', 'timeoff_types'],
+  // Parents first; --reset empties them in reverse. See SeedPart.tables.
+  tables: ['timeoff_types', 'timeoff_allocations', 'timeoff_requests'],
   async run(ctx) {
     const year = new Date().getUTCFullYear()
 

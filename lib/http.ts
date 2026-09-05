@@ -43,7 +43,7 @@ export function respond<T>(result: Result<T>, successStatus = 200): Response {
  */
 export function handle(fn: () => Promise<Response>): Promise<Response> {
   return fn().catch((reason) => {
-    if (reason instanceof DomainError) return errorResponse(reason)
+    if (DomainError.is(reason)) return errorResponse(reason)
 
     if (reason instanceof Error && reason.message === 'UNAUTHENTICATED') {
       return Response.json(

@@ -32,7 +32,13 @@ export interface ConfirmDialogProps {
   cancelLabel?: string
   /** `true` paints the confirm button destructive and adds a warning glyph. */
   destructive?: boolean
-  onConfirm: () => Promise<void> | void
+  /**
+   * Awaited before the dialog closes. Typed loosely on purpose: callers hand it
+   * a TanStack `mutateAsync`, which resolves with the mutation's result rather
+   * than void, and forcing every call site to wrap that in `() => { ...; }` to
+   * discard the value would be noise.
+   */
+  onConfirm: () => unknown | Promise<unknown>
   trigger?: React.ReactNode
   /** Controlled mode — omit `trigger` and drive it yourself. */
   open?: boolean
