@@ -18,4 +18,13 @@ export interface AccountRepositoryPort {
   /** Create the employee row AND its credentials in one go. */
   create(props: Omit<AccountProps, 'id'>): Promise<Account>
   update(id: string, props: Partial<Omit<AccountProps, 'id'>>): Promise<Account | null>
+  /**
+   * Clear `password_hash`, leaving the employee record intact.
+   *
+   * Its own method because `update` COALESCEs every column — passing
+   * `passwordHash: null` there means "leave it alone", so there is no way to
+   * express "set it to NULL" through that path. Rather than complicate the
+   * common case with sentinels, revoking gets one honest statement.
+   */
+  revokeLogin(id: string): Promise<Account | null>
 }

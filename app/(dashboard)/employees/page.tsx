@@ -8,9 +8,8 @@
  * to, which matters when someone pastes a filtered list into the team chat.
  */
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'
-import { LuLayoutGrid, LuList, LuPlus } from 'react-icons/lu'
+import { LuLayoutGrid, LuList } from 'react-icons/lu'
 import {
   EMPLOYEE_TYPE_LABELS,
   type DepartmentListItem,
@@ -22,7 +21,6 @@ import { ResourceTable } from '@/components/resource/resource-table'
 import { StatusBadge } from '@/components/resource/status-badge'
 import { FilterBar, useFilterParams } from '@/components/resource/filter-bar'
 import { Pagination } from '@/components/resource/pagination'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { EMPLOYEE_TYPE_OPTIONS, ACTIVE_OPTIONS } from '../_components/options'
 import { EmployeeKanban } from './_components/employee-kanban'
@@ -80,29 +78,28 @@ export default function EmployeesPage() {
       <PageHeader
         title="Employees"
         description="The central record. Contracts, attendance and time off all hang off an employee."
+        /*
+         * No "New employee" button here. Since migration 0010 an account IS an
+         * employee, so a person is created once, in User administration —
+         * leaving the password blank there produces exactly the HR-record-
+         * without-a-login this button used to make. Two creation paths writing
+         * one table is how two people end up sharing an email.
+         */
         actions={
-          <>
-            <div className="flex rounded-md border border-border p-0.5">
-              <ViewToggle
-                active={view === 'list'}
-                onClick={() => setView('list')}
-                icon={<LuList className="size-4" aria-hidden />}
-                label="List view"
-              />
-              <ViewToggle
-                active={view === 'kanban'}
-                onClick={() => setView('kanban')}
-                icon={<LuLayoutGrid className="size-4" aria-hidden />}
-                label="Kanban view"
-              />
-            </div>
-            <Button asChild>
-              <Link href="/employees/new">
-                <LuPlus aria-hidden />
-                New employee
-              </Link>
-            </Button>
-          </>
+          <div className="flex rounded-md border border-border p-0.5">
+            <ViewToggle
+              active={view === 'list'}
+              onClick={() => setView('list')}
+              icon={<LuList className="size-4" aria-hidden />}
+              label="List view"
+            />
+            <ViewToggle
+              active={view === 'kanban'}
+              onClick={() => setView('kanban')}
+              icon={<LuLayoutGrid className="size-4" aria-hidden />}
+              label="Kanban view"
+            />
+          </div>
         }
       />
 
@@ -127,11 +124,6 @@ export default function EmployeesPage() {
           isLoading={isLoading}
           onRowClick={(row) => router.push(`/employees/${row.id}`)}
           emptyMessage="No employees match these filters"
-          emptyAction={
-            <Button variant="outline" asChild>
-              <Link href="/employees/new">Add the first one</Link>
-            </Button>
-          }
         />
       )}
 

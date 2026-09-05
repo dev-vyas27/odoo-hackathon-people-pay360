@@ -23,23 +23,18 @@ import {
   type UseCase,
 } from '@/modules/shared'
 import type { AccountRepositoryPort } from './ports/account-repository.port'
-import type { PasswordHasherPort } from './ports/password-hasher.port'
 import { normalizeEmail, type AccountView } from '../domain/account'
 
 export interface CreateAccountInput {
   actor: Actor
   email: string
   name: string
-  password: string
   role: Role
   isActive?: boolean
 }
 
 export class CreateAccountUseCase implements UseCase<CreateAccountInput, AccountView> {
-  constructor(
-    private readonly accounts: AccountRepositoryPort,
-    private readonly hasher: PasswordHasherPort,
-  ) {}
+  constructor(private readonly accounts: AccountRepositoryPort) {}
 
   async execute(input: CreateAccountInput): Promise<Result<AccountView>> {
     const allowed = authorize(input.actor, 'user', 'create')
@@ -47,9 +42,16 @@ export class CreateAccountUseCase implements UseCase<CreateAccountInput, Account
 
     const email = normalizeEmail(input.email)
     const existing = await this.accounts.findByEmail(email)
-    const passwordHash = await this.hasher.hash(input.password)
+    /**
+     * Always NULL. Nobody but the account holder chooses their password, so the
+     * account is born without one and an invitation link is emailed — see
+     * InviteAccountUseCase.
+     */
+    const passwordHash = null
 
     if (existing) {
+      // Somebody who can already sign in does not need creating again. The
+      // administration screen has "Send a set-password link" for a reset.
       if (existing.hasLogin) {
         return Err(
           DomainError.conflict(
@@ -63,7 +65,6 @@ export class CreateAccountUseCase implements UseCase<CreateAccountInput, Account
       const granted = await this.accounts.update(existing.id, {
         name: input.name.trim(),
         role: input.role,
-        passwordHash,
         isActive: input.isActive ?? true,
       })
       if (!granted) {

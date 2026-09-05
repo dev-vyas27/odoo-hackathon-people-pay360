@@ -5,6 +5,10 @@
  * else. Internals under domain/, application/, infrastructure/ and interface/
  * are private and the ESLint boundary rule will reject imports that reach in.
  *
- * Owner: see docs/plans/ — do not add exports for another team's module.
+ * Owner: Dev A — see docs/plans/DEV-A-platform.md.
+ *
+ * Delivery owns outbound communication: email now, payslip PDFs next. Callers
+ * never import this for sending — they resolve `MailerPort` from the container,
+ * which is what keeps `nodemailer` in exactly one file.
  */
-export {}
+export { registerDelivery } from './register'

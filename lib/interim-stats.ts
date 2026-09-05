@@ -15,13 +15,13 @@
  * these is switched off individually the moment its real owner registers.
  * Deleting this file is then the only cleanup.
  */
-import { query } from '@/lib/db'
+import { query } from "@/lib/db";
+import { NOT_AN_ADMIN } from "@/modules/people";
 /**
  * The one rule this file borrows rather than restates: an administrator is an
  * operator, not a member of staff. The employee list applies the same constant,
  * so a headcount here can never disagree with the list a judge is looking at.
  */
-import { NOT_AN_ADMIN } from '@/modules/people'
 import {
   PORT_KEYS,
   container,
@@ -34,10 +34,10 @@ import {
   type EmployeeType,
   type PayrollStatsPort,
   type Period,
-} from '@/modules/shared'
+} from "@/modules/shared";
 
 /** `date` columns bind cleanly from 'YYYY-MM-DD'. */
-const d = (value: Date) => value.toISOString().slice(0, 10)
+const d = (value: Date) => value.toISOString().slice(0, 10);
 
 // ── people ───────────────────────────────────────────────────────────────────
 
@@ -51,8 +51,8 @@ const employeeStats: EmployeeStatsPort = {
           AND ($1::uuid IS NULL OR department_id = $1)
           AND ($2::text IS NULL OR employee_type = $2)`,
       [filter?.departmentId ?? null, filter?.employeeType ?? null],
-    )
-    return rows[0]?.count ?? 0
+    );
+    return rows[0]?.count ?? 0;
   },
 
   async headcountByDepartment(filter) {
@@ -61,7 +61,11 @@ const employeeStats: EmployeeStatsPort = {
      * in it still belongs on the breakdown and still belongs in the filter
      * dropdown. Joining the other way would make it vanish.
      */
-    const rows = await query<{ department_id: string; department_name: string; count: number }>(
+    const rows = await query<{
+      department_id: string;
+      department_name: string;
+      count: number;
+    }>(
       `SELECT d.id            AS department_id,
               d.name          AS department_name,
               COUNT(e.id)::int AS count
@@ -75,12 +79,12 @@ const employeeStats: EmployeeStatsPort = {
         GROUP BY d.id, d.name
         ORDER BY d.name ASC`,
       [filter?.employeeType ?? null],
-    )
+    );
     return rows.map((r) => ({
       departmentId: r.department_id,
       departmentName: r.department_name,
       count: r.count,
-    }))
+    }));
   },
 
   async headcountByEmployeeType() {
@@ -91,8 +95,8 @@ const employeeStats: EmployeeStatsPort = {
           AND ${NOT_AN_ADMIN}
         GROUP BY employee_type
         ORDER BY count DESC`,
-    )
-    return rows.map((r) => ({ employeeType: r.employee_type, count: r.count }))
+    );
+    return rows.map((r) => ({ employeeType: r.employee_type, count: r.count }));
   },
 
   async missingBankDetails() {
@@ -112,10 +116,10 @@ const employeeStats: EmployeeStatsPort = {
           AND ${NOT_AN_ADMIN}
           AND (bank_account IS NULL OR btrim(bank_account) = '')
         ORDER BY name ASC`,
-    )
-    return rows.map((r) => ({ employeeId: r.id, name: r.name }))
+    );
+    return rows.map((r) => ({ employeeId: r.id, name: r.name }));
   },
-}
+};
 
 // ── attendance ───────────────────────────────────────────────────────────────
 
@@ -126,8 +130,8 @@ const attendanceStats: AttendanceStatsPort = {
          FROM attendances
         WHERE employee_id = $1 AND worked_on BETWEEN $2::date AND $3::date`,
       [employeeId, d(period.start), d(period.end)],
-    )
-    return Number(rows[0]?.total ?? 0)
+    );
+    return Number(rows[0]?.total ?? 0);
   },
 
   async workedDays(employeeId, period) {
@@ -138,23 +142,27 @@ const attendanceStats: AttendanceStatsPort = {
           AND worked_on BETWEEN $2::date AND $3::date
           AND status <> 'absent'`,
       [employeeId, d(period.start), d(period.end)],
-    )
-    return rows[0]?.count ?? 0
+    );
+    return rows[0]?.count ?? 0;
   },
 
-  async summary(period, departmentId, employeeType): Promise<AttendanceSummary> {
+  async summary(
+    period,
+    departmentId,
+    employeeType,
+  ): Promise<AttendanceSummary> {
     /**
      * One pass with FILTER clauses rather than five COUNT queries. Postgres
      * evaluates each aggregate over the same scan, so this is one index range
      * scan instead of five.
      */
     const rows = await query<{
-      present: number
-      late: number
-      absent: number
-      overtime_hours: number
-      missing_checkouts: number
-      manual_edits: number
+      present: number;
+      late: number;
+      absent: number;
+      overtime_hours: number;
+      missing_checkouts: number;
+      manual_edits: number;
     }>(
       `SELECT COUNT(*) FILTER (WHERE a.status IN ('present', 'overtime'))::int AS present,
               COUNT(*) FILTER (WHERE a.status = 'late')::int                   AS late,
@@ -168,10 +176,15 @@ const attendanceStats: AttendanceStatsPort = {
         WHERE a.worked_on BETWEEN $1::date AND $2::date
           AND ($3::uuid IS NULL OR e.department_id = $3)
           AND ($4::text IS NULL OR e.employee_type = $4)`,
-      [d(period.start), d(period.end), departmentId ?? null, employeeType ?? null],
-    )
+      [
+        d(period.start),
+        d(period.end),
+        departmentId ?? null,
+        employeeType ?? null,
+      ],
+    );
 
-    const row = rows[0]
+    const row = rows[0];
     return {
       present: row?.present ?? 0,
       late: row?.late ?? 0,
@@ -179,14 +192,17 @@ const attendanceStats: AttendanceStatsPort = {
       overtimeHours: Number(row?.overtime_hours ?? 0),
       missingCheckouts: row?.missing_checkouts ?? 0,
       manualEdits: row?.manual_edits ?? 0,
-    }
+    };
   },
-}
+};
 
 // ── employment ───────────────────────────────────────────────────────────────
 
 const contractAlerts: ContractAlertsPort = {
-  async attentionItems(period: Period, withinDays: number): Promise<ContractAlert[]> {
+  async attentionItems(
+    period: Period,
+    withinDays: number,
+  ): Promise<ContractAlert[]> {
     /**
      * Two problems, one query.
      *
@@ -196,11 +212,11 @@ const contractAlerts: ContractAlertsPort = {
      * all — payroll cannot compute for them now.
      */
     const rows = await query<{
-      contract_id: string | null
-      employee_id: string
-      employee_name: string
-      ends_on: Date | null
-      kind: ContractAlert['kind']
+      contract_id: string | null;
+      employee_id: string;
+      employee_name: string;
+      ends_on: Date | null;
+      kind: ContractAlert["kind"];
     }>(
       `SELECT c.id AS contract_id, e.id AS employee_id, e.name AS employee_name,
               c.ends_on,
@@ -226,23 +242,23 @@ const contractAlerts: ContractAlertsPort = {
           )
         ORDER BY employee_name ASC`,
       [d(period.start), d(period.end), String(withinDays)],
-    )
+    );
 
     return rows.map((r) => ({
-      contractId: r.contract_id ?? '',
+      contractId: r.contract_id ?? "",
       employeeId: r.employee_id,
       employeeName: r.employee_name,
       kind: r.kind,
       endsOn: r.ends_on,
       issue:
-        r.kind === 'missing'
-          ? 'No active contract covers this period'
-          : r.kind === 'expired'
-            ? 'Contract expired during this period'
-            : `Contract ends ${r.ends_on ? d(r.ends_on) : 'soon'}`,
-    }))
+        r.kind === "missing"
+          ? "No active contract covers this period"
+          : r.kind === "expired"
+            ? "Contract expired during this period"
+            : `Contract ends ${r.ends_on ? d(r.ends_on) : "soon"}`,
+    }));
   },
-}
+};
 
 // ── payroll ──────────────────────────────────────────────────────────────────
 
@@ -261,16 +277,24 @@ const payrollStats: PayrollStatsPort = {
           AND p.period_start >= $1::date AND p.period_end <= $2::date
           AND ($3::uuid IS NULL OR e.department_id = $3)
           AND ($4::text IS NULL OR e.employee_type = $4)`,
-      [d(period.start), d(period.end), departmentId ?? null, employeeType ?? null],
-    )
+      [
+        d(period.start),
+        d(period.end),
+        departmentId ?? null,
+        employeeType ?? null,
+      ],
+    );
 
-    const totalNet = Number(rows[0]?.total ?? 0)
-    const payslipCount = rows[0]?.count ?? 0
+    const totalNet = Number(rows[0]?.total ?? 0);
+    const payslipCount = rows[0]?.count ?? 0;
     return {
       totalNet,
       payslipCount,
-      averageSalary: payslipCount === 0 ? 0 : Math.round((totalNet / payslipCount) * 100) / 100,
-    }
+      averageSalary:
+        payslipCount === 0
+          ? 0
+          : Math.round((totalNet / payslipCount) * 100) / 100,
+    };
   },
 
   async costByDepartment(period, employeeType) {
@@ -283,10 +307,13 @@ const payrollStats: PayrollStatsPort = {
           AND ($3::text IS NULL OR e.employee_type = $3)
         GROUP BY e.department_id`,
       [d(period.start), d(period.end), employeeType ?? null],
-    )
+    );
     return rows
       .filter((r) => r.department_id !== null)
-      .map((r) => ({ departmentId: r.department_id as string, total: Number(r.total) }))
+      .map((r) => ({
+        departmentId: r.department_id as string,
+        total: Number(r.total),
+      }));
   },
 
   async monthlyTrend(months) {
@@ -301,8 +328,8 @@ const payrollStats: PayrollStatsPort = {
         GROUP BY 1
         ORDER BY 1 ASC`,
       [String(months)],
-    )
-    return rows.map((r) => ({ month: r.month, total: Number(r.total) }))
+    );
+    return rows.map((r) => ({ month: r.month, total: Number(r.total) }));
   },
 
   async duplicatePayslips(period) {
@@ -312,7 +339,11 @@ const payrollStats: PayrollStatsPort = {
      * for the same period across two different payruns, which is a real
      * double-payment and exactly what spec B9's alert is for.
      */
-    const rows = await query<{ employee_id: string; employee_name: string; count: number }>(
+    const rows = await query<{
+      employee_id: string;
+      employee_name: string;
+      count: number;
+    }>(
       `SELECT p.employee_id, e.name AS employee_name, COUNT(*)::int AS count
          FROM payslips p
          JOIN employees e ON e.id = p.employee_id
@@ -322,36 +353,36 @@ const payrollStats: PayrollStatsPort = {
        HAVING COUNT(*) > 1
         ORDER BY count DESC`,
       [d(period.start), d(period.end)],
-    )
+    );
     return rows.map((r) => ({
       employeeId: r.employee_id,
       employeeName: r.employee_name,
       count: r.count,
-    }))
+    }));
   },
-}
+};
 
 // ── registration ─────────────────────────────────────────────────────────────
 
 const INTERIM: Array<[string, () => unknown, string]> = [
-  [PORT_KEYS.employeeStats, () => employeeStats, 'modules/people'],
-  [PORT_KEYS.attendanceStats, () => attendanceStats, 'modules/attendance'],
-  [PORT_KEYS.contractAlerts, () => contractAlerts, 'modules/employment'],
-  [PORT_KEYS.payrollStats, () => payrollStats, 'modules/payroll-processing'],
-]
+  [PORT_KEYS.employeeStats, () => employeeStats, "modules/people"],
+  [PORT_KEYS.attendanceStats, () => attendanceStats, "modules/attendance"],
+  [PORT_KEYS.contractAlerts, () => contractAlerts, "modules/employment"],
+  [PORT_KEYS.payrollStats, () => payrollStats, "modules/payroll-processing"],
+];
 
 /** Fills any dashboard port nobody has claimed. Called last, so real wins. */
 export function registerInterimStats(): void {
-  const unclaimed: string[] = []
+  const unclaimed: string[] = [];
 
   for (const [key, factory, owner] of INTERIM) {
-    if (!container().ports.has(key as never)) unclaimed.push(owner)
-    providePort(key as never, factory)
+    if (!container().ports.has(key as never)) unclaimed.push(owner);
+    providePort(key as never, factory);
   }
 
   if (unclaimed.length > 0) {
     console.warn(
-      `[bootstrap] dashboard is using INTERIM adapters for: ${unclaimed.join(', ')} — delete lib/interim-stats.ts as each registers for real`,
-    )
+      `[bootstrap] dashboard is using INTERIM adapters for: ${unclaimed.join(", ")} — delete lib/interim-stats.ts as each registers for real`,
+    );
   }
 }

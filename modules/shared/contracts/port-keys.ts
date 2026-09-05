@@ -27,6 +27,8 @@ export const PORT_KEYS = {
   attendanceStats: 'attendance.attendance-stats',
   /** Dev A — modules/timeoff */
   leaveStats: 'timeoff.leave-stats',
+  /** Dev A — modules/delivery */
+  mailer: 'delivery.mailer',
   /** Dev C — modules/payroll-processing */
   payslipQuery: 'payroll-processing.payslip-query',
   payrollStats: 'payroll-processing.payroll-stats',

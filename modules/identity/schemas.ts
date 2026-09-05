@@ -20,6 +20,31 @@
 export {
   loginSchema,
   createAccountSchema,
+  updateAccountSchema,
+  setPasswordSchema,
+  strongPassword,
   type LoginValues,
   type CreateAccountValues,
+  type UpdateAccountValues,
+  type SetPasswordValues,
 } from './interface/auth.schema'
+
+/**
+ * `AccountView` is the safe projection the API returns. It lives in `domain/`,
+ * which imports nothing but `@/modules/shared`, so a table component can be
+ * typed against the exact shape the endpoint sends without pulling in the
+ * server barrel.
+ */
+export type { AccountView } from './domain/account'
+
+/**
+ * The password policy, so the form can show a live checklist driven by the same
+ * rules the validator enforces. Pure functions over a string — no database, no
+ * server dependency.
+ */
+export {
+  PASSWORD_RULES,
+  PASSWORD_MIN_LENGTH,
+  checkPassword,
+  isPasswordAcceptable,
+} from './domain/password-policy'

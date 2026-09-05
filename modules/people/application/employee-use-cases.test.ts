@@ -3,7 +3,6 @@ import type { Actor, DomainEvent, IEventBus, PageQuery, Paged } from '@/modules/
 import { InMemoryEventBus, unwrap } from '@/modules/shared'
 import { Employee } from '../domain/employee'
 import type { EmployeeRepositoryPort } from './ports/employee-repository.port'
-import { CreateEmployeeUseCase } from './create-employee.use-case'
 import { UpdateEmployeeUseCase } from './update-employee.use-case'
 import { ListEmployeesUseCase } from './list-employees.use-case'
 import { ArchiveEmployeeUseCase } from './archive-employee.use-case'
@@ -94,34 +93,13 @@ const employeeActor = (employeeId: string): Actor => ({
 
 const validInput = { name: 'Grace Hopper', email: 'grace@example.com', employeeType: 'full_time' as const }
 
-describe('CreateEmployeeUseCase', () => {
-  it('creates an employee for an authorized actor', async () => {
-    const repo = new FakeEmployeeRepository()
-    const result = await new CreateEmployeeUseCase(repo).execute({ actor: hrActor, ...validInput })
-    expect(result.ok).toBe(true)
-    if (!result.ok) return
-    expect(result.value.id).not.toBe('')
-    expect(result.value.email).toBe('grace@example.com')
-  })
-
-  it('rejects a duplicate email', async () => {
-    const repo = new FakeEmployeeRepository()
-    await new CreateEmployeeUseCase(repo).execute({ actor: hrActor, ...validInput })
-    const result = await new CreateEmployeeUseCase(repo).execute({ actor: hrActor, ...validInput })
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.error.code).toBe('EMPLOYEE_EMAIL_TAKEN')
-  })
-
-  it('rejects an employee-role actor (no create permission)', async () => {
-    const repo = new FakeEmployeeRepository()
-    const result = await new CreateEmployeeUseCase(repo).execute({ actor: employeeActor('x'), ...validInput })
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.error.kind).toBe('forbidden')
-  })
-})
-
+/**
+ * There is no CreateEmployeeUseCase any more. Since an account IS an employee
+ * (migration 0010), creating a person happens once, in
+ * `identity`'s CreateAccountUseCase — leaving the password blank produces the
+ * HR-record-without-a-login case this module used to own. Two creation paths
+ * writing the same table was the thing worth removing.
+ */
 describe('UpdateEmployeeUseCase', () => {
   it('updates fields and prevents email collisions with another employee', async () => {
     const repo = new FakeEmployeeRepository()
