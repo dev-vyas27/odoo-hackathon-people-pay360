@@ -5,6 +5,21 @@
  * else. Internals under domain/, application/, infrastructure/ and interface/
  * are private and the ESLint boundary rule will reject imports that reach in.
  *
- * Owner: see docs/plans/ — do not add exports for another team's module.
+ * CLIENT-SAFE: pure document vocabulary only. Anything that touches pdfkit, the
+ * AWS SDK or a request lives in `@/modules/delivery/server`.
  */
-export {}
+export {
+  buildPayslipDocument,
+  fileNameFor,
+  formatDay,
+  maskAccount,
+  storageKeyFor,
+  type CompanyIdentity,
+  type DocumentField,
+  type DocumentLine,
+  type DocumentTotals,
+  type PayslipDocument,
+  type PayslipDocumentInput,
+} from './domain/payslip-document'
+
+export { amountInWords } from './domain/money-words'
