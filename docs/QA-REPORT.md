@@ -3,7 +3,7 @@
 **Branch:** `feature/hr-operations` · **Nothing committed** · **Date:** 2026-09-05
 
 **Method.** Playwright + Chromium against a **production build** (`next build && next start`).
-161 end-to-end tests across all ten modules: API contract and validation testing, business-rule
+162 end-to-end tests across all ten modules: API contract and validation testing, business-rule
 and state-machine testing, RBAC and injection testing, plus browser journeys for every screen.
 
 **No seeded data was used.** Every employee, department, job position, schedule, contract,
@@ -16,11 +16,11 @@ record is the QA login, because the application deliberately has no self-registr
 
 | | Before | After |
 |---|---|---|
-| E2E tests passing | 101 / 147 | **161 / 161** |
+| E2E tests passing | 101 / 147 | **162 / 162** |
 | Unit tests | 300 / 300 | **309 / 309** |
 | Typecheck + lint | clean | clean |
 
-**Nine defects found and fixed. One was demo-fatal.** Two consecutive full runs are green, so the
+**Ten defects found and fixed. Two were demo-fatal.** Two consecutive full runs are green, so the
 suite is idempotent and safe to re-run.
 
 ---
@@ -160,6 +160,28 @@ Same shape as F5: a write-time rule leaking onto a read path.
 exactly as `Attendance.reconstitute()` is split from `Attendance.checkIn()`, and point the
 repository at the former. Pinned by 4 unit tests.
 
+### F10 — "Load demo data" failed after the identity merge · **High**
+
+Reported from the login screen: `Row 4 of "employees" has different columns from row 0`.
+
+Mine, introduced while folding `users` into `employees`. The rewritten identity seed built its rows
+with a conditional spread — `employee_type` for the four staff accounts who need creating, omitted
+for the one employee `people.seed` had already made. `ctx.upsert` emits a **single multi-row
+INSERT**, so every row in a batch must carry identical columns; the odd row out threw and the whole
+seed rolled back. Nothing loaded.
+
+The strictness is correct and worth keeping — a silently misaligned placeholder grid writes values
+into the wrong columns. The shapes here are genuinely different, so they belong in different
+batches.
+
+**Fix.** Two upserts: staff accounts (with `employee_type`, since the column is `NOT NULL`) and
+credentials-only for people who already exist. The second deliberately names no HR column —
+granting somebody a login must not quietly rewrite their department or contract type.
+
+Pinned by an E2E test that posts what the button posts and then **signs in as all five returned
+credentials** — a 200 from the seed alone would not have caught a demo where the logins don't work.
+Both `reset: false` and `reset: true` verified end to end.
+
 ---
 
 ## Verified working — no action needed
@@ -230,7 +252,7 @@ These were tested hard and hold up. Worth knowing before an evaluator probes the
 
 ```bash
 npm run build                 # the suite runs against a production build
-npx playwright test           # 161 tests, ~1 minute
+npx playwright test           # 162 tests, ~1 minute
 npx playwright test --ui      # interactive
 ```
 

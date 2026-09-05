@@ -116,23 +116,45 @@ export const identitySeed: SeedPart = {
      * it speaks the database's snake_case rather than the application's
      * camelCase — there is no repository in between to translate.
      *
-     * `employee_type` is supplied for the staff rows because the column is NOT
-     * NULL; for the pre-existing employee the upsert leaves whatever
-     * `people.seed` set, since it only overwrites the keys named here.
+     * TWO batches, not one with a conditional spread. `ctx.upsert` builds a
+     * single multi-row INSERT, so every row in a batch has to carry exactly the
+     * same columns — a row that omits one throws
+     * `Row N of "employees" has different columns from row 0`. That is the
+     * right check to have; the shapes here are genuinely different.
      */
-    const count = await ctx.upsert(
+
+    // Staff roles: these people do not exist yet, so the row has to satisfy
+    // `employee_type NOT NULL`.
+    const created = await ctx.upsert(
       'employees',
-      DEMO_ACCOUNTS.map((account, i) => ({
+      DEMO_ACCOUNTS.filter((a) => !a.existing).map((account) => ({
         id: account.id,
         name: account.name,
         email: account.email,
         role: account.role,
-        password_hash: hashes[i],
+        password_hash: hashes[DEMO_ACCOUNTS.indexOf(account)],
         is_active: true,
-        ...(account.existing ? {} : { employee_type: 'full_time' }),
+        employee_type: 'full_time',
       })),
     )
 
-    ctx.log(`${count} accounts (one per role)`)
+    /**
+     * Already-seeded employees: credentials only. Deliberately no
+     * `employee_type`, `department_id` or anything else `people.seed` owns —
+     * granting somebody a login must not quietly rewrite their HR record.
+     */
+    const granted = await ctx.upsert(
+      'employees',
+      DEMO_ACCOUNTS.filter((a) => a.existing).map((account) => ({
+        id: account.id,
+        name: account.name,
+        email: account.email,
+        role: account.role,
+        password_hash: hashes[DEMO_ACCOUNTS.indexOf(account)],
+        is_active: true,
+      })),
+    )
+
+    ctx.log(`${created + granted} accounts (one per role)`)
   },
 }

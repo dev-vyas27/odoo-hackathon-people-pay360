@@ -231,6 +231,46 @@ test.describe('Regression — F7 a night shift must be recordable', () => {
   })
 })
 
+test.describe('Regression — F10 "Load demo data" must actually load', () => {
+  /**
+   * The button on /login posts an empty body here. It broke when the identity
+   * seed started building rows of two different shapes in one batch — `upsert`
+   * emits a single multi-row INSERT, so a row missing a column threw
+   * `Row 4 of "employees" has different columns from row 0` and the whole seed
+   * rolled back.
+   *
+   * Asserting the 200 is not enough: the point of the button is to hand a judge
+   * five working logins, so the test signs in as every credential it returns.
+   */
+  test('seeds every part and returns credentials that all sign in', async ({ anon }) => {
+    const seed = await anon.post('/api/demo/seed', {})
+    expect(seed.status, JSON.stringify(seed.raw).slice(0, 400)).toBe(200)
+
+    const parts: Array<{ name: string; rows: number }> = seed.data.parts ?? []
+    expect(parts.length, 'every seed part must run').toBe(7)
+    expect(
+      parts.find((p) => p.name === 'identity')?.rows,
+      'one account per role',
+    ).toBe(5)
+
+    const credentials: Array<{ role: string; email: string; password: string }> =
+      seed.data.credentials ?? []
+    expect(credentials.length).toBe(5)
+
+    for (const credential of credentials) {
+      const login = await anon.post('/api/auth/login', {
+        email: credential.email,
+        password: credential.password,
+      })
+      expect(
+        login.status,
+        `${credential.role} (${credential.email}) could not sign in: ${JSON.stringify(login.raw)}`,
+      ).toBe(200)
+      expect(login.data.employeeId, 'an account IS an employee since 0010').toBeTruthy()
+    }
+  })
+})
+
 test.describe('Regression — F8 a dangling reference is the caller’s error', () => {
   test('a contract for a non-existent employee is a 4xx, not a 500', async ({ api }) => {
     const r = await api.post('/api/contracts', {
