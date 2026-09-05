@@ -16,7 +16,7 @@
 | Rule | Why |
 |---|---|
 | Import other modules **only** from `@/modules/<name>` | ESLint blocks reaching into `domain/`, `application/`, `infrastructure/`. It fails your lint, not just your conscience. |
-| `domain/` and `application/` never import `next/*`, `mongoose`, `react`, `@/lib/*` | Enforced by ESLint. This is what makes the logic testable in milliseconds. |
+| `domain/` and `application/` never import `next/*`, `pg`, `react`, `@/lib/*` | Enforced by ESLint. This is what makes the logic testable in milliseconds. |
 | `await params`, `await searchParams`, `await cookies()` | Next 16 removed synchronous access. Non-negotiable. |
 | Route handlers stay about 5 lines | Parse, call use case, `respond(result)`. Logic lives in `application/`. |
 | Money is **never** a float | Use `Money` from `@/modules/shared`. |
@@ -52,8 +52,8 @@ modules/identity/
     login.use-case.ts               email + password -> TokenPayload
     create-user.use-case.ts
   infrastructure/
-    user.model.ts                   mongoose schema
-    mongo-user.repository.ts        extends BaseMongoRepository
+    user.table.ts                   row shape + column list
+    postgres-user.repository.ts     parameterised SQL
   interface/auth.controller.ts
   index.ts
 ```
@@ -124,7 +124,7 @@ modules/timeoff/
     refuse-leave.use-case.ts
     allocate.use-case.ts
     get-balance.use-case.ts
-  infrastructure/   models, repositories, adapter implementing employee lookup
+  infrastructure/   tables, repositories, adapter implementing employee lookup
   interface/        controllers, zod schemas
 ```
 

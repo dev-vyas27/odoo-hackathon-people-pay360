@@ -21,7 +21,7 @@
 | Rule | Why |
 |---|---|
 | Import other modules **only** from `@/modules/<name>` | ESLint enforces it. |
-| `domain/` and `application/` never import `next/*`, `mongoose`, `react`, `@/lib/*` | Your engine must run in a unit test with no database. This is non-negotiable for you specifically. |
+| `domain/` and `application/` never import `next/*`, `pg`, `react`, `@/lib/*` | Your engine must run in a unit test with no database. This is non-negotiable for you specifically. |
 | `await params`, `await searchParams`, `await cookies()` | Next 16 removed synchronous access. |
 | **Money is never a float** | `Money` stores integer minor units. A one-paise drift across 500 payslips is unfindable at 3am. |
 | `npm run verify` before every push | typecheck + lint + tests. |

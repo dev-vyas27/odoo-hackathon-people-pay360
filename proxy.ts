@@ -29,7 +29,13 @@ const SECTION_RESOURCE: Array<{ prefix: string; resource: Resource }> = [
   { prefix: '/admin', resource: 'user' },
 ]
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/health']
+/**
+ * `/api/demo/seed` is here because it creates the accounts you would need in
+ * order to authenticate, so requiring authentication would make it useless. It
+ * guards itself with the `DEMO_SEED_ENABLED` flag and 404s when that is off —
+ * see lib/demo-mode.ts.
+ */
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/health', '/api/demo/seed']
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
