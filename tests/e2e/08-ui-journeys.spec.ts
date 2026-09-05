@@ -1,4 +1,12 @@
-import { test, expect, uniq, uniqEmail, QA_EMAIL, QA_PASSWORD } from './_helpers/fixtures'
+import {
+  test,
+  expect,
+  makeEmployee,
+  uniq,
+  uniqEmail,
+  QA_EMAIL,
+  QA_PASSWORD,
+} from './_helpers/fixtures'
 import type { Page } from '@playwright/test'
 
 async function signIn(page: Page) {
@@ -108,7 +116,9 @@ test.describe('UI — employee detail screen', () => {
     // Pick a seeded employee that actually has its relations populated.
     const listed = await page.request.get('/api/employees?limit=200')
     const items = (await listed.json()).data.items as any[]
-    const target = items.find((e) => e.departmentId && e.jobPositionId && e.workingScheduleId)
+    const target = items.find(
+      (e) => e.departmentId && e.jobPositionId && e.workingScheduleId && e.managerId,
+    )
     expect(target, 'need a fully-populated employee — run the demo seed').toBeTruthy()
 
     await page.goto(`/employees/${target.id}`)
@@ -146,6 +156,108 @@ test.describe('UI — employee detail screen', () => {
   })
 })
 
+test.describe('UI — employee detail rules', () => {
+  /**
+   * Radix renders a hidden native <select> beside each trigger to carry the
+   * value into a form post, and it shares the field's accessible name — so
+   * `getByLabel` is ambiguous and resolves to something unclickable. The
+   * trigger is the element with role=combobox.
+   */
+  const selectFor = (page: Page, label: string) =>
+    page.getByRole('combobox', { name: label })
+
+  async function optionsUnder(page: Page, label: string): Promise<string[]> {
+    await selectFor(page, label).click()
+    await page.waitForTimeout(400)
+    const options = await page.getByRole('option').allInnerTexts()
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(200)
+    return options.map((o) => o.trim())
+  }
+
+  test('email is read-only once the employee exists', async ({ page }) => {
+    await signIn(page)
+
+    // Creating: editable.
+    await page.goto('/employees/new')
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByLabel('Email'), 'a new employee needs an address').toBeEnabled()
+
+    // Editing: locked. The address is the sign-in credential since 0010.
+    const listed = await page.request.get('/api/employees?limit=200')
+    const target = (await listed.json()).data.items[0]
+    await page.goto(`/employees/${target.id}`)
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByLabel('Email')).toBeDisabled()
+    await expect(page.getByLabel('Name'), 'only the email is locked').toBeEnabled()
+  })
+
+  test('the manager list excludes the employee and their own reports', async ({ page, api }) => {
+    // Build a real two-level line: report -> lead.
+    const lead = await makeEmployee(api)
+    const report = await makeEmployee(api, { managerId: lead.id })
+    const indirect = await makeEmployee(api, { managerId: report.id })
+
+    await signIn(page)
+    await page.goto(`/employees/${lead.id}`)
+    await page.waitForLoadState('networkidle')
+
+    const options = await optionsUnder(page, 'Manager')
+    expect(options.length, 'the picker should still offer somebody').toBeGreaterThan(0)
+    expect(options, 'an employee cannot manage themselves').not.toContain(lead.name)
+    expect(options, 'a direct report cannot become the manager').not.toContain(report.name)
+    expect(
+      options,
+      'nor can an indirect report — that closes a longer loop',
+    ).not.toContain(indirect.name)
+  })
+
+  test('the working schedule follows the employee type', async ({ page, api }) => {
+    const employee = await makeEmployee(api, { employeeType: 'intern' })
+
+    await signIn(page)
+    await page.goto(`/employees/${employee.id}`)
+    await page.waitForLoadState('networkidle')
+
+    // Intern: unrestricted, so both a full-time and a part-time schedule appear.
+    const asIntern = await optionsUnder(page, 'Working schedule')
+    expect(asIntern.length, 'interns choose from every schedule').toBeGreaterThan(1)
+
+    // Full time: only full-time schedules, and one is chosen automatically.
+    await selectFor(page, 'Employee type').click()
+    await page.getByRole('option', { name: 'Full Time' }).click()
+    await page.waitForTimeout(600)
+
+    const fullTimeValue = (await selectFor(page, 'Working schedule').innerText()).trim()
+    expect(fullTimeValue, 'a full-timer gets a schedule without being asked').not.toMatch(
+      /^Select\b/,
+    )
+    expect(fullTimeValue, 'and it is a full-time one').toMatch(/\(4\d h?\)|\(4\dh\)|\(3[5-9]h\)/)
+
+    const fullTimeOptions = await optionsUnder(page, 'Working schedule')
+    for (const option of fullTimeOptions) {
+      const hours = Number(option.match(/\((\d+)h\)/)?.[1] ?? 0)
+      expect(hours, `${option} is not a full-time schedule`).toBeGreaterThanOrEqual(35)
+    }
+
+    // Part time: the selection moves to a part-time schedule rather than
+    // leaving them on hours their pay would then be prorated against.
+    await selectFor(page, 'Employee type').click()
+    await page.getByRole('option', { name: 'Part Time' }).click()
+    await page.waitForTimeout(600)
+
+    const partTimeOptions = await optionsUnder(page, 'Working schedule')
+    expect(partTimeOptions.length).toBeGreaterThan(0)
+    for (const option of partTimeOptions) {
+      const hours = Number(option.match(/\((\d+)h\)/)?.[1] ?? 999)
+      expect(hours, `${option} is not a part-time schedule`).toBeLessThan(35)
+    }
+
+    const partTimeValue = (await selectFor(page, 'Working schedule').innerText()).trim()
+    expect(partTimeValue, 'the full-time schedule must not have stuck').not.toBe(fullTimeValue)
+  })
+})
+
 test.describe('UI — schedule creation journey', () => {
   test('creates a working schedule through the form', async ({ page }) => {
     await signIn(page)
@@ -157,6 +269,31 @@ test.describe('UI — schedule creation journey', () => {
 })
 
 test.describe('UI — accessibility and form hygiene', () => {
+  test('every select trigger has an associated label', async ({ page }) => {
+    /**
+     * The inputs-only check below missed this entirely: `FormControl` wrapped
+     * the Radix `<Select>` root, which is a context provider rather than a DOM
+     * element, so the id never reached the trigger. Every dropdown rendered
+     * with no accessible name — a screen reader announced "button, Full Time"
+     * without saying which field it belonged to.
+     */
+    await signIn(page)
+    await page.goto('/employees/new')
+    await page.waitForLoadState('networkidle')
+
+    const unnamed = await page.evaluate(() => {
+      const bad: string[] = []
+      document.querySelectorAll('[role="combobox"]').forEach((el) => {
+        const id = el.id
+        const labelled = id ? Boolean(document.querySelector(`label[for="${id}"]`)) : false
+        const aria = el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')
+        if (!labelled && !aria) bad.push(el.textContent?.trim().slice(0, 40) ?? '(empty)')
+      })
+      return bad
+    })
+    expect(unnamed, `selects with no accessible name: ${unnamed.join(', ')}`).toEqual([])
+  })
+
   test('every visible input on the employee form has an associated label', async ({ page }) => {
     await signIn(page)
     await page.goto('/employees/new')

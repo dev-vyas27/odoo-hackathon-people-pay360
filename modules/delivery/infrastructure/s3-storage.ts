@@ -1,66 +1,84 @@
 /**
  * The ONLY file that imports the AWS SDK.
  *
- * Configured entirely from the environment, and DISABLED by default: with
- * `S3_BUCKET` empty every call short-circuits to `skipped`, nothing is uploaded
- * and no credentials are needed. That is the same shape as the SMTP settings —
- * a demo runs with the boilerplate untouched, and a real deployment fills four
- * variables in without a code change.
+ * Set up the same way as the reference implementation in
+ * odoo-hackathon-transit-ops: a PRIVATE bucket, and short-lived presigned URLs
+ * as the entire read surface. The AWS secret lives here, server-side, and is
+ * never sent to the browser.
  *
- * `S3_ENDPOINT` is here so the same adapter drives Cloudflare R2, MinIO,
- * Backblaze B2 or any other S3-compatible store; leave it empty for AWS.
+ * Two deliberate differences from that reference, because the use case differs:
  *
- * Nothing here throws. An archive failure is reported in the result and logged
- * by the caller, because by the time this runs the payslip has already been
- * delivered to the browser and there is nobody left to show an error to.
+ *  - It presigns an UPLOAD url so a browser can PUT a user's file straight to
+ *    S3, bypassing Vercel's 4.5 MB body cap. We have no such upload — the
+ *    server generates the payslip itself — so uploads go through `put()` here
+ *    and there is nothing for a browser to send.
+ *  - It throws when any variable is missing. We keep archiving OPT-IN: an empty
+ *    `AWS_S3_BUCKET` disables it and the payslip still downloads, so a demo
+ *    needs no AWS account. A bucket that is set but half-configured is a
+ *    different thing entirely and throws exactly as the reference does — a
+ *    typo'd secret should not look identical to "archiving is off".
  */
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import type {
   DocumentStoragePort,
   StoredDocument,
 } from '../application/ports/document-storage.port'
+
+/** How long a view link stays valid. Minutes, not hours — it is payroll data. */
+const VIEW_URL_TTL_SECONDS = 300
 
 interface S3Settings {
   bucket: string
   region: string
   accessKeyId: string
   secretAccessKey: string
-  /** Custom endpoint for S3-compatible providers. Empty for AWS. */
-  endpoint: string
-  /** Overrides the derived object URL, e.g. a CDN in front of the bucket. */
-  publicBaseUrl: string
-  /** MinIO and most non-AWS providers need path-style addressing. */
-  forcePathStyle: boolean
 }
 
+const read = (name: string) => (process.env[name] ?? '').trim()
+
+/**
+ * Validated config, or a loud error — never a cryptic failure from an undefined
+ * bucket.
+ *
+ * Credentials are NOT required: on ECS, EKS and Lambda they arrive from the
+ * instance role rather than the environment, and demanding env keys there would
+ * disable storage on exactly the deployments that have it set up properly. But
+ * supplying ONE of the pair is always a mistake, so that is rejected.
+ */
 function readSettings(): S3Settings {
-  const env = process.env
-  return {
-    bucket: (env.S3_BUCKET ?? '').trim(),
-    region: (env.S3_REGION ?? '').trim() || 'us-east-1',
-    accessKeyId: (env.S3_ACCESS_KEY_ID ?? '').trim(),
-    secretAccessKey: (env.S3_SECRET_ACCESS_KEY ?? '').trim(),
-    endpoint: (env.S3_ENDPOINT ?? '').trim(),
-    publicBaseUrl: (env.S3_PUBLIC_BASE_URL ?? '').trim().replace(/\/+$/, ''),
-    forcePathStyle: (env.S3_FORCE_PATH_STYLE ?? '').trim() === 'true',
+  const bucket = read('AWS_S3_BUCKET')
+  const region = read('AWS_REGION')
+  const accessKeyId = read('AWS_ACCESS_KEY_ID')
+  const secretAccessKey = read('AWS_SECRET_ACCESS_KEY')
+
+  if (bucket && !region) {
+    throw new Error(
+      'S3 is half-configured — AWS_S3_BUCKET is set but AWS_REGION is not. ' +
+        'Set AWS_REGION, or clear AWS_S3_BUCKET to turn payslip archiving off.',
+    )
   }
+
+  if (bucket && Boolean(accessKeyId) !== Boolean(secretAccessKey)) {
+    throw new Error(
+      'S3 is half-configured — set BOTH AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY, ' +
+        'or neither (to use the instance role / ~/.aws/credentials).',
+    )
+  }
+
+  return { bucket, region, accessKeyId, secretAccessKey }
 }
 
 /**
- * The object's URL.
+ * Guard a key before it reaches S3.
  *
- * Derived rather than returned by the SDK, and deliberately NOT presigned: a
- * bucket that is private (which it should be) simply yields a URL that requires
- * credentials to open. Wire a CDN or a presigner in later behind
- * `S3_PUBLIC_BASE_URL` if public links are ever wanted.
+ * The reference calls this `isValidDocumentKey`, and it exists for the same
+ * reason: without it a caller could hand in `../` or another prefix and be
+ * given a signed URL for an object that is none of their business. Matches
+ * `storageKeyFor` in the domain — payslips/<payrun uuid>/<payslip uuid>.pdf.
  */
-function objectUrl(settings: S3Settings, key: string): string | null {
-  if (settings.publicBaseUrl) return `${settings.publicBaseUrl}/${key}`
-  if (settings.endpoint) {
-    const base = settings.endpoint.replace(/\/+$/, '')
-    return settings.forcePathStyle ? `${base}/${settings.bucket}/${key}` : `${base}/${key}`
-  }
-  return `https://${settings.bucket}.s3.${settings.region}.amazonaws.com/${key}`
+export function isPayslipKey(key: unknown): key is string {
+  return typeof key === 'string' && /^payslips\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.pdf$/i.test(key)
 }
 
 export class S3DocumentStorage implements DocumentStoragePort {
@@ -68,10 +86,9 @@ export class S3DocumentStorage implements DocumentStoragePort {
   private client: S3Client | null = null
 
   /**
-   * A bucket name is the switch. Credentials are intentionally NOT part of this
-   * check — on ECS, EKS and Lambda they arrive from the instance role rather
-   * than the environment, and demanding env keys there would disable storage on
-   * exactly the deployments that have it configured properly.
+   * The bucket name is the switch. Everything else is validated in
+   * `readSettings`, so `configured` being true means genuinely usable rather
+   * than merely partially filled in.
    */
   get configured(): boolean {
     return this.settings.bucket !== ''
@@ -81,18 +98,15 @@ export class S3DocumentStorage implements DocumentStoragePort {
   private connect(): S3Client {
     if (this.client) return this.client
 
-    const { region, endpoint, accessKeyId, secretAccessKey, forcePathStyle } = this.settings
-
+    const { region, accessKeyId, secretAccessKey } = this.settings
     this.client = new S3Client({
       region,
-      ...(endpoint ? { endpoint, forcePathStyle: true } : { forcePathStyle }),
-      // Omitted entirely when unset, so the SDK's own credential chain (instance
-      // role, SSO profile, ~/.aws/credentials) still applies.
+      // Omitted entirely when unset, so the SDK's own credential chain
+      // (instance role, SSO profile, ~/.aws/credentials) still applies.
       ...(accessKeyId && secretAccessKey
         ? { credentials: { accessKeyId, secretAccessKey } }
         : {}),
     })
-
     return this.client
   }
 
@@ -102,10 +116,13 @@ export class S3DocumentStorage implements DocumentStoragePort {
         ok: false,
         skipped: true,
         key,
-        url: null,
         bytes: body.byteLength,
-        reason: 'S3_BUCKET is empty — archiving is turned off.',
+        reason: 'AWS_S3_BUCKET is empty — archiving is turned off.',
       }
+    }
+
+    if (!isPayslipKey(key)) {
+      return { ok: false, key, bytes: body.byteLength, reason: `Refusing to write key "${key}"` }
     }
 
     try {
@@ -121,20 +138,26 @@ export class S3DocumentStorage implements DocumentStoragePort {
         }),
       )
 
-      return {
-        ok: true,
-        key,
-        url: objectUrl(this.settings, key),
-        bytes: body.byteLength,
-      }
+      return { ok: true, key, bytes: body.byteLength }
     } catch (reason) {
       return {
         ok: false,
         key,
-        url: null,
         bytes: body.byteLength,
         reason: reason instanceof Error ? reason.message : 'Unknown S3 error',
       }
     }
+  }
+
+  /** Signed, expiring, and minted per request. See the port for why. */
+  async viewUrl(key: string): Promise<string | null> {
+    if (!this.configured) return null
+    if (!isPayslipKey(key)) return null
+
+    return getSignedUrl(
+      this.connect(),
+      new GetObjectCommand({ Bucket: this.settings.bucket, Key: key }),
+      { expiresIn: VIEW_URL_TTL_SECONDS },
+    )
   }
 }

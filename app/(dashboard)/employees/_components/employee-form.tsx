@@ -8,6 +8,7 @@
  * but not changeable.
  */
 import { createEmployeeSchema, type CreateEmployeeBody } from '@/modules/people/schemas'
+import { isFullTimeSchedule } from '@/modules/employment/schemas'
 import { ResourceForm } from '@/components/resource/resource-form'
 import {
   EMPLOYEE_TYPE_OPTIONS,
@@ -16,6 +17,25 @@ import {
   useJobPositionOptions,
   useScheduleOptions,
 } from '../../_components/options'
+
+/**
+ * Which schedules suit an employee type.
+ *
+ * A full-timer on a 20-hour schedule would be judged late against hours they
+ * were never meant to work, and prorated down to half pay — the schedule is
+ * what attendance and payroll measure against, so the pairing has to hold.
+ *
+ * Interns and contractors are deliberately unrestricted: their hours are the
+ * negotiated ones, and there is no honest default to pick for them.
+ */
+function schedulesFor<T extends { weeklyHours: number }>(
+  employeeType: CreateEmployeeBody['employeeType'],
+  schedules: T[],
+): T[] {
+  if (employeeType === 'full_time') return schedules.filter((s) => isFullTimeSchedule(s.weeklyHours))
+  if (employeeType === 'part_time') return schedules.filter((s) => !isFullTimeSchedule(s.weeklyHours))
+  return schedules
+}
 
 export function EmployeeForm({
   defaultValues,
@@ -36,6 +56,9 @@ export function EmployeeForm({
   const schedules = useScheduleOptions()
   const managers = useEmployeeOptions(employeeId)
 
+  /** Editing an existing record rather than creating one. */
+  const isEditing = Boolean(employeeId)
+
   return (
     <ResourceForm<CreateEmployeeBody>
       schema={createEmployeeSchema}
@@ -43,7 +66,29 @@ export function EmployeeForm({
       defaultValues={defaultValues}
       cancel={cancel}
       onSubmit={onSubmit}
-      fields={[
+      /**
+       * Keep the schedule consistent with the employee type.
+       *
+       * Only fires when the current choice is not valid for the type — so an
+       * intern's negotiated schedule is never overwritten, and a full-timer who
+       * already has the 40-hour one is left alone. Switching someone to part
+       * time moves them onto a part-time schedule rather than silently leaving
+       * them on hours their pay will now be prorated against.
+       *
+       * Nothing is auto-picked for interns and contractors: `allowed` is every
+       * schedule for them, so a current value is always valid and an empty one
+       * stays empty for a human to choose.
+       */
+      derive={(values) => {
+        const allowed = schedulesFor(values.employeeType, schedules.items)
+        if (allowed.length === 0) return null
+        if (values.workingScheduleId && allowed.some((s) => s.id === values.workingScheduleId)) {
+          return null
+        }
+        if (values.employeeType !== 'full_time' && values.employeeType !== 'part_time') return null
+        return { workingScheduleId: allowed[0].id }
+      }}
+      fields={(values) => [
         { name: 'name', label: 'Name', placeholder: 'Priya Sharma', section: 'Identity' },
         {
           name: 'email',
@@ -51,6 +96,17 @@ export function EmployeeForm({
           type: 'email',
           placeholder: 'priya@company.com',
           section: 'Identity',
+          /**
+           * Read-only once the record exists. Since migration 0010 the employee
+           * row IS the login, so this address is the credential someone signs in
+           * with — editing it in an HR form would silently lock them out, and
+           * every payslip already sent quotes it. Changing it is an account
+           * operation, not an HR edit.
+           */
+          disabled: isEditing,
+          description: isEditing
+            ? 'The sign-in address. Change it from account administration.'
+            : undefined,
         },
         {
           name: 'employeeType',
@@ -88,9 +144,18 @@ export function EmployeeForm({
           name: 'workingScheduleId',
           label: 'Working schedule',
           type: 'select',
-          options: schedules.options,
+          // Narrowed to the schedules that suit the chosen employee type.
+          options: schedulesFor(values.employeeType, schedules.items).map((s) => ({
+            value: s.id,
+            label: `${s.name} (${s.weeklyHours}h)`,
+          })),
           placeholder: schedules.isLoading ? 'Loading...' : 'Select schedule',
-          description: 'Attendance judges lateness and overtime against this.',
+          description:
+            values.employeeType === 'full_time'
+              ? 'Full-time employees are on a full-time schedule.'
+              : values.employeeType === 'part_time'
+                ? 'Part-time employees are on a part-time schedule.'
+                : 'Attendance judges lateness and overtime against this.',
           section: 'Pay and hours',
         },
         {

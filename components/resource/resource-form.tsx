@@ -11,11 +11,14 @@
  * The same schema should be reused by the module's route handler so the client
  * and the server validate against one definition rather than two that drift.
  */
+import { useEffect } from 'react'
 import {
   useForm,
+  useWatch,
   type DefaultValues,
   type FieldValues,
   type Path,
+  type PathValue,
   type Resolver,
 } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -80,11 +83,28 @@ export interface FieldConfig<T extends FieldValues> {
 
 export interface ResourceFormProps<T extends FieldValues> {
   schema: ZodType<T>
-  fields: FieldConfig<T>[]
+  /**
+   * A fixed list, or a function of the CURRENT values when one field's choices
+   * depend on another's — a part-time employee should not be offered a 40-hour
+   * schedule. Passing a function re-derives the list on every change.
+   */
+  fields: FieldConfig<T>[] | ((values: T) => FieldConfig<T>[])
   defaultValues?: DefaultValues<T>
   onSubmit: (values: T) => Promise<void> | void
   submitLabel?: string
   cancel?: React.ReactNode
+  /**
+   * Values that FOLLOW from other values, applied whenever the form changes.
+   *
+   * Return a patch of what should be true given the current values, or null for
+   * "nothing to correct". Only keys whose value actually differs are written, so
+   * this cannot loop, and a field the user has already set correctly is left
+   * alone rather than being re-set on every keystroke.
+   *
+   * Use it for consequences, never for validation — a rule that can REJECT
+   * belongs in the zod schema where the server enforces it too.
+   */
+  derive?: (values: T) => Partial<T> | null
   /** Rendered above the buttons — warnings, computed totals, related records. */
   children?: React.ReactNode
   className?: string
@@ -97,6 +117,7 @@ export function ResourceForm<T extends FieldValues>({
   onSubmit,
   submitLabel = 'Save',
   cancel,
+  derive,
   children,
   className,
 }: ResourceFormProps<T>) {
@@ -118,12 +139,36 @@ export function ResourceForm<T extends FieldValues>({
   const { isSubmitting } = form.formState
 
   /**
+   * `useWatch`, not `form.watch()`: the latter subscribes outside React's render
+   * cycle and the React Compiler cannot memoise around it.
+   */
+  const values = useWatch({ control: form.control }) as T
+  const fieldList = typeof fields === 'function' ? fields(values) : fields
+
+  useEffect(() => {
+    if (!derive) return
+    const patch = derive(values)
+    if (!patch) return
+    for (const [name, next] of Object.entries(patch)) {
+      const path = name as Path<T>
+      // The guard is what makes this safe to run on every render: setValue only
+      // fires when something genuinely changed, so it cannot feed itself.
+      if (form.getValues(path) !== next) {
+        form.setValue(path, next as PathValue<T, Path<T>>, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
+      }
+    }
+  }, [derive, values, form])
+
+  /**
    * Fields in declaration order, bucketed by section. One bucket keyed
    * `undefined` when nothing is sectioned, which renders as today's single grid
    * with no heading — that is what keeps this change invisible to every form
    * that has not opted in.
    */
-  const sections = fields.reduce<Array<{ title?: string; items: FieldConfig<T>[] }>>(
+  const sections = fieldList.reduce<Array<{ title?: string; items: FieldConfig<T>[] }>>(
     (acc, field) => {
       const last = acc[acc.length - 1]
       if (last && last.title === field.section) last.items.push(field)
@@ -141,6 +186,39 @@ export function ResourceForm<T extends FieldValues>({
       render={({ field: rhf }) => (
         <FormItem className={cn(field.span === 2 && 'sm:col-span-2')}>
           {field.type !== 'checkbox' && <FormLabel>{field.label}</FormLabel>}
+          {/**
+           * The select is handled before the shared FormControl, and FormControl
+           * wraps its TRIGGER instead.
+           *
+           * FormControl passes the field's id down with a Slot, and a Slot needs
+           * a DOM element to land on. `<Select>` is a Radix context provider,
+           * not an element, so the id went nowhere: every trigger rendered with
+           * no id, the label's htmlFor pointed at nothing, and the control had
+           * no accessible name — a screen reader announced "button, Full Time"
+           * without saying which field. Wrapping the trigger fixes the
+           * association, and is what makes `getByRole('combobox', { name })`
+           * find these at all.
+           */}
+          {field.type === 'select' ? (
+            <Select
+              onValueChange={rhf.onChange}
+              value={rhf.value ? String(rhf.value) : undefined}
+              disabled={field.disabled || isSubmitting}
+            >
+              <FormControl>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={field.placeholder ?? 'Select...'} />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {field.options?.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
           <FormControl>
             {field.type === 'textarea' ? (
               <Textarea
@@ -150,23 +228,6 @@ export function ResourceForm<T extends FieldValues>({
                 disabled={field.disabled || isSubmitting}
                 rows={4}
               />
-            ) : field.type === 'select' ? (
-              <Select
-                onValueChange={rhf.onChange}
-                value={rhf.value ? String(rhf.value) : undefined}
-                disabled={field.disabled || isSubmitting}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={field.placeholder ?? 'Select...'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {field.options?.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             ) : field.type === 'checkbox' ? (
               <label className="flex items-center gap-2.5 pt-1">
                 <Checkbox
@@ -196,6 +257,7 @@ export function ResourceForm<T extends FieldValues>({
               />
             )}
           </FormControl>
+          )}
           {field.description ? (
             <FormDescription>{field.description}</FormDescription>
           ) : null}

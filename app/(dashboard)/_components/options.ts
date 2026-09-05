@@ -56,21 +56,61 @@ export function useJobPositionOptions() {
   }
 }
 
+/**
+ * `items` is returned alongside `options` because callers need the weekly hours
+ * to decide which schedules suit an employee type — a `{label, value}` pair
+ * cannot answer "is this full time".
+ */
 export function useScheduleOptions() {
   const { page, isLoading } = useResourceList<ScheduleListItem>('schedules', PICKER)
   return {
     isLoading,
+    items: page.items,
     options: page.items.map((s) => ({ value: s.id, label: `${s.name} (${s.weeklyHours}h)` })),
   }
 }
 
-/** Managers are just employees; the list excludes nobody, the form excludes self. */
+/**
+ * Everyone who could report to `excludeId`, including `excludeId` itself.
+ *
+ * Walks DOWN the reporting line, not just one level. If Rahul reports to Sahil
+ * and Priya reports to Rahul, then neither Rahul nor Priya may become Sahil's
+ * manager — picking either closes a loop, and a reporting line with a loop
+ * makes any walk up it run forever.
+ *
+ * `seen` doubles as the result and as the cycle guard, so pre-existing bad data
+ * cannot hang this.
+ */
+function reportingSubtree(employees: EmployeeListItem[], rootId?: string): Set<string> {
+  const seen = new Set<string>()
+  if (!rootId) return seen
+
+  seen.add(rootId)
+  let growing = true
+  while (growing) {
+    growing = false
+    for (const employee of employees) {
+      if (!seen.has(employee.id) && employee.managerId && seen.has(employee.managerId)) {
+        seen.add(employee.id)
+        growing = true
+      }
+    }
+  }
+  return seen
+}
+
+/**
+ * Managers are just employees — minus anyone who already reports to this one,
+ * at any depth. The server refuses a cycle too (see UpdateEmployeeUseCase);
+ * this is so the choice never appears in the first place.
+ */
 export function useEmployeeOptions(excludeId?: string) {
   const { page, isLoading } = useResourceList<EmployeeListItem>('employees', PICKER)
+  const blocked = reportingSubtree(page.items, excludeId)
   return {
     isLoading,
     options: page.items
-      .filter((e) => e.id !== excludeId)
+      .filter((e) => !blocked.has(e.id))
       .map((e) => ({ value: e.id, label: e.name })),
   }
 }
