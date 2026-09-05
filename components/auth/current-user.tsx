@@ -22,7 +22,7 @@
  * rather than a pile of if-statements: the screen and the API cannot drift.
  */
 import { createContext, useContext } from 'react'
-import { can, type Action, type CurrentUser, type Resource } from '@/modules/shared'
+import { can, scopeToSelf, type Action, type CurrentUser, type Resource } from '@/modules/shared'
 
 const CurrentUserContext = createContext<CurrentUser | null>(null)
 
@@ -54,4 +54,21 @@ export function useCurrentUser(): CurrentUser {
 /** `useCan('employee', 'create')` — the same question the use case asks. */
 export function useCan(resource: Resource, action: Action): boolean {
   return can(useCurrentUser().role, resource, action)
+}
+
+/**
+ * True when this role may only ever act on their OWN rows.
+ *
+ * The companion to `useCan`: permission answers *whether*, this answers *whose*.
+ * `authorizeOwned` already refuses a record filed against somebody else, so a
+ * form that offers an employee picker to a self-scoped role is offering names
+ * that can only produce a 403 — the picker should name them and nothing else.
+ *
+ * Derived from the role, never inferred from how many options a fetch happened
+ * to return: a company with exactly one employee must not accidentally lock the
+ * picker for HR, and a scoped list that wrongly returned two names must not
+ * accidentally unlock it.
+ */
+export function useScopedToSelf(): boolean {
+  return scopeToSelf(useCurrentUser().role)
 }
