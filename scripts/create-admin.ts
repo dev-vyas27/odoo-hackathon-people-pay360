@@ -10,13 +10,17 @@
  * from the command line means the capability exists exactly where the person
  * holding the database credentials already is.
  *
+ * Since migration 0010 this writes an EMPLOYEE. There is no separate `users`
+ * table: an administrator is a person on file who happens to hold the admin
+ * role, which is the model the product actually has.
+ *
  * It is idempotent: run it twice and the second run resets the password of the
  * existing account rather than failing on the unique-email index.
  */
 import { createInterface } from 'node:readline'
 import { randomBytes } from 'node:crypto'
 import { closePool, ping } from '@/lib/db'
-import { BcryptHasher, PostgresUserRepository } from '@/modules/identity'
+import { BcryptHasher, PostgresAccountRepository } from '@/modules/identity'
 import { ROLE_LABELS, ROLES, type Role } from '@/modules/shared'
 
 interface Options {
@@ -90,34 +94,37 @@ async function main() {
   console.log(`Connecting to ${redact(process.env.DATABASE_URL ?? '(unset)')}`)
   await ping()
 
-  const users = new PostgresUserRepository()
+  const accounts = new PostgresAccountRepository()
   const hasher = new BcryptHasher()
 
-  const existing = await users.findByEmail(options.email)
+  const existing = await accounts.findByEmail(options.email)
 
   if (existing) {
-    if (!(await confirmOverwrite(options.email))) {
+    /**
+     * An employee who exists but has never had a login is not an overwrite — it
+     * is the ordinary "give this person an account" case. Only an existing
+     * LOGIN needs confirming, which also keeps this safe to run unattended
+     * against a database that already has the employee.
+     */
+    if (existing.hasLogin && !(await confirmOverwrite(options.email))) {
       console.log('\nLeft the existing account untouched.')
-      console.log(`Pass --email with a different address to create another user.`)
+      console.log(`Pass --email with a different address to create another account.`)
       return
     }
 
-    await users.update(existing.id, {
+    await accounts.update(existing.id, {
       passwordHash: await hasher.hash(options.password),
       role: options.role,
       isActive: true,
     })
-    report('Password reset', options)
+    report(existing.hasLogin ? 'Password reset' : 'Login granted to existing employee', options)
     return
   }
 
-  await users.create({
+  await accounts.create({
     email: options.email,
     name: options.name,
     role: options.role,
-    // An administrator is a login, not an HR record. Linking one is Dev B's
-    // employee form, not this script's business.
-    employeeId: null,
     passwordHash: await hasher.hash(options.password),
     isActive: true,
   })

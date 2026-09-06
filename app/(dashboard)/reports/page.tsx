@@ -127,9 +127,16 @@ export default function ReportsPage() {
         </p>
       ) : null}
 
-      {/* ── KPI cards ─────────────────────────────────────────────────────── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {/*
+        ── KPI cards ────────────────────────────────────────────────────────
+        Six columns, not five: total net paid takes two of them and is the one
+        tile allowed the display size. It is the figure the page exists to
+        answer, and giving the other four equal weight would bury it.
+      */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <KpiCard
+          featured
+          className="sm:col-span-2"
           label="Total net paid"
           value={compactMoney(kpis.totalNetPaid)}
           hint="Paid payslips only"
@@ -174,7 +181,7 @@ export default function ReportsPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-normal text-muted-foreground">
+            <CardTitle className="eyebrow">
               Salary cost by department
             </CardTitle>
           </CardHeader>
@@ -189,7 +196,7 @@ export default function ReportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-normal text-muted-foreground">
+            <CardTitle className="eyebrow">
               Monthly net salary trend
             </CardTitle>
           </CardHeader>
@@ -255,7 +262,7 @@ export default function ReportsPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-normal text-muted-foreground">
+            <CardTitle className="eyebrow">
               Attendance overview
             </CardTitle>
           </CardHeader>
@@ -290,7 +297,7 @@ export default function ReportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-normal text-muted-foreground">
+            <CardTitle className="eyebrow">
               Department breakdown
             </CardTitle>
           </CardHeader>
@@ -373,33 +380,37 @@ function AlertGroup({
   items: Array<{ key: string; primary: string; secondary?: string }>
 }) {
   return (
-    <div>
-      <p className="flex items-center gap-1.5 text-sm">
-        {items.length > 0 ? (
-          <LuTriangleAlert className="size-3.5 text-warning-foreground" aria-hidden />
-        ) : null}
-        {title}
-      </p>
-      <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+    <div className="flex flex-col">
+      <div className="shrink-0">
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          {items.length > 0 ? (
+            <LuTriangleAlert className="size-3.5 text-warning-foreground" aria-hidden />
+          ) : null}
+          {title}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+      </div>
 
       {items.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">None</p>
       ) : (
-        <ul className="mt-3 space-y-1.5">
-          {items.map((item) => (
-            <li key={item.key} className="text-sm">
-              <span className="flex items-center gap-1.5">
-                <LuUsers className="size-3 shrink-0 text-muted-foreground" aria-hidden />
-                {item.primary}
-              </span>
-              {item.secondary ? (
-                <span className="ml-4.5 block text-xs text-muted-foreground">
-                  {item.secondary}
+        <div className="mt-3 max-h-72 overflow-y-auto pr-1.5">
+          <ul className="space-y-2">
+            {items.map((item) => (
+              <li key={item.key} className="text-sm">
+                <span className="flex items-center gap-1.5">
+                  <LuUsers className="size-3 shrink-0 text-muted-foreground" aria-hidden />
+                  {item.primary}
                 </span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+                {item.secondary ? (
+                  <span className="ml-4.5 block text-xs text-muted-foreground">
+                    {item.secondary}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   )

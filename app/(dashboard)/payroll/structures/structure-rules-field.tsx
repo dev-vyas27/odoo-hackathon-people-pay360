@@ -76,7 +76,7 @@ export function StructureRulesField({ available }: { available: AvailableRule[] 
       </div>
 
       {fields.length ? (
-        <div className="overflow-hidden rounded-lg border border-border">
+        <div className="overflow-hidden rounded-2xl border border-border">
           <div className="grid grid-cols-[5rem_1fr_auto] items-center gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-xs uppercase tracking-wide text-muted-foreground">
             <span>Sequence</span>
             <span>Salary rule</span>
@@ -143,7 +143,7 @@ export function StructureRulesField({ available }: { available: AvailableRule[] 
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
           No rules included yet. A structure with no rules produces empty payslips.
         </div>
       )}

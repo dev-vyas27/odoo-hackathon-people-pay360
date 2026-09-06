@@ -15,6 +15,7 @@ import { PostgresAttendanceStats } from './infrastructure/attendance-stats.adapt
 export { deriveStatus, type AttendanceStatus, type DailySchedule } from './domain/exception'
 export { computeWorkedHours } from './domain/worked-hours.service'
 export { Attendance } from './domain/attendance'
+export { WORK_MODES, WORK_MODE_LABELS, type WorkMode } from './domain/work-mode'
 
 // --- Interface layer, for the route handlers in app/api --------------------
 export * from './interface/attendance.schema'
@@ -47,6 +48,7 @@ import { CheckOutUseCase } from './application/check-out.use-case'
 import { CorrectAttendanceUseCase } from './application/correct-attendance.use-case'
 import { ListAttendanceUseCase } from './application/list-attendance.use-case'
 import { GetAttendanceUseCase } from './application/get-attendance.use-case'
+import { GetTodayAttendanceUseCase } from './application/get-today-attendance.use-case'
 import { DeleteAttendanceUseCase } from './application/delete-attendance.use-case'
 
 /**
@@ -84,6 +86,14 @@ export function createGetAttendanceUseCase(): GetAttendanceUseCase {
   return new GetAttendanceUseCase(attendanceRepository())
 }
 
+export function createGetTodayAttendanceUseCase(): GetTodayAttendanceUseCase {
+  return new GetTodayAttendanceUseCase(attendanceRepository())
+}
+
 export function createDeleteAttendanceUseCase(): DeleteAttendanceUseCase {
   return new DeleteAttendanceUseCase(attendanceRepository())
 }
+
+/** The one wire shape every attendance route returns. */
+export { toAttendanceView } from './interface/attendance.view'
+export type { TodayAttendance } from './application/get-today-attendance.use-case'

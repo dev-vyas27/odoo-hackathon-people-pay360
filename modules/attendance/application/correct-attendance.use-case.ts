@@ -36,7 +36,8 @@ export class CorrectAttendanceUseCase {
     const authz = authorize(input.actor, 'attendance', 'update')
     if (!authz.ok) return authz
 
-    const existing = await this.repo.findById(input.attendanceId)
+    const record = await this.repo.findById(input.attendanceId)
+    const existing = record?.attendance ?? null
     if (!existing) {
       return Err(DomainError.notFound('ATTENDANCE_NOT_FOUND', 'Attendance record not found'))
     }

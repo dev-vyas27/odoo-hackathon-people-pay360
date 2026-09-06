@@ -6,18 +6,32 @@
  * to Time Off. Same locale, same conventions, so the screens read as one app.
  */
 
+/**
+ * Everything is displayed in IST, 24-hour.
+ *
+ * The company works to an Indian clock, so that is the clock the screens show.
+ * Timestamps are still STORED in UTC — this is presentation only, and it is the
+ * same zone `modules/shared/domain/ist.ts` uses to decide which day a shift
+ * belongs to, so the check-in time on the clock widget and the check-in time in
+ * the table cannot disagree.
+ *
+ * Date-only columns are read as UTC midnight, which is 05:30 the same morning
+ * in IST — so a date still renders as its own date, not the day before.
+ */
+const ZONE = 'Asia/Kolkata'
+
 const DATE = new Intl.DateTimeFormat('en-IN', {
   day: '2-digit',
   month: 'short',
   year: 'numeric',
-  timeZone: 'UTC',
+  timeZone: ZONE,
 })
 
 const TIME = new Intl.DateTimeFormat('en-IN', {
   hour: '2-digit',
   minute: '2-digit',
   hour12: false,
-  timeZone: 'UTC',
+  timeZone: ZONE,
 })
 
 export function formatDate(iso: string | null | undefined): string {

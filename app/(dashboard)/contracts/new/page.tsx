@@ -32,8 +32,6 @@ export default function NewContractPage() {
           wage: 0,
           start: new Date(),
           end: null,
-          jobPositionName: undefined,
-          departmentId: undefined,
           workingScheduleId: undefined,
           salaryStructureId: undefined,
         }}

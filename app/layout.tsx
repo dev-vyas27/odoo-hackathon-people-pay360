@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Toaster } from "react-hot-toast";
 import { ltWave } from "@/lib/fonts";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,9 +12,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${ltWave.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">
+    <html lang="en" className={`${ltWave.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        {/*
+          Runs before the body is parsed, so the theme is on <html> before the
+          first paint. An effect cannot do this: the server does not know the
+          visitor's choice, so the page would paint light and then correct
+          itself — a white flash on every load for anyone using dark mode.
+          `suppressHydrationWarning` on <html> above is what lets the script
+          write a class React did not render.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         {children}
+        {/* Reads the same CSS variables as everything else, so toasts follow
+            the theme without knowing anything about it. */}
         <Toaster
           position="top-right"
           toastOptions={{

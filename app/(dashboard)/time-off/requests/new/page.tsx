@@ -21,10 +21,13 @@ import { apiFetch } from '@/lib/api-client'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader } from '@/components/resource/page-header'
 import { ResourceForm } from '@/components/resource/resource-form'
+import { useCurrentUser, useScopedToSelf } from '@/components/auth/current-user'
 import { Button } from '@/components/ui/button'
 
 export default function NewLeaveRequestPage() {
   const router = useRouter()
+  const me = useCurrentUser()
+  const selfOnly = useScopedToSelf()
 
   const { data: employees = [] } = useQuery<EmployeeOption[]>({
     queryKey: ['time-off', 'employee-options'],
@@ -52,7 +55,7 @@ export default function NewLeaveRequestPage() {
         schema={leaveRequestSchema}
         submitLabel="Submit request"
         defaultValues={{
-          employeeId: employees.length === 1 ? employees[0].id : '',
+          employeeId: selfOnly ? me.employeeId : '',
           timeOffTypeId: '',
           reason: '',
         }}
@@ -61,9 +64,18 @@ export default function NewLeaveRequestPage() {
             name: 'employeeId',
             label: 'Employee',
             type: 'select',
-            options: employees.map((e) => ({ value: e.id, label: e.name })),
-            // A self-scoped role gets exactly one option — their own record.
-            disabled: employees.length === 1,
+            /**
+             * Locked to the signed-in person for a self-scoped role, off the
+             * ROLE rather than off `employees.length === 1` as this used to be:
+             * a company with a single employee would otherwise lock the picker
+             * for HR too, and a scoped endpoint that wrongly returned two names
+             * would quietly unlock it.
+             */
+            options: selfOnly
+              ? [{ value: me.employeeId, label: me.name }]
+              : employees.map((e) => ({ value: e.id, label: e.name })),
+            disabled: selfOnly,
+            description: selfOnly ? 'You can only raise your own requests.' : undefined,
           },
           {
             name: 'timeOffTypeId',

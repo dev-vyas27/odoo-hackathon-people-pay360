@@ -111,6 +111,24 @@ const eslintConfig = defineConfig([
     },
   })),
 
+  /**
+   * The Playwright QA suite.
+   *
+   * Two rules do not apply to it and cannot be satisfied honestly. API
+   * responses are deliberately read as `any`, because the whole point of a QA
+   * assertion is to check the shape the server ACTUALLY returned rather than
+   * the shape a type says it should have — typing them would assume the very
+   * thing under test. And Playwright's fixture callback parameter is named
+   * `use`, which the React hooks rule reads as a hook call outside a component.
+   */
+  {
+    files: ["tests/e2e/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/rules-of-hooks": "off",
+    },
+  },
+
   globalIgnores([
     ".next/**",
     "out/**",

@@ -6,11 +6,11 @@ import { InMemoryAttendanceRepository } from './test-support/in-memory-attendanc
 import { FakeScheduleLookup } from './test-support/fake-schedule-lookup'
 
 function employeeActor(employeeId: string): Actor {
-  return { userId: 'u1', employeeId, role: 'employee', email: 'e@x.com', name: 'Employee' }
+  return { employeeId, role: 'employee', email: 'e@x.com', name: 'Employee' }
 }
 
 function otherEmployeeActor(): Actor {
-  return { userId: 'u9', employeeId: 'emp-2', role: 'employee', email: 'other@x.com', name: 'Other' }
+  return { employeeId: 'emp-2', role: 'employee', email: 'other@x.com', name: 'Other' }
 }
 
 describe('CheckOutUseCase', () => {

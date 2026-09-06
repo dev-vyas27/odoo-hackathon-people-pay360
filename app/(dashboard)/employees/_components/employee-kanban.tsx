@@ -18,19 +18,16 @@ const UNASSIGNED = 'Unassigned'
 
 export function EmployeeKanban({
   employees,
-  departmentNames,
   isLoading,
 }: {
   employees: EmployeeListItem[]
-  /** id -> name, so a card can show a department without a second fetch. */
-  departmentNames: Map<string, string>
   isLoading?: boolean
 }) {
   if (isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 w-full rounded-lg" />
+          <Skeleton key={i} className="h-28 w-full rounded-2xl" />
         ))}
       </div>
     )
@@ -38,7 +35,7 @@ export function EmployeeKanban({
 
   if (employees.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border py-16 text-center">
+      <div className="rounded-2xl border border-dashed border-border py-16 text-center">
         <p className="text-sm text-muted-foreground">No employees match these filters</p>
       </div>
     )
@@ -47,9 +44,7 @@ export function EmployeeKanban({
   // Group by department, preserving the order employees arrived in.
   const columns = new Map<string, EmployeeListItem[]>()
   for (const employee of employees) {
-    const key = employee.departmentId
-      ? (departmentNames.get(employee.departmentId) ?? UNASSIGNED)
-      : UNASSIGNED
+    const key = employee.departmentName ?? UNASSIGNED
     const bucket = columns.get(key) ?? []
     bucket.push(employee)
     columns.set(key, bucket)
@@ -73,7 +68,7 @@ export function EmployeeKanban({
                 key={employee.id}
                 href={`/employees/${employee.id}`}
                 className={cn(
-                  'block rounded-lg border border-border bg-card p-3 transition-colors',
+                  'block rounded-2xl border border-border bg-card p-3 transition-colors',
                   'hover:border-primary/40 hover:bg-accent',
                   !employee.isActive && 'opacity-60',
                 )}

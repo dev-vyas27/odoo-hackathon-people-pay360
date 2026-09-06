@@ -6,7 +6,8 @@
  */
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'
-import { checkOutSchema, createCheckOutUseCase } from '@/modules/attendance'
+import { Ok } from '@/modules/shared'
+import { checkOutSchema, createCheckOutUseCase, toAttendanceView } from '@/modules/attendance'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -18,6 +19,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     const actor = await requireActor()
     const body = checkOutSchema.parse(await request.json())
     const result = await createCheckOutUseCase().execute({ actor, attendanceId: id, ...body })
-    return respond(result)
+    if (!result.ok) return respond(result)
+    return respond(Ok(toAttendanceView(result.value.attendance, result.value.status)))
   })
 }

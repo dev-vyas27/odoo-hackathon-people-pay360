@@ -1,43 +1,35 @@
 /**
- * Four months of paid payruns, plus one draft.
- *
- * ── Dev C: this file is yours to replace (modules/payroll-processing). ──────
+ * Nine months of paid payruns across the whole workforce, plus one draft.
  *
  * The dashboard's Total Net Salary Paid, Average Salary, Salary Cost by
  * Department and Monthly Net Salary Trend all read `payslips`. With an empty
  * table every one of them is zero and the screen cannot be judged, so this
- * seeds the history the plan calls for: a fully paid history so the trend chart
- * has shape on first load, and a draft payrun staged for the live compute demo.
+ * seeds the history: a fully paid run for each of the last nine months, and a
+ * draft staged for the live compute demo.
  *
- * It runs AFTER contracts, because a payslip records which contract it was
- * computed from.
+ * Nine and not four, because the trend chart plots twelve months. With four it
+ * sat flat on zero for two thirds of its width and then leapt, which reads as a
+ * company that started trading in June rather than as a trend. Nine fills the
+ * chart, and people hired part-way through still join it late — so the line
+ * rises for a real reason.
  *
- * The amounts are produced by the same arithmetic the rule engine will use, in
- * the same sequence, so recomputing a seeded payslip should not move the
- * numbers. If it does, one of the two is wrong — which makes this a rough
- * conformance check as well as demo data.
+ * ── The wage comes from the contract, not the employee ─────────────────────
+ *
+ * Every payslip resolves the contract that actually covered its period and uses
+ * THAT contract's wage. One employee had a raise three months ago, so their
+ * oldest payslip comes out lower than the other three — which is the whole
+ * point of storing `contract_id` on a payslip, and is checkable on screen.
+ *
+ * The amounts are produced by the same arithmetic the rule engine uses, in the
+ * same sequence, so recomputing a seeded payslip should not move the numbers.
+ * If it does, one of the two is wrong — which makes this a rough conformance
+ * check as well as demo data.
  */
-import { SEED, seedId } from '../ids'
+import { seedId } from '../ids'
+import { contractOn } from '../contracts'
+import { ACTIVE_ROSTER } from '../roster'
 import type { SeedPart, SeedRow } from '../types'
 import { STRUCTURE_ID } from './payroll-config.seed'
-
-/** Wage per employee — must match `employment.seed.ts`. */
-const WAGES: Array<{ employeeId: string; wage: number }> = [
-  { employeeId: SEED.employees.demoLead, wage: 90000 },
-  { employeeId: SEED.employees.twoContracts, wage: 78000 },
-  { employeeId: seedId('emp', 3), wage: 145000 },
-  { employeeId: seedId('emp', 4), wage: 42000 },
-  { employeeId: seedId('emp', 5), wage: 25000 },
-]
-
-/** The contract each employee is paid under, mirroring employment.seed.ts. */
-const CONTRACTS: Record<string, string> = {
-  [SEED.employees.demoLead]: seedId('con', 1),
-  [SEED.employees.twoContracts]: seedId('con', 3),
-  [seedId('emp', 3)]: seedId('con', 4),
-  [seedId('emp', 4)]: seedId('con', 5),
-  [seedId('emp', 5)]: seedId('con', 6),
-}
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -75,6 +67,18 @@ const MONTHS = [
 
 const iso = (date: Date) => date.toISOString().slice(0, 10)
 
+/** Business days in a month, which is what `worked_days` means on a payslip. */
+function businessDays(start: Date, end: Date): number {
+  let count = 0
+  const cursor = new Date(start)
+  while (cursor <= end) {
+    const weekday = cursor.getUTCDay()
+    if (weekday !== 0 && weekday !== 6) count += 1
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+  return count
+}
+
 export const payrollProcessingSeed: SeedPart = {
   name: 'payroll-processing',
   tables: ['payruns', 'payrun_employees', 'payslips', 'payslip_lines'],
@@ -88,19 +92,24 @@ export const payrollProcessingSeed: SeedPart = {
 
     let payslipSeq = 1
     let lineSeq = 1
+    let paidTotal = 0
 
     /**
-     * Four paid months ending with the CURRENT one, then a draft for next
-     * month. The dashboard defaults to the current month, so it has to have
-     * paid data — otherwise the demo opens on a screen of zeros.
+     * Paid months ending with the CURRENT one, then a draft for next month. The
+     * dashboard defaults to the current month, so it has to have paid data —
+     * otherwise the demo opens on a screen of zeros.
      */
-    for (let offset = 3; offset >= -1; offset -= 1) {
+    const PAID_MONTHS = 9
+    for (let offset = PAID_MONTHS; offset >= -1; offset -= 1) {
       const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - offset, 1))
       const monthEnd = new Date(
         Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0),
       )
       const isDraft = offset === -1
-      const payrunId = seedId('run', 4 - offset)
+      // `seedId` rejects a negative index, so the draft (offset -1) has to
+      // land above the paid runs rather than below them.
+      const payrunId = seedId('run', PAID_MONTHS + 1 - offset)
+      const workedDays = businessDays(monthStart, monthEnd)
 
       payruns.push({
         id: payrunId,
@@ -111,25 +120,34 @@ export const payrollProcessingSeed: SeedPart = {
         status: isDraft ? 'draft' : 'paid',
       })
 
-      for (const { employeeId, wage } of WAGES) {
-        payrunEmployees.push([payrunId, employeeId])
+      for (const person of ACTIVE_ROSTER) {
+        /**
+         * Only people whose contract covers the period. Someone hired last
+         * month has no payslip for the month before that, which is both correct
+         * and what makes the monthly trend rise rather than sit flat.
+         */
+        const contract = contractOn(person.id, iso(monthEnd))
+        if (!contract) continue
+
+        payrunEmployees.push([payrunId, person.id])
 
         // A draft payrun has selected employees but NO payslips — they do not
         // exist until Compute runs, which is the live demo moment.
         if (isDraft) continue
 
-        const computed = compute(wage)
+        const computed = compute(contract.wage)
+        paidTotal += computed.net
         const payslipId = seedId('psl', payslipSeq)
         payslipSeq += 1
 
         payslips.push({
           id: payslipId,
           payrun_id: payrunId,
-          employee_id: employeeId,
-          contract_id: CONTRACTS[employeeId],
+          employee_id: person.id,
+          contract_id: contract.id,
           period_start: iso(monthStart),
           period_end: iso(monthEnd),
-          worked_days: 22,
+          worked_days: workedDays,
           basic: computed.basic,
           gross: computed.gross,
           deductions: computed.deductions,
@@ -139,23 +157,18 @@ export const payrollProcessingSeed: SeedPart = {
 
         for (const line of computed.lines) {
           // Offset well clear of the payslip ids so the two never collide.
-          lines.push({ id: seedId('psl', 1000 + lineSeq), payslip_id: payslipId, ...line })
+          lines.push({ id: seedId('psl', 1_000_000 + lineSeq), payslip_id: payslipId, ...line })
           lineSeq += 1
         }
       }
     }
 
-    ctx.log(`${await ctx.upsert('payruns', payruns)} payruns (4 paid, 1 draft)`)
-
-    for (const [payrunId, employeeId] of payrunEmployees) {
-      await ctx.sql(
-        `INSERT INTO payrun_employees (payrun_id, employee_id)
-         VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-        [payrunId, employeeId],
-      )
-    }
-
+    ctx.log(`${await ctx.upsert('payruns', payruns)} payruns (${PAID_MONTHS} paid, 1 draft)`)
+    ctx.log(
+      `${await ctx.link('payrun_employees', ['payrun_id', 'employee_id'], payrunEmployees)} payrun selections`,
+    )
     ctx.log(`${await ctx.upsert('payslips', payslips)} payslips`)
     ctx.log(`${await ctx.upsert('payslip_lines', lines)} payslip lines`)
+    ctx.log(`₹${Math.round(paidTotal).toLocaleString('en-IN')} net paid across ${PAID_MONTHS} months`)
   },
 }

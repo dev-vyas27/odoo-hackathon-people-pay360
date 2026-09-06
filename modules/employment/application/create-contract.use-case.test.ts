@@ -62,7 +62,7 @@ class FakeContractRepository implements ContractRepositoryPort {
 }
 
 function hrManager(): Actor {
-  return { userId: 'u1', employeeId: null, role: 'hr_manager', email: 'hr@pp360.dev', name: 'HR' }
+  return { employeeId: 'emp-actor', role: 'hr_manager', email: 'hr@pp360.dev', name: 'HR' }
 }
 
 function existingContract(overrides: Partial<Contract> = {}): Contract {
@@ -195,7 +195,7 @@ describe('CreateContractUseCase', () => {
     const useCase = new CreateContractUseCase(repo)
 
     const result = await useCase.execute({
-      actor: { userId: 'u2', employeeId: 'emp-9', role: 'employee', email: 'e@pp360.dev', name: 'Emp' },
+      actor: { employeeId: 'emp-9', role: 'employee', email: 'e@pp360.dev', name: 'Emp' },
       employeeId: 'emp-1',
       wage: 60000,
       salaryStructureId: null,

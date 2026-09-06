@@ -11,9 +11,14 @@ import { DomainError } from '../domain/domain-error'
 import type { Result } from '../domain/result'
 import { Err, Ok } from '../domain/result'
 
+/**
+ * `employeeId` is the identity, and it is never null: since 0010 an account IS
+ * an employee row, so being authenticated means having one. Row-level scoping
+ * (`authorizeOwned` below) therefore no longer has a "logged in but not a
+ * person" case to defend against.
+ */
 export interface Actor {
-  readonly userId: string
-  readonly employeeId: string | null
+  readonly employeeId: string
   readonly role: Role
   readonly email: string
   readonly name: string

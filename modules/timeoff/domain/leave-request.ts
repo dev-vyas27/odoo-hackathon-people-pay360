@@ -26,7 +26,7 @@ export interface LeaveRequestProps {
   status: LeaveStatus
   /** The allocation the approval drew from — needed to restore on refusal. */
   allocationId?: string | null
-  decidedByUserId?: string | null
+  decidedByEmployeeId?: string | null
   decidedAt?: Date | null
 }
 
@@ -116,21 +116,21 @@ export class LeaveRequest {
     this.props = { ...this.props, status: this.state.submit().name }
   }
 
-  approve(decidedByUserId: string, allocationId: string | null): void {
+  approve(decidedByEmployeeId: string, allocationId: string | null): void {
     this.props = {
       ...this.props,
       status: this.state.approve().name,
       allocationId,
-      decidedByUserId,
+      decidedByEmployeeId,
       decidedAt: new Date(),
     }
   }
 
-  refuse(decidedByUserId: string): void {
+  refuse(decidedByEmployeeId: string): void {
     this.props = {
       ...this.props,
       status: this.state.refuse().name,
-      decidedByUserId,
+      decidedByEmployeeId,
       decidedAt: new Date(),
     }
   }

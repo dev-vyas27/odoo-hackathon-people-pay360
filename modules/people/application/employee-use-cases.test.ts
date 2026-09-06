@@ -84,9 +84,8 @@ class FakeEmployeeRepository implements EmployeeRepositoryPort {
   }
 }
 
-const hrActor: Actor = { userId: 'u1', employeeId: null, role: 'hr_manager', email: 'hr@co.com', name: 'HR' }
+const hrActor: Actor = { employeeId: 'emp-actor', role: 'hr_manager', email: 'hr@co.com', name: 'HR' }
 const employeeActor = (employeeId: string): Actor => ({
-  userId: 'u2',
   employeeId,
   role: 'employee',
   email: 'e@co.com',

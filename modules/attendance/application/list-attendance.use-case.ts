@@ -7,8 +7,11 @@
  * expresses everywhere else in this module.
  */
 import { authorize, Ok, scopeToSelf, type Actor, type PageQuery, type Paged, type Result } from '@/modules/shared'
-import type { Attendance } from '../domain/attendance'
-import type { AttendanceFilter, AttendanceRepositoryPort } from './ports/attendance-repository.port'
+import type {
+  AttendanceFilter,
+  AttendanceRecord,
+  AttendanceRepositoryPort,
+} from './ports/attendance-repository.port'
 
 export interface ListAttendanceInput {
   actor: Actor
@@ -19,7 +22,7 @@ export interface ListAttendanceInput {
 export class ListAttendanceUseCase {
   constructor(private readonly repo: AttendanceRepositoryPort) {}
 
-  async execute(input: ListAttendanceInput): Promise<Result<Paged<Attendance>>> {
+  async execute(input: ListAttendanceInput): Promise<Result<Paged<AttendanceRecord>>> {
     const authz = authorize(input.actor, 'attendance', 'read')
     if (!authz.ok) return authz
 

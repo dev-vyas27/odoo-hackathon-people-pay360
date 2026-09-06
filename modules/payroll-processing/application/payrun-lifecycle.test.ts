@@ -28,8 +28,7 @@ import { MarkPayrunPaidUseCase } from './mark-payrun-paid.use-case'
 import { ListEligibleEmployeesUseCase } from './list-eligible-employees.use-case'
 
 const ACTOR: Actor = {
-  userId: 'u1',
-  employeeId: null,
+  employeeId: 'emp-actor',
   role: 'hr_payroll_manager',
   email: 'payroll@example.com',
   name: 'Payroll Manager',

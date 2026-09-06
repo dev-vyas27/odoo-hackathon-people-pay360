@@ -20,10 +20,17 @@ import type { Role } from './permissions'
 // Common — owner: Dev A
 // ---------------------------------------------------------------------------
 
-/** The authenticated user as every layer above the domain sees it. */
+/**
+ * The authenticated person as every layer above the domain sees it.
+ *
+ * One id, not two. `users` and `employees` were separate tables until 0010, so
+ * this carried both a `userId` and a nullable `employeeId` and every consumer
+ * had to know which one to use — and handle the null. The employee row is now
+ * the identity, so `employeeId` is the only id there is and it is always
+ * present.
+ */
 export interface CurrentUser {
-  userId: string
-  employeeId: string | null
+  employeeId: string
   role: Role
   email: string
   name: string
@@ -176,6 +183,47 @@ export interface AttendanceStatsPort {
     departmentId?: string,
     employeeType?: string,
   ): Promise<AttendanceSummary>
+}
+
+/**
+ * Outbound email — owner: Dev A (`delivery`).
+ *
+ * Consumed by identity for invitations, and later by payslip distribution.
+ * Behind a port so `nodemailer` is imported in exactly one file and so a test
+ * can assert on what would have been sent without an SMTP server.
+ */
+export interface EmailAttachment {
+  filename: string
+  content: Uint8Array
+  contentType: string
+}
+
+export interface EmailMessage {
+  to: string
+  subject: string
+  /** Plain text is required; HTML is the enhancement, not the other way round. */
+  text: string
+  html?: string
+  /**
+   * Files travelling WITH the message.
+   *
+   * A payslip is emailed as an attachment rather than only as a link because a
+   * signed download URL expires — seven days at the very most — and an email
+   * that outlives its own link is worse than no email. The archived copy in S3
+   * is the system of record; the attachment is what the person actually opens.
+   */
+  attachments?: EmailAttachment[]
+}
+
+export interface EmailResult {
+  to: string
+  sent: boolean
+  /** Present when `sent` is false. Never contains credentials. */
+  error?: string
+}
+
+export interface MailerPort {
+  send(message: EmailMessage): Promise<EmailResult>
 }
 
 // ---------------------------------------------------------------------------

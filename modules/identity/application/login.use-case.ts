@@ -8,9 +8,9 @@
  * whether the address is registered either.
  */
 import { DomainError, Err, Ok, type CurrentUser, type Result, type UseCase } from '@/modules/shared'
-import type { UserRepositoryPort } from './ports/user-repository.port'
+import type { AccountRepositoryPort } from './ports/account-repository.port'
 import type { PasswordHasherPort } from './ports/password-hasher.port'
-import { normalizeEmail } from '../domain/user'
+import { normalizeEmail } from '../domain/account'
 
 export interface LoginInput {
   email: string
@@ -22,28 +22,33 @@ const DUMMY_HASH = '$2b$10$CwTycUXWue0Thq9StjUM0uJ8.Ux3Vh4pQ2qFqvIcS8B0eYbkVsKQK
 
 export class LoginUseCase implements UseCase<LoginInput, CurrentUser> {
   constructor(
-    private readonly users: UserRepositoryPort,
+    private readonly accounts: AccountRepositoryPort,
     private readonly hasher: PasswordHasherPort,
   ) {}
 
   async execute(input: LoginInput): Promise<Result<CurrentUser>> {
-    const user = await this.users.findByEmail(normalizeEmail(input.email))
+    const account = await this.accounts.findByEmail(normalizeEmail(input.email))
 
-    const matches = await this.hasher.compare(input.password, user?.passwordHash ?? DUMMY_HASH)
+    const matches = await this.hasher.compare(
+      input.password,
+      // Null for an employee with no login, which must cost the same to reject as
+      // a wrong password — otherwise the timing says who has an account.
+      account?.passwordHash ?? DUMMY_HASH,
+    )
 
-    if (!user || !matches) {
+    if (!account || !matches) {
       return Err(
         DomainError.unauthorized('INVALID_CREDENTIALS', 'Email or password is incorrect'),
       )
     }
 
     try {
-      user.assertCanSignIn()
+      account.assertCanSignIn()
     } catch (reason) {
       if (DomainError.is(reason)) return Err(reason)
       throw reason
     }
 
-    return Ok(user.toCurrentUser())
+    return Ok(account.toCurrentUser())
   }
 }

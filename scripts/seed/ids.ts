@@ -75,6 +75,15 @@ export const SEED = {
     engineering: seedId('dep', 1),
     sales: seedId('dep', 2),
     operations: seedId('dep', 3),
+    /**
+     * The department the staff logins belong to.
+     *
+     * Since 0010 an account is an employee row, so the HR and payroll people
+     * appear on the employee list like anyone else. Without a department they
+     * read as half-created records — a dash where every other row has a name.
+     * They are real staff; this is where they work.
+     */
+    humanResources: seedId('dep', 4),
   },
   schedules: {
     standard40: seedId('sch', 1),

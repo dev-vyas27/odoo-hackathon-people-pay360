@@ -9,6 +9,7 @@
 import { redirect } from 'next/navigation'
 import { getActor } from '@/lib/auth'
 import { isDemoSeedEnabled } from '@/lib/demo-mode'
+import { DEMO_CREDENTIALS } from '@/scripts/seed/parts/identity.seed'
 import { landingPathFor } from '@/components/layout/nav-items'
 import { LoginScreen } from './login-screen'
 
@@ -29,22 +30,23 @@ export default async function LoginPage({
   const { next } = await searchParams
 
   return (
-    <div className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="space-y-2">
-          <p className="text-sm tracking-tight">
-            PeoplePay<span className="text-primary">360</span>
-          </p>
-          <h1 className="text-2xl font-medium tracking-tight">Sign in</h1>
-          <p className="text-sm text-muted-foreground">
-            HR and payroll operations for your organisation.
-          </p>
-        </div>
-
-        {/* The flag is read here, on the server, and passed down as a prop —
-            it never reaches a client bundle. */}
-        <LoginScreen next={safeNext(next)} demoEnabled={isDemoSeedEnabled()} />
+    <>
+      <div className="space-y-3">
+        <h1 className="text-xl font-medium">Sign in</h1>
+        <p className="text-base text-muted-foreground">
+          Sign in with your work email.
+        </p>
       </div>
-    </div>
+
+      {/*
+        The flag is read here, on the SERVER, and the accounts are passed down
+        already resolved — the credentials never reach a client bundle unless
+        the flag is on, and there is no client-side check to bypass.
+
+        `DEMO_CREDENTIALS` is the same array the seeder prints, so a password
+        changed in the seed cannot leave a stale one on this screen.
+      */}
+      <LoginScreen next={safeNext(next)} accounts={isDemoSeedEnabled() ? DEMO_CREDENTIALS : []} />
+    </>
   )
 }

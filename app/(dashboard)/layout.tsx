@@ -9,6 +9,7 @@
 import { redirect } from 'next/navigation'
 import { getActor } from '@/lib/auth'
 import { Providers } from '@/app/providers'
+import { CurrentUserProvider } from '@/components/auth/current-user'
 import { TopNav } from '@/components/layout/top-nav'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -16,7 +17,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!actor) redirect('/login')
 
   const user = {
-    userId: actor.userId,
     employeeId: actor.employeeId,
     role: actor.role,
     email: actor.email,
@@ -25,10 +25,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <Providers>
-      <div className="flex min-h-full flex-col">
-        <TopNav user={user} />
-        <main className="mx-auto w-full max-w-[90rem] flex-1 px-4 py-8 sm:px-6">{children}</main>
-      </div>
+      {/* The layout already read the cookie, so client pages get the role with
+          no extra request and no flash of an action the user cannot take. */}
+      <CurrentUserProvider user={user}>
+        <div className="flex min-h-full flex-col">
+          <TopNav user={user} />
+          <main className="mx-auto w-full max-w-[90rem] flex-1 px-4 py-8 sm:px-6">{children}</main>
+        </div>
+      </CurrentUserProvider>
     </Providers>
   )
 }

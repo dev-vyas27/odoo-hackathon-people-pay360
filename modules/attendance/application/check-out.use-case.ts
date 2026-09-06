@@ -31,7 +31,8 @@ export class CheckOutUseCase {
   ) {}
 
   async execute(input: CheckOutInput): Promise<Result<CheckOutOutput>> {
-    const existing = await this.repo.findById(input.attendanceId)
+    const record = await this.repo.findById(input.attendanceId)
+    const existing = record?.attendance ?? null
     if (!existing) {
       return Err(DomainError.notFound('ATTENDANCE_NOT_FOUND', 'Attendance record not found'))
     }

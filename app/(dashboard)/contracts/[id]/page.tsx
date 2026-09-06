@@ -65,8 +65,6 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           wage: contract.wage,
           start: new Date(contract.start),
           end: contract.end ? new Date(contract.end) : null,
-          jobPositionName: contract.jobPositionName ?? undefined,
-          departmentId: contract.departmentId ?? undefined,
           workingScheduleId: contract.workingScheduleId ?? undefined,
           salaryStructureId: contract.salaryStructureId ?? undefined,
         }}

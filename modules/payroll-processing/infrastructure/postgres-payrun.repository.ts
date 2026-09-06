@@ -13,7 +13,7 @@ import { Period, type PageQuery, type Paged } from '@/modules/shared'
 import { normalizePageQuery, paged } from '@/modules/shared'
 import { query, queryOne, transaction } from '@/lib/db'
 import type { PayrunRepositoryPort } from '../application/ports/payrun-repository.port'
-import { createPayrun, type Payrun } from '../domain/payrun'
+import { reconstitutePayrun, type Payrun } from '../domain/payrun'
 import type { PayrunStatus } from '../domain/payrun-state'
 import {
   PAYRUN_EMPLOYEES_TABLE,
@@ -44,7 +44,8 @@ const GROUP_BY = `GROUP BY p.id, s.name`
 const SORTABLE = new Set(['name', 'period_start', 'period_end', 'status', 'created_at'])
 
 function toDomain(row: PayrunReadRow): Payrun {
-  return createPayrun({
+  // reconstitute, not create: reading a row must not re-run create-time rules.
+  return reconstitutePayrun({
     id: row.id,
     name: row.name,
     structureId: row.salary_structure_id,

@@ -14,6 +14,7 @@ import { LuArrowLeft, LuTrash2 } from 'react-icons/lu'
 import type { TimeOffTypeValues, TimeOffTypeView } from '@/modules/timeoff/schemas'
 import { useDeleteResource, useResourceList, useUpdateResource } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
+import { useCan } from '@/components/auth/current-user'
 import { ConfirmDialog } from '@/components/resource/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -34,6 +35,14 @@ export default function EditTimeOffTypePage({ params }: { params: Promise<{ id: 
   const type = page.items.find((item) => item.id === id)
 
   const update = useUpdateResource<TimeOffTypeView, TimeOffTypeValues>('time-off/types')
+  /**
+   * `/time-off` is guarded on `leave_request:read`, which an employee holds —
+   * so they reach this page. They hold `time_off_type:read` and nothing more,
+   * and must not be offered Delete on company leave policy.
+   */
+  const canDelete = useCan('time_off_type', 'delete')
+  const canEdit = useCan('time_off_type', 'update')
+
   const remove = useDeleteResource('time-off/types', { successMessage: 'Leave type deleted' })
 
   if (isLoading) return <Skeleton className="h-64 w-full max-w-3xl" />
@@ -65,6 +74,7 @@ export default function EditTimeOffTypePage({ params }: { params: Promise<{ id: 
       />
 
       <TimeOffTypeForm
+        readOnly={!canEdit}
         submitLabel="Save changes"
         defaultValues={{
           name: type.name,
@@ -75,22 +85,24 @@ export default function EditTimeOffTypePage({ params }: { params: Promise<{ id: 
           isActive: type.isActive,
         }}
         cancel={
-          <ConfirmDialog
-            title="Delete this leave type?"
-            description="Only possible when nothing references it. Otherwise deactivate it instead — the history has to stay."
-            confirmLabel="Delete"
-            destructive
-            onConfirm={async () => {
-              await remove.mutateAsync(id)
-              router.push('/time-off/types')
-            }}
-            trigger={
-              <Button variant="ghost" type="button">
-                <LuTrash2 aria-hidden />
-                Delete
-              </Button>
-            }
-          />
+          canDelete ? (
+            <ConfirmDialog
+              title="Delete this leave type?"
+              description="Only possible when nothing references it. Otherwise deactivate it instead — the history has to stay."
+              confirmLabel="Delete"
+              destructive
+              onConfirm={async () => {
+                await remove.mutateAsync(id)
+                router.push('/time-off/types')
+              }}
+              trigger={
+                <Button variant="ghost" type="button">
+                  <LuTrash2 aria-hidden />
+                  Delete
+                </Button>
+              }
+            />
+          ) : undefined
         }
         onSubmit={async (values) => {
           await update.mutateAsync({ id, values })

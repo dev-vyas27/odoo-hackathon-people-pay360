@@ -28,6 +28,26 @@ export interface EmployeeRow {
 }
 
 export const EMPLOYEES_TABLE = 'employees'
+
+/**
+ * "An administrator is not a member of staff", as SQL.
+ *
+ * Migration 0010 made every login an employee row, so the account somebody
+ * administers the system with now sits in the same table as real staff. It has
+ * no department, no contract and no job position, because it is the operator
+ * rather than a person on the payroll.
+ *
+ * This lives here, once, because the rule is needed in two places that would
+ * otherwise drift: the employee list (see `buildWhere` in
+ * postgres-employee.repository.ts) and the dashboard's people statistics. A
+ * list showing eight beside a headcount reading nine is the kind of
+ * disagreement that makes someone stop trusting both numbers.
+ *
+ * It is a constant, never interpolated from input, so it carries no injection
+ * risk and `role` can stay out of `EMPLOYEE_COLUMNS` — and therefore off the
+ * wire. Prefix it (`e.`) when the query joins.
+ */
+export const NOT_AN_ADMIN = `role <> 'admin'`
 export const EMPLOYEE_COLUMNS = [
   'id',
   'name',

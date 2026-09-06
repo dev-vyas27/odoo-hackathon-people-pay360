@@ -26,7 +26,7 @@ export function StructurePreview({
   if (!lines?.length) return null
 
   return (
-    <section className="rounded-lg border border-border">
+    <section className="rounded-2xl border border-border">
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border bg-muted/30 px-5 py-3">
         <h2 className="text-sm font-medium text-foreground">Computation preview</h2>
         <p className="text-xs text-muted-foreground">

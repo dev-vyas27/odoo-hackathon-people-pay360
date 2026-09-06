@@ -5,8 +5,7 @@ import type { SalaryRuleRepositoryPort } from './ports/salary-rule-repository.po
 import { ListSalaryRulesUseCase } from './list-salary-rules.use-case'
 
 const ACTOR: Actor = {
-  userId: 'u1',
-  employeeId: null,
+  employeeId: 'emp-actor',
   role: 'hr_payroll_manager',
   email: 'payroll@example.com',
   name: 'Payroll Manager',

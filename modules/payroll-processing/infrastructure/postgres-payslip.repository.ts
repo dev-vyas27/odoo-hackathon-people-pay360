@@ -139,18 +139,28 @@ export class PostgresPayslipRepository implements PayslipRepositoryPort {
 
         if (!lines.length) continue
 
-        // One multi-row INSERT per payslip rather than one per line.
+        /**
+         * One multi-row INSERT per payslip rather than one per line.
+         *
+         * The tuples list `$1` (the payslip id) in every row rather than
+         * selecting from a `(VALUES ...) AS v(...)` derived table. That is not
+         * a style choice: inside a standalone VALUES subquery Postgres has no
+         * target column to infer parameter types from, so every `$n` binds as
+         * `text` and the insert dies with
+         * `column "sequence" is of type integer but expression is of type text`.
+         * Writing the VALUES directly under the INSERT gives each parameter the
+         * target column's type.
+         */
         const values: unknown[] = []
         const tuples = lines.map((line, index) => {
           const base = index * 5
           values.push(line.code, line.name, line.category, line.sequence, line.amount.toNumber())
-          return `($${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6})`
+          return `($1, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6})`
         })
 
         await client.query(
           `INSERT INTO "${PAYSLIP_LINES_TABLE}" (payslip_id, code, name, category, sequence, amount)
-           SELECT $1, v.code, v.name, v.category, v.sequence, v.amount
-             FROM (VALUES ${tuples.join(', ')}) AS v(code, name, category, sequence, amount)`,
+           VALUES ${tuples.join(', ')}`,
           [inserted.rows[0].id, ...values],
         )
       }

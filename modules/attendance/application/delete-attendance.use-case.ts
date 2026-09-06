@@ -17,7 +17,7 @@ export class DeleteAttendanceUseCase {
     const authz = authorize(input.actor, 'attendance', 'delete')
     if (!authz.ok) return authz
 
-    const existing = await this.repo.findById(input.attendanceId)
+    const existing = (await this.repo.findById(input.attendanceId))?.attendance ?? null
     if (!existing) {
       return Err(DomainError.notFound('ATTENDANCE_NOT_FOUND', 'Attendance record not found'))
     }

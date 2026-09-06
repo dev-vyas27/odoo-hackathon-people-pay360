@@ -98,6 +98,10 @@ export type {
   LeaveStatus,
   LeaveBalanceView,
   LeaveStatsPort,
+  EmailAttachment,
+  EmailMessage,
+  EmailResult,
+  MailerPort,
   SalaryCategory,
   PayslipStatus,
   PayrunStatus,
@@ -117,3 +121,23 @@ export {
   portOr,
   type Container,
 } from './container'
+
+/**
+ * The business calendar.
+ *
+ * Lives in the shared kernel rather than in `lib/` because "which day is this
+ * shift on" is a domain question, not an app-level formatting one — and the
+ * architecture rule that keeps `modules/**` off `lib/**` is right to say so.
+ * Pure functions, no I/O, safe on both sides of the wire.
+ */
+export {
+  IST_OFFSET_MS,
+  IST_LABEL,
+  istDay,
+  istTime,
+  istStartOfDay,
+  istEndOfDay,
+  istNextMidnight,
+  minutesBetween,
+  formatDuration,
+} from './domain/ist'

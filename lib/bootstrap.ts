@@ -12,6 +12,7 @@
  * Called from `instrumentation.ts`, which Next runs once at server startup.
  */
 import { registerTimeOff } from '@/modules/timeoff'
+import { registerDelivery } from '@/modules/delivery'
 import { registerPeople } from '@/modules/people'
 import { registerEmployment } from '@/modules/employment'
 import { registerAttendance } from '@/modules/attendance'
@@ -29,6 +30,8 @@ export function bootstrap(): void {
 
   // ── Dev A ────────────────────────────────────────────────────────────────
   registerTimeOff()
+  // MailerPort. Logs to the console until SMTP_HOST is set.
+  registerDelivery()
 
   // ── Dev B ────────────────────────────────────────────────────────────────
   registerPeople()          // EmployeeLookupPort

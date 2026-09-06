@@ -25,6 +25,29 @@ types.setTypeParser(types.builtins.NUMERIC, (value) => Number(value))
 /** int8/bigint — only ever a COUNT(*) in this application. */
 types.setTypeParser(types.builtins.INT8, (value) => Number(value))
 
+/**
+ * `date` columns are UTC midnight, not local midnight.
+ *
+ * This is the single most consequential line in the file. By default node-pg
+ * turns a `date` into `new Date('2029-02-01')`-at-LOCAL-midnight, so on a
+ * machine at UTC+5:30 a contract starting 1 February came back as
+ * `2029-01-31T18:30:00.000Z`. Every UTC reader downstream then saw the wrong
+ * DAY:
+ *
+ *   - `Period` and `startOfDay()` use UTC getters, so contract resolution
+ *     treated that contract as already in force on 31 January.
+ *   - `worked_on` shifted a day, which moves attendance between payroll periods.
+ *   - The API serialised the shifted instant, so date inputs rendered the day
+ *     before the stored one.
+ *
+ * A `date` has no time and no zone — it is a calendar day. Anchoring it to UTC
+ * midnight is what makes it round-trip through `toISOString().slice(0, 10)`
+ * unchanged, which is how every screen and every query in this codebase reads
+ * one. Deployments west of UTC were shifted the other way; only a server sitting
+ * exactly on UTC ever behaved correctly, which is why nothing caught it.
+ */
+types.setTypeParser(types.builtins.DATE, (value) => new Date(`${value}T00:00:00.000Z`))
+
 declare global {
   var __pgPool: Pool | undefined
 }

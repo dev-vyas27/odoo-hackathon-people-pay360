@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 /**
  * The login form — and the first demonstration of the project's form rule:
@@ -6,25 +6,26 @@
  * module, which the login route handler validates with too. One definition,
  * two enforcement points.
  */
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 // NOT '@/modules/identity' — that barrel reaches the Postgres repository, and
 // pulling the pg driver into a client bundle breaks at module evaluation.
 // See modules/identity/schemas.ts.
-import { loginSchema, type LoginValues } from '@/modules/identity/schemas'
-import { ApiError, apiFetch } from '@/lib/api-client'
-import { ResourceForm } from '@/components/resource/resource-form'
+import { loginSchema, type LoginValues } from "@/modules/identity/schemas";
+import { ApiError, apiFetch } from "@/lib/api-client";
+import { ResourceForm } from "@/components/resource/resource-form";
 
 export function LoginForm({
   next,
   prefill,
 }: {
-  next?: string
+  next?: string;
   /** Filled in by the demo panel. See login-screen.tsx for how it is applied. */
-  prefill?: { email: string; password: string }
+  prefill?: { email: string; password: string };
 }) {
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="space-y-4">
@@ -38,20 +39,38 @@ export function LoginForm({
       ) : null}
 
       <ResourceForm<LoginValues>
+        surface={false}
         schema={loginSchema}
         submitLabel="Sign in"
-        defaultValues={{ email: prefill?.email ?? '', password: prefill?.password ?? '' }}
+        defaultValues={{
+          email: prefill?.email ?? "",
+          password: prefill?.password ?? "",
+        }}
         fields={[
-          { name: 'email', label: 'Email', type: 'email', span: 2, placeholder: 'you@company.com' },
-          { name: 'password', label: 'Password', type: 'password', span: 2 },
+          {
+            name: "email",
+            label: "Email",
+            type: "email",
+            span: 2,
+            placeholder: "you@company.com",
+          },
+          { name: "password", label: "Password", type: "password", span: 2 },
         ]}
+        cancel={
+          <Link
+            href="/forgot-password"
+            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Forgot your password?
+          </Link>
+        }
         onSubmit={async (values) => {
-          setError(null)
+          setError(null);
           try {
-            await apiFetch('/api/auth/login', {
-              method: 'POST',
+            await apiFetch("/api/auth/login", {
+              method: "POST",
               body: JSON.stringify(values),
-            })
+            });
             /**
              * Refresh BEFORE navigating. The session cookie was just set on the
              * login response, and the router still holds the RSC payload it
@@ -59,15 +78,17 @@ export function LoginForm({
              * the push lands on a tree rendered with the new cookie instead of
              * bouncing straight back to /login.
              */
-            router.refresh()
-            router.push(next ?? '/')
+            router.refresh();
+            router.push(next ?? "/");
           } catch (reason) {
             setError(
-              reason instanceof ApiError ? reason.message : 'Could not sign in. Try again.',
-            )
+              reason instanceof ApiError
+                ? reason.message
+                : "Could not sign in. Try again.",
+            );
           }
         }}
       />
     </div>
-  )
+  );
 }

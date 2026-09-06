@@ -18,17 +18,21 @@ export function TimeOffTypeForm({
   cancel,
   /** The unit is locked once allocations exist — see UpdateTimeOffTypeUseCase. */
   unitLocked = false,
+  /** A role that may read leave policy but not change it. */
+  readOnly = false,
 }: {
   defaultValues: TimeOffTypeValues
   submitLabel: string
   onSubmit: (values: TimeOffTypeValues) => Promise<void>
   cancel?: React.ReactNode
   unitLocked?: boolean
+  readOnly?: boolean
 }) {
   return (
     <ResourceForm<TimeOffTypeValues>
       schema={timeOffTypeSchema}
       submitLabel={submitLabel}
+      readOnly={readOnly}
       defaultValues={defaultValues}
       cancel={cancel}
       onSubmit={onSubmit}

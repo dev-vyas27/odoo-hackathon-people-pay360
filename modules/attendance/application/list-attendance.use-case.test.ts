@@ -6,11 +6,11 @@ import { InMemoryAttendanceRepository } from './test-support/in-memory-attendanc
 import { FakeScheduleLookup } from './test-support/fake-schedule-lookup'
 
 function employeeActor(employeeId: string): Actor {
-  return { userId: 'u1', employeeId, role: 'employee', email: 'e@x.com', name: 'Employee' }
+  return { employeeId, role: 'employee', email: 'e@x.com', name: 'Employee' }
 }
 
 function hrActor(): Actor {
-  return { userId: 'u2', employeeId: null, role: 'hr_manager', email: 'hr@x.com', name: 'HR' }
+  return { employeeId: 'emp-actor', role: 'hr_manager', email: 'hr@x.com', name: 'HR' }
 }
 
 async function seed(repo: InMemoryAttendanceRepository) {
@@ -46,7 +46,7 @@ describe('ListAttendanceUseCase', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.value.total).toBe(1)
-      expect(result.value.items[0]?.employeeId).toBe('emp-1')
+      expect(result.value.items[0]?.attendance.employeeId).toBe('emp-1')
     }
   })
 })

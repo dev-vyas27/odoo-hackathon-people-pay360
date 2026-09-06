@@ -22,9 +22,17 @@ export interface SeedContext {
    */
   upsert(table: string, rows: SeedRow[]): Promise<number>
   /**
-   * Escape hatch for anything an upsert cannot express — a join table with a
-   * composite key, say. Always parameterised; never build SQL by concatenating
-   * values into the string.
+   * Rows for a join table with a composite primary key and no `id`.
+   *
+   * `payrun_employees` and `salary_structure_rules` are both of this shape, and
+   * both used to be filled one INSERT at a time inside the transaction. At five
+   * payruns across a full workforce that is hundreds of round trips for data
+   * that fits in one statement.
+   */
+  link(table: string, columns: [string, string], pairs: Array<[string, string]>): Promise<number>
+  /**
+   * Escape hatch for anything the helpers above cannot express. Always
+   * parameterised; never build SQL by concatenating values into the string.
    */
   sql(text: string, params?: readonly unknown[]): Promise<void>
   log(message: string): void
@@ -46,7 +54,16 @@ export interface SeedPart {
 }
 
 export interface SeedCredential {
+  /** Human label for the role — 'HR Payroll Manager', not 'hr_payroll_manager'. */
   role: string
+  /**
+   * Who this actually is.
+   *
+   * Since the staff logins became real members of the workforce, "HR Manager"
+   * alone no longer identifies the account — the sign-in screen lists these,
+   * and a jury picking one should see the person they are about to become.
+   */
+  name: string
   email: string
   password: string
 }

@@ -58,3 +58,7 @@ next-env.d.ts
 /docs/plans/
 *.pdf
 *.patch
+
+# Playwright QA suite output
+/test-results/
+/playwright-report/

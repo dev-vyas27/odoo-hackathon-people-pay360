@@ -3,6 +3,7 @@
  *
  *   npm run seed
  *   npm run seed -- --reset     empty the seeded tables first
+ *   npm run seed -- --wipe      empty EVERY table first, then seed
  *
  * All of the actual work is in `scripts/seed/run.ts`, shared with the demo-seed
  * button on the login screen so the two can never drift apart.
@@ -12,10 +13,12 @@ import { runSeed } from './seed/run'
 
 async function main() {
   const reset = process.argv.includes('--reset')
+  const wipe = process.argv.includes('--wipe')
 
-  console.log(`Seeding ${redact(process.env.DATABASE_URL ?? '(unset)')}${reset ? ' (reset)' : ''}\n`)
+  const mode = wipe ? ' — WIPING every table first' : reset ? ' (reset)' : ''
+  console.log(`Seeding ${redact(process.env.DATABASE_URL ?? '(unset)')}${mode}\n`)
 
-  const summary = await runSeed({ reset, onLog: (message) => console.log(message) })
+  const summary = await runSeed({ reset, wipe, onLog: (message) => console.log(message) })
 
   console.log(`\nDone in ${summary.durationMs}ms`)
   for (const part of summary.parts) {

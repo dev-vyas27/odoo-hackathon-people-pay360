@@ -65,7 +65,7 @@ export default async function SectionPlaceholder({
         }
       />
 
-      <div className="rounded-lg border border-dashed border-border py-16 text-center">
+      <div className="rounded-2xl border border-dashed border-border py-16 text-center">
         <LuHardHat className="mx-auto size-8 text-muted-foreground/60" aria-hidden />
         <p className="mt-3 text-sm text-muted-foreground">
           This screen has not been built yet.

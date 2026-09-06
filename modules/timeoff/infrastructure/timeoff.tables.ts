@@ -82,7 +82,7 @@ export interface LeaveRequestRow {
   reason: string | null
   status: LeaveStatus
   allocation_id: string | null
-  decided_by_user_id: string | null
+  decided_by_employee_id: string | null
   decided_at: Date | null
   created_at: Date
   updated_at: Date
@@ -99,7 +99,7 @@ export const REQUEST_COLUMNS = [
   'reason',
   'status',
   'allocation_id',
-  'decided_by_user_id',
+  'decided_by_employee_id',
   'decided_at',
   'created_at',
   'updated_at',

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LuArrowLeft, LuPrinter } from 'react-icons/lu'
+import { LuArrowLeft, LuDownload, LuPrinter } from 'react-icons/lu'
 import { GetPayslipDetailUseCase, payslipRepository, toPayslipView } from '@/modules/payroll-processing/server'
 import { PageHeader } from '@/components/resource/page-header'
 import { StatusBadge } from '@/components/resource/status-badge'
@@ -46,18 +46,25 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                 Back to pay run
               </Link>
             </Button>
-            {/* Rendered by Dev A's delivery module. */}
+            {/* Rendered by the delivery module. Inline preview here… */}
             <Button asChild variant="outline">
               <a href={`/api/payslips/${payslip.id}/pdf`} target="_blank" rel="noreferrer">
                 <LuPrinter className="size-4" aria-hidden />
                 Print PDF
               </a>
             </Button>
+            {/* …and the same route with ?download=1 for a save dialog. */}
+            <Button asChild>
+              <a href={`/api/payslips/${payslip.id}/pdf?download=1`}>
+                <LuDownload className="size-4" aria-hidden />
+                Download
+              </a>
+            </Button>
           </div>
         }
       />
 
-      <section className="mb-6 grid grid-cols-2 gap-6 rounded-lg border border-border bg-card px-5 py-4 sm:grid-cols-3 lg:grid-cols-6">
+      <section className="mb-6 grid grid-cols-2 gap-6 rounded-2xl border border-border bg-card px-5 py-4 sm:grid-cols-3 lg:grid-cols-6">
         <Field label="Employee">{payslip.employeeName}</Field>
         <Field label="Structure">{payslip.structureName}</Field>
         <Field label="Pay run">

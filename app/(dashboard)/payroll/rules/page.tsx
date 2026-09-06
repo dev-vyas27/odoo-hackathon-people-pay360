@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { LuPlus } from 'react-icons/lu'
 import { ListSalaryRulesUseCase, salaryRuleRepository } from '@/modules/payroll-config/server'
+import { can } from '@/modules/shared'
 import { PageHeader } from '@/components/resource/page-header'
 import { Button } from '@/components/ui/button'
 import { ErrorState } from '../_components/states'
@@ -9,6 +10,8 @@ import { RulesTable, type RuleRow } from './rules-table'
 
 export default async function SalaryRulesPage() {
   const actor = await pageActor()
+  // hr_payroll_user reads salary configuration; only a manager may change it.
+  const canCreate = can(actor.role, 'salary_rule', 'create')
 
   const result = await load(async () => {
     const outcome = await new ListSalaryRulesUseCase(salaryRuleRepository()).execute({
@@ -25,12 +28,14 @@ export default async function SalaryRulesPage() {
         title="Salary Rules"
         description="The building blocks of a payslip. Each rule computes one line, and its code is how later rules refer to it."
         actions={
-          <Button asChild>
-            <Link href="/payroll/rules/new">
-              <LuPlus className="size-4" aria-hidden />
-              New rule
-            </Link>
-          </Button>
+          canCreate ? (
+            <Button asChild>
+              <Link href="/payroll/rules/new">
+                <LuPlus className="size-4" aria-hidden />
+                New rule
+              </Link>
+            </Button>
+          ) : null
         }
       />
 
