@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: "PeoplePay360 — HR & Payroll",
   description:
     "Integrated HR and payroll operations: employees, contracts, attendance, time off, and payroll processing.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

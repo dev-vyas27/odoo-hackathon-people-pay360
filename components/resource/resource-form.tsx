@@ -134,6 +134,16 @@ export interface ResourceFormProps<T extends FieldValues> {
    * a white sheet and a second frame inside it is a frame too many.
    */
   surface?: boolean;
+  /**
+   * Submit spans the action row, with `cancel` seated beneath it.
+   *
+   * For a form that IS the page's single decision — sign in, choose a password.
+   * A 90px button floating at the left of a 400px column reads as one option
+   * among several when there are none; a full-width one reads as the way
+   * forward. Everything else keeps the seated bar, where a natural-width Save
+   * beside a Cancel is exactly right.
+   */
+  submitFullWidth?: boolean;
   derive?: (values: T) => Partial<T> | null;
   /** Rendered above the buttons — warnings, computed totals, related records. */
   children?: React.ReactNode;
@@ -192,6 +202,7 @@ export function ResourceForm<T extends FieldValues>({
   cancel,
   readOnly = false,
   surface = true,
+  submitFullWidth = false,
   derive,
   children,
   className,
@@ -442,6 +453,7 @@ export function ResourceForm<T extends FieldValues>({
         <div
           className={cn(
             "flex items-center gap-3",
+            submitFullWidth && "flex-col items-stretch",
             surface
               ? "border-t border-border bg-sunken px-6 py-4 sm:px-8"
               : "pt-1",
@@ -450,7 +462,11 @@ export function ResourceForm<T extends FieldValues>({
           {/* No submit at all when read-only — a disabled Save still invites a
               click and still says "you should be able to do this". */}
           {readOnly ? null : (
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className={cn(submitFullWidth && "w-full")}
+            >
               {isSubmitting ? (
                 <>
                   <LuLoaderCircle className="size-4 animate-spin" aria-hidden />

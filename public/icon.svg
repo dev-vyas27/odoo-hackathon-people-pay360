@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
+  <defs>
+    <linearGradient id="odooPrimary" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#815575" />
+      <stop offset="0.5" stop-color="#714B67" />
+      <stop offset="1" stop-color="#503549" />
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" />
+      <stop offset="1" stop-color="#E2D5DE" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Badge styled with Odoo Primary colors and radius -->
+  <rect width="32" height="32" rx="9" fill="url(#odooPrimary)" />
+
+  <!-- 360 Ring Arc -->
+  <path 
+    d="M 16 5.5 A 10.5 10.5 0 1 1 7.5 21.5" 
+    stroke="url(#ringGrad)" 
+    stroke-width="2.5" 
+    stroke-linecap="round" 
+  />
+
+  <!-- Arrow tip on ring -->
+  <path 
+    d="M 16 3 L 18.5 5.5 L 16 8" 
+    fill="none"
+    stroke="#FFFFFF" 
+    stroke-width="2" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+  />
+
+  <!-- Center 'P' Icon -->
+  <path 
+    d="M 12 10 H 17.5 C 19.4 10 21 11.3 21 13.25 C 21 15.2 19.4 16.5 17.5 16.5 H 14.5 V 22" 
+    stroke="#FFFFFF" 
+    stroke-width="2.5" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+  />
+</svg>

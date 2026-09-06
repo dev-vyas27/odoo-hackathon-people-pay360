@@ -8,6 +8,7 @@
 import { redirect } from 'next/navigation'
 import { getActor } from '@/lib/auth'
 import { landingPathFor } from '@/components/layout/nav-items'
+import { AuthColumn } from '../_components/auth-column'
 import { ForgotPasswordForm } from './forgot-password-form'
 
 export default async function ForgotPasswordPage() {
@@ -15,7 +16,7 @@ export default async function ForgotPasswordPage() {
   if (actor) redirect(landingPathFor(actor.role))
 
   return (
-    <>
+    <AuthColumn>
       <div className="space-y-3">
         <h1 className="text-xl font-medium">Reset your password</h1>
         <p className="text-base text-muted-foreground">
@@ -24,6 +25,6 @@ export default async function ForgotPasswordPage() {
       </div>
 
       <ForgotPasswordForm />
-    </>
+    </AuthColumn>
   )
 }
