@@ -32,6 +32,13 @@ const columns: ColumnDef<SalaryStructureListItem, unknown>[] = [
     cell: ({ row }) => <span className="tabular-nums font-medium">{row.original.ruleCount}</span>,
   },
   {
+    accessorKey: 'employeeCount',
+    header: 'Employees',
+    cell: ({ row }) => (
+      <span className="tabular-nums font-medium">{row.original.employeeCount}</span>
+    ),
+  },
+  {
     accessorKey: 'active',
     header: 'Status',
     cell: ({ row }) => <StatusBadge status={row.original.active ? 'active' : 'archived'} />,

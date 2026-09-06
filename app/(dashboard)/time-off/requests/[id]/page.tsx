@@ -96,7 +96,12 @@ export default function LeaveRequestPage({ params }: { params: Promise<{ id: str
               {request.decidedAt ? (
                 <>
                   <dt className="text-muted-foreground">Decided</dt>
-                  <dd className="tabular">{formatDate(request.decidedAt)}</dd>
+                  <dd className="tabular">
+                    {formatDate(request.decidedAt)}
+                    {request.autoApprove && request.status === 'approved' ? (
+                      <span className="ml-1 text-muted-foreground">— auto-approved</span>
+                    ) : null}
+                  </dd>
                 </>
               ) : null}
 

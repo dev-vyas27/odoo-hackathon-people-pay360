@@ -9,6 +9,16 @@
  * authoritative check happens again at approval, because the balance can change
  * in between. Checking twice is not redundancy; the two checks answer different
  * questions at different moments.
+ *
+ * When the type auto-approves and the request is submitted (not saved as a
+ * draft), "approval" is one of those two checks happening for real: the same
+ * `consumeAllocationForApproval` helper `approve-leave` uses runs inside the
+ * SAME transaction that creates the row, so the request is never persisted in
+ * an approved state that has not actually consumed its allocation. If the
+ * authoritative consume fails — balance moved between the courtesy check and
+ * now — the whole transaction rolls back and no request is created at all,
+ * the same fail-fast posture this use case already takes for an unfundable
+ * draft.
  */
 import {
   DomainError,
@@ -17,16 +27,14 @@ import {
   Period,
   authorizeOwned,
   type Actor,
+  type IEventBus,
   type Result,
   type UseCase,
 } from '@/modules/shared'
 import { LeaveRequest, type LeaveRequestView } from '../domain/leave-request'
 import { assertNoOverlap, selectAllocation } from '../domain/balance.service'
-import type {
-  AllocationRepositoryPort,
-  LeaveRequestRepositoryPort,
-  TimeOffTypeRepositoryPort,
-} from './ports/repositories.port'
+import { consumeAllocationForApproval } from './approval.service'
+import type { UnitOfWorkPort } from './ports/unit-of-work.port'
 
 export interface RequestLeaveInput {
   actor: Actor
@@ -43,16 +51,17 @@ export interface RequestLeaveInput {
 
 export class RequestLeaveUseCase implements UseCase<RequestLeaveInput, LeaveRequestView> {
   constructor(
-    private readonly requests: LeaveRequestRepositoryPort,
-    private readonly allocations: AllocationRepositoryPort,
-    private readonly types: TimeOffTypeRepositoryPort,
+    private readonly uow: UnitOfWorkPort,
+    private readonly events: IEventBus,
   ) {}
 
   async execute(input: RequestLeaveInput): Promise<Result<LeaveRequestView>> {
     const allowed = authorizeOwned(input.actor, 'leave_request', 'create', input.employeeId)
     if (!allowed.ok) return allowed
 
-    const type = await this.types.findById(input.timeOffTypeId)
+    const { types, allocations, requests } = this.uow.repos
+
+    const type = await types.findById(input.timeOffTypeId)
     if (!type) {
       return Err(DomainError.notFound('TIME_OFF_TYPE_NOT_FOUND', 'That leave type does not exist'))
     }
@@ -79,11 +88,11 @@ export class RequestLeaveUseCase implements UseCase<RequestLeaveInput, LeaveRequ
         status: 'draft',
       })
 
-      assertNoOverlap(candidate, await this.requests.findForEmployee(input.employeeId))
+      assertNoOverlap(candidate, await requests.findForEmployee(input.employeeId))
 
       if (type.requiresAllocation) {
         // Throws with the shortfall in the message when it cannot be funded.
-        selectAllocation(await this.allocations.findForEmployee(input.employeeId, type.id), {
+        selectAllocation(await allocations.findForEmployee(input.employeeId, type.id), {
           employeeId: input.employeeId,
           timeOffTypeId: type.id,
           period,
@@ -93,17 +102,40 @@ export class RequestLeaveUseCase implements UseCase<RequestLeaveInput, LeaveRequ
 
       if (!input.asDraft) candidate.submit()
 
-      // Built field by field rather than spreading `toProps()`: the aggregate
-      // carries a sentinel id that must not reach the database.
-      const saved = await this.requests.create({
-        employeeId: input.employeeId,
-        timeOffTypeId: type.id,
-        period,
-        unit: type.unit,
-        duration,
-        reason: input.reason ?? null,
-        status: candidate.status,
+      const willAutoApprove = !input.asDraft && type.autoApprove
+
+      const saved = await this.uow.transaction(async (repos) => {
+        // Built field by field rather than spreading `toProps()`: the aggregate
+        // carries a sentinel id that must not reach the database.
+        const created = await repos.requests.create({
+          employeeId: input.employeeId,
+          timeOffTypeId: type.id,
+          period,
+          unit: type.unit,
+          duration,
+          reason: input.reason ?? null,
+          status: candidate.status,
+        })
+
+        if (!willAutoApprove) return created
+
+        // `null`: the policy decided, not a person — see LeaveRequest.approve.
+        const allocationId = await consumeAllocationForApproval(repos, type, created)
+        created.approve(null, allocationId)
+        return repos.requests.save(created)
       })
+
+      if (willAutoApprove) {
+        await this.events.publish({
+          type: 'leave_request.approved',
+          occurredAt: new Date(),
+          requestId: saved.id,
+          employeeId: saved.employeeId,
+          timeOffTypeId: saved.timeOffTypeId,
+          duration: saved.duration,
+          unit: saved.unit,
+        })
+      }
 
       return Ok(saved.toView())
     } catch (reason) {

@@ -28,6 +28,7 @@ export default function NewTimeOffTypePage() {
           code: '',
           unit: 'day',
           requiresAllocation: true,
+          autoApprove: false,
           isPaid: true,
           isActive: true,
         }}

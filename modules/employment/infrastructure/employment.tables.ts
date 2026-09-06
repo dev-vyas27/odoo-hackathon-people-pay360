@@ -7,6 +7,8 @@
  *   domain `start`/`end`  ->  columns `starts_on`/`ends_on`
  *   day `start`/`end`     ->  columns `starts_at`/`ends_at` (SQL `time`)
  */
+import type { ScheduleType } from '../domain/working-schedule'
+
 export interface ContractRow {
   id: string
   employee_id: string
@@ -49,6 +51,7 @@ export const CONTRACT_COLUMNS = [
 export interface ScheduleRow {
   id: string
   name: string
+  type: ScheduleType
   weekly_hours: number
   is_active: boolean
   created_at: Date
@@ -59,6 +62,7 @@ export const SCHEDULES_TABLE = 'working_schedules'
 export const SCHEDULE_COLUMNS = [
   'id',
   'name',
+  'type',
   'weekly_hours',
   'is_active',
   'created_at',

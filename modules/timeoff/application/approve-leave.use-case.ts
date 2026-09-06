@@ -30,7 +30,7 @@ import {
   type UseCase,
 } from '@/modules/shared'
 import type { LeaveRequestView } from '../domain/leave-request'
-import { selectAllocation } from '../domain/balance.service'
+import { consumeAllocationForApproval } from './approval.service'
 import type { UnitOfWorkPort } from './ports/unit-of-work.port'
 
 export interface ApproveLeaveInput {
@@ -59,6 +59,13 @@ export class ApproveLeaveUseCase implements UseCase<ApproveLeaveInput, LeaveRequ
          * Nobody approves their own leave. The permission table cannot express
          * this: it is about the relationship between the actor and the row, not
          * about the role.
+         *
+         * This guard is specific to a HUMAN clicking Approve, so it lives only
+         * here — the auto-approve path in `request-leave` / `submit-leave`
+         * never reaches this use case at all. That is not a loophole: which
+         * types skip manual review is HR configuration on the Time Off Type,
+         * decided up front for everyone, not a choice the requester makes for
+         * their own request.
          */
         if (input.actor.employeeId && input.actor.employeeId === request.employeeId) {
           throw DomainError.forbidden(
@@ -72,32 +79,7 @@ export class ApproveLeaveUseCase implements UseCase<ApproveLeaveInput, LeaveRequ
           throw DomainError.notFound('TIME_OFF_TYPE_NOT_FOUND', 'That leave type does not exist')
         }
 
-        let allocationId: string | null = null
-
-        if (type.requiresAllocation) {
-          // Choose the funding allocation from the employee's current set, then
-          // re-read it under a lock. Selecting first keeps the pure rule (which
-          // allocation, and why) in the domain where it is unit-tested.
-          const candidate = selectAllocation(
-            await repos.allocations.findForEmployee(request.employeeId, type.id),
-            {
-              employeeId: request.employeeId,
-              timeOffTypeId: type.id,
-              period: request.period,
-              duration: request.duration,
-            },
-          )
-
-          const allocation = await repos.allocations.findByIdForUpdate(candidate.id)
-          if (!allocation) {
-            throw DomainError.notFound('ALLOCATION_NOT_FOUND', 'That allocation no longer exists')
-          }
-
-          // Throws on insufficient balance — before the request is touched.
-          allocation.consume(request.duration)
-          await repos.allocations.save(allocation)
-          allocationId = allocation.id
-        }
+        const allocationId = await consumeAllocationForApproval(repos, type, request)
 
         request.approve(input.actor.employeeId, allocationId)
         return repos.requests.save(request)

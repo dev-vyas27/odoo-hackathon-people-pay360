@@ -9,8 +9,14 @@
  * modules/shared/contracts/dto.ts — consumers import them from '@/modules/shared'
  * and get the implementation through the container, not from here.
  */
-import { providePort, PORT_KEYS, type EmployeeLookupPort } from '@/modules/shared'
+import {
+  providePort,
+  PORT_KEYS,
+  type EmployeeLookupPort,
+  type EmployeeStatsPort,
+} from '@/modules/shared'
 import { PostgresEmployeeLookup } from './infrastructure/employee-lookup.adapter'
+import { PostgresEmployeeStats } from './infrastructure/employee-stats.adapter'
 
 // --- Domain vocabulary shared across modules -------------------------------
 export {
@@ -33,6 +39,7 @@ export { PostgresEmployeeRepository } from './infrastructure/postgres-employee.r
 export { PostgresDepartmentRepository } from './infrastructure/postgres-department.repository'
 export { PostgresJobPositionRepository } from './infrastructure/postgres-job-position.repository'
 export { PostgresEmployeeLookup } from './infrastructure/employee-lookup.adapter'
+export { PostgresEmployeeStats } from './infrastructure/employee-stats.adapter'
 
 /**
  * "Administrators are not staff", so the dashboard's people statistics can
@@ -50,6 +57,7 @@ export { NOT_AN_ADMIN } from './infrastructure/people.tables'
  */
 export function registerPeople(): void {
   providePort<EmployeeLookupPort>(PORT_KEYS.employeeLookup, () => new PostgresEmployeeLookup())
+  providePort<EmployeeStatsPort>(PORT_KEYS.employeeStats, () => new PostgresEmployeeStats())
 }
 
 /** Direct construction, for callers that are inside the composition root. */

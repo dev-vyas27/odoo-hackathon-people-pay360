@@ -21,6 +21,7 @@ class FakeScheduleRepository implements ScheduleRepositoryPort {
     return {
       id: 's1',
       name: data.name ?? '',
+      type: data.type ?? 'full_time',
       days: data.days ?? [],
       weeklyHours: data.weeklyHours ?? 0,
       createdAt: new Date(),
@@ -47,6 +48,7 @@ describe('CreateScheduleUseCase', () => {
     const result = await useCase.execute({
       actor: hrManager(),
       name: 'Standard 9-6',
+      type: 'full_time',
       days: [
         { day: 1, start: '09:00', end: '18:00', breakMinutes: 60 },
         { day: 2, start: '09:00', end: '18:00', breakMinutes: 60 },
@@ -70,6 +72,7 @@ describe('CreateScheduleUseCase', () => {
     const result = await useCase.execute({
       actor: { employeeId: 'emp-9', role: 'employee', email: 'e@pp360.dev', name: 'Emp' },
       name: 'Standard',
+      type: 'full_time',
       days: [],
     })
 

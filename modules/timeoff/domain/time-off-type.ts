@@ -1,14 +1,25 @@
 /**
  * TimeOffType — the configuration that decides how a leave behaves.
  *
- * Three flags carry the whole policy:
+ * Four flags carry the whole policy (spec A4: units, allocation
+ * requirements, approval workflows, payroll integration):
  *   unit                day or hour, and it must match the allocation's unit
  *   requiresAllocation  false for something like unpaid leave, which has no
  *                       balance to draw down and therefore cannot overdraw
+ *   autoApprove         skips the manual approval step — see below
  *   isPaid              consumed by payroll when prorating
  *
  * Modelling these as data rather than as `if (type.name === 'Sick')` means
  * adding a leave type at 2am is a database row, not a deployment.
+ *
+ * `autoApprove` does NOT introduce a new state into the request lifecycle
+ * (`leave-request-state.ts`) — every request still walks draft -> to_approve
+ * -> approved, and an illegal transition is still impossible. What it changes
+ * is WHO drives the to_approve -> approved transition: the application layer
+ * (`request-leave` / `submit-leave` use cases) drives it immediately, using
+ * the same allocation-consuming machinery `approve-leave` uses, instead of
+ * waiting for a human to click Approve. See `consumeAllocationForApproval` in
+ * `application/approval.service.ts`.
  */
 import { DomainError, type LeaveUnit } from '@/modules/shared'
 
@@ -19,6 +30,8 @@ export interface TimeOffTypeProps {
   code: string
   unit: LeaveUnit
   requiresAllocation: boolean
+  /** Skip the manual approval step: a submitted request lands as approved. */
+  autoApprove: boolean
   isPaid: boolean
   isActive: boolean
 }
@@ -49,6 +62,9 @@ export class TimeOffType {
   }
   get requiresAllocation(): boolean {
     return this.props.requiresAllocation
+  }
+  get autoApprove(): boolean {
+    return this.props.autoApprove
   }
   get isPaid(): boolean {
     return this.props.isPaid

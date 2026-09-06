@@ -62,6 +62,13 @@ export function TimeOffTypeForm({
             'On: requests draw down a balance and are refused when it is short. Off: unlimited, like unpaid leave.',
         },
         {
+          name: 'autoApprove',
+          label: 'Auto-approve',
+          type: 'checkbox',
+          description:
+            'On: a submitted request of this type is approved immediately — no manager has to act — and still draws down the allocation if one is required. Off (default): every request waits for a manual decision.',
+        },
+        {
           name: 'isPaid',
           label: 'Paid leave',
           type: 'checkbox',

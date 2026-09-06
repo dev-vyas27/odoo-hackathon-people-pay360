@@ -18,7 +18,6 @@ import { registerEmployment } from '@/modules/employment'
 import { registerAttendance } from '@/modules/attendance'
 import { registerPayrollPorts } from '@/modules/payroll-processing/composition'
 import { registerInterimAdapters } from '@/lib/interim-adapters'
-import { registerInterimStats } from '@/lib/interim-stats'
 
 let done = false
 
@@ -47,5 +46,4 @@ export function bootstrap(): void {
   // Must stay last: these fill only the ports nobody claimed above. Now that
   // Dev B registers for real, the interim employee adapter is never consulted.
   registerInterimAdapters()
-  registerInterimStats()
 }

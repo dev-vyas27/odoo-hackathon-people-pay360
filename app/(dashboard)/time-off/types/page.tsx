@@ -6,10 +6,12 @@
  * Spec A4: "Time Off Types define leave policies including units (days/hours),
  * allocation requirements, approval workflows, and payroll integration."
  *
- * Three of those four are columns: unit, whether it needs an allocation, and
- * whether it is paid (which is what payroll reads when prorating). The fourth,
- * the approval workflow, is identical for every type — it is the request state
- * machine — so it is not a per-type field.
+ * All four are columns: unit, whether it needs an allocation, its approval
+ * workflow (manual review, or auto-approve), and whether it is paid (which is
+ * what payroll reads when prorating). Every request still walks the same
+ * state machine (`leave-request-state.ts`) — auto-approve does not skip a
+ * status, it just means the application layer drives the to_approve ->
+ * approved step immediately instead of waiting for a manager.
  */
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -54,6 +56,16 @@ const columns: ColumnDef<TimeOffTypeView, unknown>[] = [
         <span className="text-sm">Required</span>
       ) : (
         <span className="text-sm text-muted-foreground">Not used</span>
+      ),
+  },
+  {
+    accessorKey: 'autoApprove',
+    header: 'Approval',
+    cell: ({ row }) =>
+      row.original.autoApprove ? (
+        <span className="text-sm">Auto-approve</span>
+      ) : (
+        <span className="text-sm text-muted-foreground">Manual</span>
       ),
   },
   {

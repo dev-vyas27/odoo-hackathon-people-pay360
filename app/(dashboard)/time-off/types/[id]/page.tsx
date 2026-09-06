@@ -81,6 +81,7 @@ export default function EditTimeOffTypePage({ params }: { params: Promise<{ id: 
           code: type.code,
           unit: type.unit,
           requiresAllocation: type.requiresAllocation,
+          autoApprove: type.autoApprove,
           isPaid: type.isPaid,
           isActive: type.isActive,
         }}

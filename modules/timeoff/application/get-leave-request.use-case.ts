@@ -33,6 +33,8 @@ export interface LeaveRequestDetail extends LeaveRequestView {
   employeeName: string
   timeOffTypeName: string
   requiresAllocation: boolean
+  /** Whether this type skips manual review — see TimeOffType.autoApprove. */
+  autoApprove: boolean
   isPaid: boolean
   /** The employee's balance for this leave type, as of today. */
   balance: LeaveBalanceView | null
@@ -96,6 +98,7 @@ export class GetLeaveRequestUseCase
       employeeName: employee?.name ?? 'Unknown employee',
       timeOffTypeName: type.name,
       requiresAllocation: type.requiresAllocation,
+      autoApprove: type.autoApprove,
       isPaid: type.isPaid,
       balance: balance ?? null,
       canSubmit: request.status === 'draft',

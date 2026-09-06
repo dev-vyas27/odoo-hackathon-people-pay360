@@ -26,6 +26,8 @@ export const timeOffTypeSchema = z.object({
     .regex(/^[A-Z0-9_]+$/, 'Letters, numbers and underscores only'),
   unit: z.enum(LEAVE_UNITS),
   requiresAllocation: z.boolean(),
+  /** Skip the manual approval step: a submitted request lands as approved. */
+  autoApprove: z.boolean(),
   isPaid: z.boolean(),
   isActive: z.boolean(),
 })

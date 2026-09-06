@@ -5,6 +5,8 @@
  * `@/modules/employment` from a client component would pull the Postgres
  * repositories, and with them `pg`, into the browser bundle.
  */
+import type { ScheduleType } from './domain/working-schedule'
+
 export {
   createContractSchema,
   updateContractSchema,
@@ -30,16 +32,32 @@ export {
 export { computeWeeklyHours } from './domain/weekly-hours.service'
 
 /**
+ * Full-time vs part-time, re-exported for the client (spec A3).
+ *
+ * Since migration 0013 this is a real STORED column on `working_schedules`,
+ * not something re-derived on every read — `ScheduleListItem.type` below is
+ * the answer to "is this schedule full time", full stop.
+ */
+export {
+  SCHEDULE_TYPES,
+  SCHEDULE_TYPE_LABELS,
+  type ScheduleType,
+} from './domain/working-schedule'
+
+/**
  * The line between a full-time and a part-time schedule, in weekly hours.
  *
- * Schedules are defined by their day pattern, not by a "kind" flag, so this is
- * the only thing that can classify one. 35 rather than 40 because a 37.5-hour
- * week is still full time in most of the world, and a threshold that only
- * recognised exactly 40 would push those employees onto a part-time schedule.
+ * 35 rather than 40 because a 37.5-hour week is still full time in most of the
+ * world, and a threshold that only recognised exactly 40 would push those
+ * employees onto a part-time schedule.
  *
- * It lives here because "what counts as full time" is employment's business,
- * and both the employee form and anything that validates the pairing later have
- * to agree on one answer.
+ * Historically this was the ONLY way to classify a schedule — `type` did not
+ * exist as a column. Now that every schedule carries a stored `type`, this
+ * threshold has exactly two remaining jobs: migration 0013's one-time backfill
+ * of pre-existing rows, and suggesting a sensible starting value in the create
+ * form before a person overrides it. It is deliberately NOT used to override
+ * or second-guess a schedule's stored `type` — that would reintroduce the
+ * exact two-sources-of-truth problem storing the column was meant to fix.
  */
 export const FULL_TIME_MIN_WEEKLY_HOURS = 35
 
@@ -72,6 +90,7 @@ export interface ContractListItem {
 export interface ScheduleListItem {
   id: string
   name: string
+  type: ScheduleType
   weeklyHours: number
   days: ScheduleDayValues[]
 }

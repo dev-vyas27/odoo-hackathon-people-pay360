@@ -9,7 +9,7 @@
  */
 import { createEmployeeSchema, type CreateEmployeeBody } from '@/modules/people/schemas'
 import type { SelectOption } from '@/components/resource/resource-form'
-import { isFullTimeSchedule } from '@/modules/employment/schemas'
+import type { ScheduleType } from '@/modules/employment/schemas'
 import { useCan } from '@/components/auth/current-user'
 import { ResourceForm } from '@/components/resource/resource-form'
 import {
@@ -29,13 +29,18 @@ import {
  *
  * Interns and contractors are deliberately unrestricted: their hours are the
  * negotiated ones, and there is no honest default to pick for them.
+ *
+ * Reads the schedule's STORED `type` rather than re-deriving it from weekly
+ * hours: since migration 0013 a schedule says what it is, and a 30-hour
+ * schedule its owner deliberately marked full time must not be filtered out
+ * here while the schedules list shows it as full time.
  */
-function schedulesFor<T extends { weeklyHours: number }>(
+function schedulesFor<T extends { type: ScheduleType }>(
   employeeType: CreateEmployeeBody['employeeType'],
   schedules: T[],
 ): T[] {
-  if (employeeType === 'full_time') return schedules.filter((s) => isFullTimeSchedule(s.weeklyHours))
-  if (employeeType === 'part_time') return schedules.filter((s) => !isFullTimeSchedule(s.weeklyHours))
+  if (employeeType === 'full_time') return schedules.filter((s) => s.type === 'full_time')
+  if (employeeType === 'part_time') return schedules.filter((s) => s.type === 'part_time')
   return schedules
 }
 

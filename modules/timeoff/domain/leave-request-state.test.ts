@@ -48,6 +48,21 @@ describe('leave request lifecycle', () => {
     expect(request.status).toBe('refused')
   })
 
+  it('reaches approved with no human decider, for a type that auto-approves', () => {
+    // The application layer calls exactly this — submit() then approve(null, ...)
+    // — when the request's Time Off Type is configured to skip manual review.
+    // The transition is the SAME to_approve -> approved edge a human triggers;
+    // only who decided differs.
+    const request = draft()
+    request.submit()
+
+    request.approve(null, 'alloc-1')
+
+    expect(request.status).toBe('approved')
+    expect(request.allocationId).toBe('alloc-1')
+    expect(request.toProps().decidedByEmployeeId).toBeNull()
+  })
+
   it('will not resurrect a refused request', () => {
     const request = draft()
     request.submit()

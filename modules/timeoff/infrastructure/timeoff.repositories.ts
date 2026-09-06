@@ -68,6 +68,7 @@ function toType(row: TimeOffTypeRow): TimeOffType {
     code: row.code,
     unit: row.unit,
     requiresAllocation: row.requires_allocation,
+    autoApprove: row.auto_approve,
     isPaid: row.is_paid,
     isActive: row.is_active,
   })
@@ -222,10 +223,18 @@ export class PostgresTimeOffTypeRepository implements TimeOffTypeRepositoryPort 
     const rows = await run<TimeOffTypeRow>(
       this.db,
       `INSERT INTO "${TIMEOFF_TYPES_TABLE}"
-         (name, code, unit, requires_allocation, is_paid, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6)
+         (name, code, unit, requires_allocation, auto_approve, is_paid, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING ${TYPE_COLS}`,
-      [props.name, props.code, props.unit, props.requiresAllocation, props.isPaid, props.isActive],
+      [
+        props.name,
+        props.code,
+        props.unit,
+        props.requiresAllocation,
+        props.autoApprove,
+        props.isPaid,
+        props.isActive,
+      ],
     )
     return toType(rows[0])
   }
@@ -243,8 +252,9 @@ export class PostgresTimeOffTypeRepository implements TimeOffTypeRepositoryPort 
          code                = COALESCE($3, code),
          unit                = COALESCE($4, unit),
          requires_allocation = COALESCE($5, requires_allocation),
-         is_paid             = COALESCE($6, is_paid),
-         is_active           = COALESCE($7, is_active)
+         auto_approve        = COALESCE($6, auto_approve),
+         is_paid             = COALESCE($7, is_paid),
+         is_active           = COALESCE($8, is_active)
        WHERE id = $1
        RETURNING ${TYPE_COLS}`,
       [
@@ -253,6 +263,7 @@ export class PostgresTimeOffTypeRepository implements TimeOffTypeRepositoryPort 
         props.code ?? null,
         props.unit ?? null,
         props.requiresAllocation ?? null,
+        props.autoApprove ?? null,
         props.isPaid ?? null,
         props.isActive ?? null,
       ],

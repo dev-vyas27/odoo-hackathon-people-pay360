@@ -7,6 +7,13 @@
  * `isEditable` is false the moment a request reaches an approver — which is the
  * rule that stops someone quietly changing the dates of a request already
  * sitting in a manager's queue.
+ *
+ * A type configured to auto-approve does not stop there: submitting drives
+ * straight through to approved, in the SAME transaction, using the same
+ * allocation-consuming helper the manual approval path uses
+ * (`consumeAllocationForApproval`). A draft never auto-approves — only the
+ * act of submitting it does, which is what makes "save as draft" still mean
+ * "not sent for a decision yet".
  */
 import {
   DomainError,
@@ -14,10 +21,12 @@ import {
   Ok,
   authorizeOwned,
   type Actor,
+  type IEventBus,
   type Result,
   type UseCase,
 } from '@/modules/shared'
 import type { LeaveRequestView } from '../domain/leave-request'
+import { consumeAllocationForApproval } from './approval.service'
 import type { UnitOfWorkPort } from './ports/unit-of-work.port'
 
 export interface SubmitLeaveInput {
@@ -26,21 +35,61 @@ export interface SubmitLeaveInput {
 }
 
 export class SubmitLeaveUseCase implements UseCase<SubmitLeaveInput, LeaveRequestView> {
-  constructor(private readonly uow: UnitOfWorkPort) {}
+  constructor(
+    private readonly uow: UnitOfWorkPort,
+    private readonly events: IEventBus,
+  ) {}
 
   async execute(input: SubmitLeaveInput): Promise<Result<LeaveRequestView>> {
     try {
-      const request = await this.uow.repos.requests.findById(input.requestId)
-      if (!request) {
+      const existing = await this.uow.repos.requests.findById(input.requestId)
+      if (!existing) {
         return Err(DomainError.notFound('LEAVE_NOT_FOUND', 'That leave request does not exist'))
       }
 
       // You may submit your own; HR may submit on someone's behalf.
-      const allowed = authorizeOwned(input.actor, 'leave_request', 'update', request.employeeId)
+      const allowed = authorizeOwned(input.actor, 'leave_request', 'update', existing.employeeId)
       if (!allowed.ok) return allowed
 
-      request.submit()
-      const saved = await this.uow.repos.requests.save(request)
+      let autoApproved = false
+
+      const saved = await this.uow.transaction(async (repos) => {
+        const request = await repos.requests.findByIdForUpdate(input.requestId)
+        if (!request) {
+          throw DomainError.notFound('LEAVE_NOT_FOUND', 'That leave request does not exist')
+        }
+
+        request.submit()
+
+        const type = await repos.types.findById(request.timeOffTypeId)
+        if (!type) {
+          throw DomainError.notFound('TIME_OFF_TYPE_NOT_FOUND', 'That leave type does not exist')
+        }
+
+        if (type.autoApprove) {
+          // `null`: the policy decided, not a person — see LeaveRequest.approve.
+          const allocationId = await consumeAllocationForApproval(repos, type, request)
+          request.approve(null, allocationId)
+          autoApproved = true
+        }
+
+        return repos.requests.save(request)
+      })
+
+      // Published after the commit, same rule as approve-leave: a subscriber
+      // must never see this event before the row it describes is durable.
+      if (autoApproved) {
+        await this.events.publish({
+          type: 'leave_request.approved',
+          occurredAt: new Date(),
+          requestId: saved.id,
+          employeeId: saved.employeeId,
+          timeOffTypeId: saved.timeOffTypeId,
+          duration: saved.duration,
+          unit: saved.unit,
+        })
+      }
+
       return Ok(saved.toView())
     } catch (reason) {
       if (DomainError.is(reason)) return Err(reason)

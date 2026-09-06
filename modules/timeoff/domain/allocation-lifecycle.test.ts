@@ -86,6 +86,7 @@ describe('unit agreement', () => {
     code: 'TOIL',
     unit: 'hour',
     requiresAllocation: true,
+    autoApprove: false,
     isPaid: true,
     isActive: true,
   })
@@ -97,5 +98,33 @@ describe('unit agreement', () => {
 
   it('accepts the matching unit', () => {
     expect(() => hourly.assertUnitMatches('hour')).not.toThrow()
+  })
+})
+
+describe('approval workflow', () => {
+  it('exposes whether the type skips manual approval', () => {
+    const manual = TimeOffType.from({
+      id: 'type-manual',
+      name: 'Paid Time Off',
+      code: 'PL',
+      unit: 'day',
+      requiresAllocation: true,
+      autoApprove: false,
+      isPaid: true,
+      isActive: true,
+    })
+    const auto = TimeOffType.from({
+      id: 'type-auto',
+      name: 'Work From Home',
+      code: 'WFH',
+      unit: 'day',
+      requiresAllocation: false,
+      autoApprove: true,
+      isPaid: true,
+      isActive: true,
+    })
+
+    expect(manual.autoApprove).toBe(false)
+    expect(auto.autoApprove).toBe(true)
   })
 })

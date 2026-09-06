@@ -82,7 +82,7 @@ const NO_LEAVE_STATS: LeaveStatsPort = {
   async pendingCount() {
     return 0
   },
-  async balancesFor() {
+  async balanceTotals() {
     return []
   },
 }

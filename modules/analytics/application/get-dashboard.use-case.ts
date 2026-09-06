@@ -139,18 +139,21 @@ export class GetDashboardUseCase implements UseCase<GetDashboardInput, Dashboard
       costByDepartment,
       monthlyTrend,
       duplicatePayslips,
+      balances,
     ] = await Promise.all([
       ports.employees.headcount({ departmentId, employeeType }),
       ports.employees.headcountByDepartment({ employeeType }),
       ports.employees.missingBankDetails(),
       ports.attendance.summary(period, departmentId, employeeType),
       ports.contracts.attentionItems(period, CONTRACT_ATTENTION_DAYS),
-      ports.leave.approvedInPeriod(period, departmentId ? [departmentId] : undefined),
-      ports.leave.pendingCount(),
+      ports.leave.approvedInPeriod(period, { departmentId, employeeType }),
+      ports.leave.pendingCount({ departmentId, employeeType }),
       ports.payroll.totals(period, departmentId, employeeType),
-      ports.payroll.costByDepartment(period, employeeType),
-      ports.payroll.monthlyTrend(TREND_MONTHS),
-      ports.payroll.duplicatePayslips(period),
+      ports.payroll.costByDepartment(period, departmentId, employeeType),
+      ports.payroll.monthlyTrend(TREND_MONTHS, departmentId, employeeType),
+      ports.payroll.duplicatePayslips(period, departmentId, employeeType),
+      // Org-wide, not the viewer's own — see the `timeOff.balances` note below.
+      ports.leave.balanceTotals({ departmentId, employeeType }, period.end),
     ])
 
     const departmentNames = new Map(
@@ -198,10 +201,12 @@ export class GetDashboardUseCase implements UseCase<GetDashboardInput, Dashboard
       timeOff: {
         approvedDays,
         pendingRequests,
-        // Company-wide balances would be a row per employee per leave type.
-        // The dashboard shows the aggregate figures above; an individual's
-        // balances live on the Time Off screens, where they belong.
-        balances: [],
+        // Org-wide totals across the employees matched by the active
+        // Department / Employee Type filters, as of the end of the period —
+        // NOT the viewer's own balance. An HR Payroll Manager looking at
+        // Engineering wants that department's outstanding leave position, not
+        // their personal one. See `LeaveStatsPort.balanceTotals`.
+        balances,
       },
 
       departments: headcountByDepartment

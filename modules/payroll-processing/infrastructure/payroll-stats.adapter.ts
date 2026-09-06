@@ -31,15 +31,32 @@ const COUNTED = `ps.status IN ('validated', 'paid')`
 const OVERLAPS = `ps.period_start <= $2 AND ps.period_end >= $1`
 
 export class PayrollStatsAdapter implements PayrollStatsPort {
-  async totals(period: Period, departmentId?: string): Promise<PayrollTotals> {
+  async totals(period: Period, departmentId?: string, employeeType?: string): Promise<PayrollTotals> {
+    const values: unknown[] = [period.start, period.end]
+    let filters = ''
+
+    // `employees` is joined INNER, not LEFT: `e.id` is the payslip's own FK and
+    // unique, so this can only drop a payslip whose employee record vanished —
+    // never duplicate a row.
+    const needsEmployeeJoin = Boolean(departmentId || employeeType)
+
+    if (departmentId) {
+      values.push(departmentId)
+      filters += ` AND e.department_id = $${values.length}`
+    }
+    if (employeeType) {
+      values.push(employeeType)
+      filters += ` AND e.employee_type = $${values.length}`
+    }
+
     const row = await queryOne<{ total_net: number; payslip_count: number }>(
       `SELECT COALESCE(SUM(ps.net), 0) AS total_net,
               COUNT(*)::int            AS payslip_count
          FROM "${PAYSLIPS_TABLE}" ps
-         ${departmentId ? 'JOIN "employees" e ON e.id = ps.employee_id' : ''}
+         ${needsEmployeeJoin ? 'JOIN "employees" e ON e.id = ps.employee_id' : ''}
         WHERE ${COUNTED} AND ${OVERLAPS}
-              ${departmentId ? 'AND e.department_id = $3' : ''}`,
-      departmentId ? [period.start, period.end, departmentId] : [period.start, period.end],
+              ${filters}`,
+      values,
     )
 
     const count = row?.payslip_count ?? 0
@@ -54,15 +71,35 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
     }
   }
 
-  async costByDepartment(period: Period): Promise<DepartmentCost[]> {
+  async costByDepartment(
+    period: Period,
+    departmentId?: string,
+    employeeType?: string,
+  ): Promise<DepartmentCost[]> {
+    const values: unknown[] = [period.start, period.end]
+    let filter = ''
+    // Filtering a BREAKDOWN by department to one department is not a
+    // contradiction: it is the honest way to answer "what did Engineering
+    // cost", which collapses the chart to a single bar rather than leaving it
+    // showing every other department's spend too.
+    if (departmentId) {
+      values.push(departmentId)
+      filter += ` AND e.department_id = $${values.length}`
+    }
+    if (employeeType) {
+      values.push(employeeType)
+      filter += ` AND e.employee_type = $${values.length}`
+    }
+
     const rows = await query<{ department_id: string | null; total: number }>(
       `SELECT e.department_id, COALESCE(SUM(ps.net), 0) AS total
          FROM "${PAYSLIPS_TABLE}" ps
          LEFT JOIN "employees" e ON e.id = ps.employee_id
         WHERE ${COUNTED} AND ${OVERLAPS}
+        ${filter}
         GROUP BY e.department_id
         ORDER BY total DESC`,
-      [period.start, period.end],
+      values,
     )
 
     return rows.map((row) => ({
@@ -71,8 +108,26 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
     }))
   }
 
-  async monthlyTrend(months: number): Promise<MonthlyTotal[]> {
+  async monthlyTrend(
+    months: number,
+    departmentId?: string,
+    employeeType?: string,
+  ): Promise<MonthlyTotal[]> {
     const span = Math.max(1, Math.trunc(months))
+    const values: unknown[] = [span - 1]
+    // One join covers both filters; adding it twice would duplicate every row.
+    const join =
+      departmentId || employeeType ? 'JOIN "employees" e ON e.id = ps.employee_id' : ''
+    const conditions: string[] = []
+    if (departmentId) {
+      values.push(departmentId)
+      conditions.push(`AND e.department_id = $${values.length}`)
+    }
+    if (employeeType) {
+      values.push(employeeType)
+      conditions.push(`AND e.employee_type = $${values.length}`)
+    }
+    const filter = conditions.join('\n          ')
 
     /**
      * Grouped by the payslip's OWN month, not by when it was computed: a
@@ -86,17 +141,23 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
       `SELECT to_char(date_trunc('month', ps.period_start), 'YYYY-MM') AS month,
               COALESCE(SUM(ps.net), 0) AS total
          FROM "${PAYSLIPS_TABLE}" ps
+         ${join}
         WHERE ${COUNTED}
           AND ps.period_start >= date_trunc('month', CURRENT_DATE) - make_interval(months => $1)
+          ${filter}
         GROUP BY date_trunc('month', ps.period_start)
         ORDER BY date_trunc('month', ps.period_start) ASC`,
-      [span - 1],
+      values,
     )
 
     return rows.map((row) => ({ month: row.month, total: Number(row.total) }))
   }
 
-  async duplicatePayslips(period: Period): Promise<DuplicatePayslip[]> {
+  async duplicatePayslips(
+    period: Period,
+    departmentId?: string,
+    employeeType?: string,
+  ): Promise<DuplicatePayslip[]> {
     /**
      * The same employee paid twice for an overlapping period, across ANY runs.
      *
@@ -105,6 +166,17 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
      * two different runs covering the same month — exactly the operational
      * alert the dashboard wants, and the case a UNIQUE constraint cannot catch.
      */
+    const values: unknown[] = [period.start, period.end]
+    let filter = ''
+    if (departmentId) {
+      values.push(departmentId)
+      filter += ` AND e.department_id = $${values.length}`
+    }
+    if (employeeType) {
+      values.push(employeeType)
+      filter += ` AND e.employee_type = $${values.length}`
+    }
+
     const rows = await query<{ employee_id: string; employee_name: string; count: number }>(
       `SELECT ps.employee_id,
               COALESCE(e.name, 'Unknown employee') AS employee_name,
@@ -112,10 +184,11 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
          FROM "${PAYSLIPS_TABLE}" ps
          LEFT JOIN "employees" e ON e.id = ps.employee_id
         WHERE ps.status <> 'cancelled' AND ${OVERLAPS}
+        ${filter}
         GROUP BY ps.employee_id, e.name
        HAVING COUNT(*) > 1
         ORDER BY count DESC`,
-      [period.start, period.end],
+      values,
     )
 
     return rows.map((row) => ({

@@ -39,7 +39,7 @@ export interface DuplicatePayslip {
 
 export interface PayrollStatsPort {
   totals(period: Period, departmentId?: string): Promise<PayrollTotals>
-  costByDepartment(period: Period): Promise<DepartmentCost[]>
+  costByDepartment(period: Period, departmentId?: string): Promise<DepartmentCost[]>
   monthlyTrend(months: number): Promise<MonthlyTotal[]>
-  duplicatePayslips(period: Period): Promise<DuplicatePayslip[]>
+  duplicatePayslips(period: Period, departmentId?: string): Promise<DuplicatePayslip[]>
 }

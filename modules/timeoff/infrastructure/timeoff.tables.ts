@@ -22,6 +22,7 @@ export interface TimeOffTypeRow {
   code: string
   unit: LeaveUnit
   requires_allocation: boolean
+  auto_approve: boolean
   is_paid: boolean
   is_active: boolean
   created_at: Date
@@ -34,6 +35,7 @@ export const TIMEOFF_TYPE_COLUMNS = [
   'code',
   'unit',
   'requires_allocation',
+  'auto_approve',
   'is_paid',
   'is_active',
   'created_at',

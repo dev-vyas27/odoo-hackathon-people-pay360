@@ -19,7 +19,10 @@ import { LuLoaderCircle, LuPlus, LuTrash2 } from 'react-icons/lu'
 import {
   computeWeeklyHours,
   createScheduleSchema,
+  SCHEDULE_TYPE_LABELS,
+  SCHEDULE_TYPES,
   type CreateScheduleBody,
+  type ScheduleType,
 } from '@/modules/employment/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,6 +35,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { WEEKDAY_OPTIONS } from '../../_components/options'
+
+const SCHEDULE_TYPE_OPTIONS = SCHEDULE_TYPES.map((value) => ({
+  value,
+  label: SCHEDULE_TYPE_LABELS[value],
+}))
 
 export function ScheduleForm({
   defaultValues,
@@ -56,6 +64,7 @@ export function ScheduleForm({
   // useWatch rather than form.watch(): the latter returns a fresh function the
   // React Compiler cannot memoize, and it re-renders the whole form on any change.
   const days = useWatch({ control: form.control, name: 'days' })
+  const type = useWatch({ control: form.control, name: 'type' })
   const { isSubmitting } = form.formState
 
   // Live preview using the very function the server uses to persist the value.
@@ -69,12 +78,34 @@ export function ScheduleForm({
       className="space-y-6"
       noValidate
     >
-      <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="schedule-name">Name</Label>
           <Input id="schedule-name" placeholder="Standard 40h" {...form.register('name')} />
           {form.formState.errors.name && (
             <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="schedule-type">Type</Label>
+          <Select
+            value={type ?? undefined}
+            onValueChange={(value) => form.setValue('type', value as ScheduleType, { shouldDirty: true, shouldValidate: true })}
+          >
+            <SelectTrigger id="schedule-type" className="w-full">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              {SCHEDULE_TYPE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {form.formState.errors.type && (
+            <p className="text-sm text-destructive">{form.formState.errors.type.message}</p>
           )}
         </div>
 

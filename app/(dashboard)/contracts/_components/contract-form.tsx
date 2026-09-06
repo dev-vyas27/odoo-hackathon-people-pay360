@@ -24,13 +24,43 @@
  */
 import { useWatch, useFormContext } from 'react-hook-form'
 import { createContractSchema, type CreateContractBody } from '@/modules/employment/schemas'
+import type { SalaryStructureListItem } from '@/modules/payroll-config'
 import { ResourceForm } from '@/components/resource/resource-form'
+import { useCan } from '@/components/auth/current-user'
+import { useResourceList } from '@/hooks/use-resource'
 import {
   useDepartmentOptions,
   useEmployeeOptions,
   useJobPositionOptions,
   useScheduleOptions,
 } from '../../_components/options'
+
+/**
+ * Salary structure options, fetched the same way `options.ts` fetches every
+ * other reference list — a large single page rather than paging, since a
+ * structure list is tens of rows, not thousands. Lives here rather than in
+ * the shared `options.ts` because that file is scoped to modules already
+ * wired through it; payroll-config's list route is `/api/payroll/structures`,
+ * not `/api/structures`, so `useResourceList` is pointed at it directly.
+ */
+function useSalaryStructureOptions(enabled: boolean) {
+  // No `active` filter, matching `useScheduleOptions` above: a contract whose
+  // structure was archived after the fact must still show it on edit rather
+  // than silently blanking the field (see the note on `withCurrent` in
+  // employee-form.tsx for why that specific failure mode is worth avoiding).
+  //
+  // Skipped entirely without `salary_structure:read` — an HR Manager holds
+  // contract CRUD but no payroll permission, so the request would only 403.
+  const { page, isLoading } = useResourceList<SalaryStructureListItem>(
+    'payroll/structures',
+    { limit: 200 },
+    { enabled },
+  )
+  return {
+    isLoading: enabled && isLoading,
+    options: page.items.map((s) => ({ value: s.id, label: s.name })),
+  }
+}
 
 /**
  * Rendered inside ResourceForm, so it can watch the live employee selection and
@@ -96,6 +126,11 @@ export function ContractForm({
   const departments = useDepartmentOptions()
   const positions = useJobPositionOptions()
   const schedules = useScheduleOptions()
+  // Spec grants salary-structure read from HR Payroll User up; an HR Manager
+  // has contract CRUD without it. Disable rather than render an empty select,
+  // which reads as a broken field rather than one that isn't theirs to set.
+  const canReadStructures = useCan('salary_structure', 'read')
+  const salaryStructures = useSalaryStructureOptions(canReadStructures)
 
   return (
     <ResourceForm<CreateContractBody>
@@ -140,6 +175,17 @@ export function ContractForm({
           label: 'Wage',
           type: 'number',
           description: 'Gross monthly wage, prorated by worked days.',
+        },
+        {
+          name: 'salaryStructureId',
+          label: 'Salary structure',
+          type: 'select',
+          options: salaryStructures.options,
+          disabled: !canReadStructures,
+          placeholder: salaryStructures.isLoading ? 'Loading...' : 'Select salary structure',
+          description: canReadStructures
+            ? 'The rule set payroll computes this contract’s payslips from.'
+            : 'Set by payroll — your role does not have access to salary structures.',
         },
         {
           name: 'start',

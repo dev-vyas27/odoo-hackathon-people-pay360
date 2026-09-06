@@ -40,6 +40,7 @@ export class PostgresScheduleRepository
     return {
       id: row.id,
       name: row.name,
+      type: row.type,
       days: [],
       weeklyHours: Number(row.weekly_hours),
       createdAt: row.created_at,
@@ -105,9 +106,9 @@ export class PostgresScheduleRepository
     try {
       await client.query('BEGIN')
       const { rows } = await client.query<ScheduleRow>(
-        `INSERT INTO "${SCHEDULES_TABLE}" (name, weekly_hours)
-         VALUES ($1, $2) RETURNING ${this.selection}`,
-        [data.name, weeklyHours],
+        `INSERT INTO "${SCHEDULES_TABLE}" (name, type, weekly_hours)
+         VALUES ($1, $2, $3) RETURNING ${this.selection}`,
+        [data.name, data.type ?? null, weeklyHours],
       )
       const parent = rows[0]
       await this.replaceDays(client, parent.id, days)
@@ -133,10 +134,11 @@ export class PostgresScheduleRepository
       const { rows } = await client.query<ScheduleRow>(
         `UPDATE "${SCHEDULES_TABLE}"
             SET name = COALESCE($2, name),
-                weekly_hours = COALESCE($3, weekly_hours)
+                type = COALESCE($3, type),
+                weekly_hours = COALESCE($4, weekly_hours)
           WHERE id = $1
           RETURNING ${this.selection}`,
-        [id, data.name ?? null, weeklyHours ?? null],
+        [id, data.name ?? null, data.type ?? null, weeklyHours ?? null],
       )
       if (rows.length === 0) {
         await client.query('ROLLBACK')

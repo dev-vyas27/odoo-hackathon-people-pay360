@@ -114,6 +114,59 @@ export function buildBalances(
   })
 }
 
+/** One leave type's allocation figures, already summed across many employees. */
+export interface AllocationTotal {
+  timeOffTypeId: string
+  allocated: number
+  taken: number
+}
+
+/** One leave type's pending-request total, already summed across many employees. */
+export interface PendingTotal {
+  timeOffTypeId: string
+  pending: number
+}
+
+/**
+ * The organisation-wide sibling of `buildBalances`: merges pre-aggregated
+ * per-type totals into the same `LeaveBalanceView` shape, for the Payroll
+ * Dashboard's Time Off overview.
+ *
+ * The summing itself happens in SQL (`LeaveStatsPort.balanceTotals`) — a
+ * dashboard aggregate is exactly the shape of query a database is for, and an
+ * org-wide balance can be thousands of allocation rows. What stays here, pure
+ * and unit-tested, is the one rule that must not drift from `buildBalances`:
+ * `remaining` is `allocated - taken - pending`, not merely `allocated - taken`.
+ * The WHICH allocations count (approved, valid on the reference date) is
+ * `Allocation.isUsable` plus the validity window, enforced by the caller's SQL
+ * rather than re-decided here — this function only merges what it is given.
+ */
+export function buildBalanceTotals(
+  types: TimeOffType[],
+  allocationTotals: AllocationTotal[],
+  pendingTotals: PendingTotal[],
+): LeaveBalanceView[] {
+  const allocatedByType = new Map(allocationTotals.map((row) => [row.timeOffTypeId, row]))
+  const pendingByType = new Map(pendingTotals.map((row) => [row.timeOffTypeId, row.pending]))
+
+  return types.map((type) => {
+    const row = allocatedByType.get(type.id)
+    const allocated = row?.allocated ?? 0
+    const taken = row?.taken ?? 0
+    const pending = pendingByType.get(type.id) ?? 0
+
+    return {
+      timeOffTypeId: type.id,
+      timeOffTypeName: type.name,
+      unit: type.unit,
+      allocated,
+      taken,
+      pending,
+      remaining: round2(allocated - taken - pending),
+    }
+  })
+}
+
 /**
  * Reject a request that collides with one the employee already has.
  *

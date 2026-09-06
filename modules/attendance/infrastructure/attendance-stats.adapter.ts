@@ -79,15 +79,22 @@ export class PostgresAttendanceStats implements AttendanceStatsPort {
    * FILTER (WHERE ...) gives one conditional count per status without five
    * separate queries or any client-side counting.
    */
-  async summary(period: Period, departmentId?: string): Promise<AttendanceSummary> {
+  async summary(period: Period, departmentId?: string, employeeType?: string): Promise<AttendanceSummary> {
     const values: unknown[] = [period.start, period.end]
-    let departmentJoin = ''
-    let departmentFilter = ''
+    // Joined only when a filter needs it: `employees` is not denormalised onto
+    // `attendances`, and `e.id` is unique, so the join can only drop a record
+    // whose employee vanished — never duplicate one.
+    const needsEmployeeJoin = Boolean(departmentId || employeeType)
+    const employeeJoin = needsEmployeeJoin ? 'JOIN employees e ON e.id = a.employee_id' : ''
+    let extraFilters = ''
 
     if (departmentId) {
       values.push(departmentId)
-      departmentJoin = 'JOIN employees e ON e.id = a.employee_id'
-      departmentFilter = `AND e.department_id = $${values.length}`
+      extraFilters += ` AND e.department_id = $${values.length}`
+    }
+    if (employeeType) {
+      values.push(employeeType)
+      extraFilters += ` AND e.employee_type = $${values.length}`
     }
 
     const row = await queryOne<{
@@ -107,9 +114,9 @@ export class PostgresAttendanceStats implements AttendanceStatsPort {
          COUNT(*) FILTER (WHERE a.status = 'missing_checkout')::int AS missing_checkouts,
          COUNT(*) FILTER (WHERE a.is_manual)::int                   AS manual_edits
        FROM "${ATTENDANCES_TABLE}" a
-       ${departmentJoin}
+       ${employeeJoin}
        WHERE a.worked_on BETWEEN $1::date AND $2::date
-       ${departmentFilter}`,
+       ${extraFilters}`,
       values,
     )
 

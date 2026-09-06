@@ -52,7 +52,7 @@ export default function ScheduleDetailPage({ params }: { params: Promise<{ id: s
 
       <ScheduleForm
         submitLabel="Save changes"
-        defaultValues={{ name: schedule.name, days: schedule.days }}
+        defaultValues={{ name: schedule.name, type: schedule.type, days: schedule.days }}
         cancel={
           <Button variant="ghost" asChild>
             <Link href="/schedules">Back to list</Link>

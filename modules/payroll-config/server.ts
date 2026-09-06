@@ -43,4 +43,5 @@ export {
   salaryRuleRepository,
   salaryStructureRepository,
   createSalaryStructureQuery,
+  structureEmployeeCount,
 } from './composition'

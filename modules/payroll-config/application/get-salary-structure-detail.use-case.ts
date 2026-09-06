@@ -16,6 +16,7 @@ import {
 } from '../domain/salary-structure'
 import type { SalaryRuleRepositoryPort } from './ports/salary-rule-repository.port'
 import type { SalaryStructureRepositoryPort } from './ports/salary-structure-repository.port'
+import type { StructureEmployeeCountPort } from './ports/structure-employee-count.port'
 import { attempt } from './attempt'
 
 export interface GetSalaryStructureDetailInput {
@@ -32,6 +33,15 @@ export interface SalaryStructureDetail {
    * the form so they are fixed there rather than mid-payrun.
    */
   issues: StructureIssue[]
+  /** Distinct employees whose currently active contract references this structure. See StructureEmployeeCountPort. */
+  employeeCount: number
+}
+
+/** Degrades to a zero count for callers that predate this port. */
+const NO_EMPLOYEE_COUNTS: StructureEmployeeCountPort = {
+  async countByStructure() {
+    return new Map()
+  },
 }
 
 export class GetSalaryStructureDetailUseCase
@@ -40,6 +50,7 @@ export class GetSalaryStructureDetailUseCase
   constructor(
     private readonly structures: SalaryStructureRepositoryPort,
     private readonly rules: SalaryRuleRepositoryPort,
+    private readonly employeeCounts: StructureEmployeeCountPort = NO_EMPLOYEE_COUNTS,
   ) {}
 
   async execute({
@@ -62,10 +73,13 @@ export class GetSalaryStructureDetailUseCase
     const resolved = attempt(() => resolveStructure(structure, byId))
     if (!resolved.ok) return resolved
 
+    const counts = await this.employeeCounts.countByStructure([id])
+
     return Ok({
       structure,
       rules: [...resolved.value.rules],
       issues: inspectStructure(resolved.value),
+      employeeCount: counts.get(id) ?? 0,
     })
   }
 }

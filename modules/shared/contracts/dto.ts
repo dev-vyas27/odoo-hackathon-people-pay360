@@ -247,10 +247,20 @@ export interface LeaveBalanceView {
 }
 
 export interface LeaveStatsPort {
-  /** Duration approved inside the period, optionally narrowed to departments. */
-  approvedInPeriod(period: Period, departmentIds?: string[]): Promise<number>
-  pendingCount(): Promise<number>
-  balancesFor(employeeId: string, on: Date): Promise<LeaveBalanceView[]>
+  /** Duration approved inside the period, narrowed by the dashboard filters. */
+  approvedInPeriod(period: Period, filter?: StatsFilter): Promise<number>
+  /** Requests awaiting a decision, narrowed by the dashboard filters. */
+  pendingCount(filter?: StatsFilter): Promise<number>
+  /**
+   * Leave balances aggregated across the employee population matched by
+   * `filter`, one row per leave type that requires an allocation.
+   *
+   * This is what the org-wide Payroll Dashboard needs (spec B9's "leave
+   * balances" alongside Period/Department/Employee Type filtering) — an
+   * individual's own balance is a different question, answered by `timeoff`'s
+   * own `GetBalanceUseCase`, not this port.
+   */
+  balanceTotals(filter: StatsFilter, on: Date): Promise<LeaveBalanceView[]>
 }
 
 // ---------------------------------------------------------------------------
@@ -313,11 +323,18 @@ export interface PayrollStatsPort {
   totals(period: Period, departmentId?: string, employeeType?: string): Promise<PayrollTotals>
   costByDepartment(
     period: Period,
+    departmentId?: string,
     employeeType?: string,
   ): Promise<Array<{ departmentId: string; total: number }>>
-  monthlyTrend(months: number): Promise<Array<{ month: string; total: number }>>
+  monthlyTrend(
+    months: number,
+    departmentId?: string,
+    employeeType?: string,
+  ): Promise<Array<{ month: string; total: number }>>
   /** Same employee paid twice inside one period — an operational alert. */
   duplicatePayslips(
     period: Period,
+    departmentId?: string,
+    employeeType?: string,
   ): Promise<Array<{ employeeId: string; employeeName: string; count: number }>>
 }

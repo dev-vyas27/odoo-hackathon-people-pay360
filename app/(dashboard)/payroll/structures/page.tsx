@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { LuPlus } from 'react-icons/lu'
-import { ListSalaryStructuresUseCase, salaryStructureRepository } from '@/modules/payroll-config/server'
+import {
+  ListSalaryStructuresUseCase,
+  salaryStructureRepository,
+  structureEmployeeCount,
+} from '@/modules/payroll-config/server'
 import { can } from '@/modules/shared'
 import { PageHeader } from '@/components/resource/page-header'
 import { Button } from '@/components/ui/button'
@@ -14,7 +18,10 @@ export default async function SalaryStructuresPage() {
   const canCreate = can(actor.role, 'salary_structure', 'create')
 
   const result = await load(async () => {
-    const outcome = await new ListSalaryStructuresUseCase(salaryStructureRepository()).execute({
+    const outcome = await new ListSalaryStructuresUseCase(
+      salaryStructureRepository(),
+      structureEmployeeCount(),
+    ).execute({
       actor,
       query: { limit: 100 },
     })

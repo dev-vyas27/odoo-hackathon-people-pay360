@@ -1,12 +1,13 @@
 import { authorize, DomainError, Err, Ok, type Actor, type Result, type UseCase } from '@/modules/shared'
 import { computeWeeklyHours, type ScheduleDayPattern } from '../domain/weekly-hours.service'
-import type { WorkingSchedule } from '../domain/working-schedule'
+import type { ScheduleType, WorkingSchedule } from '../domain/working-schedule'
 import type { ScheduleRepositoryPort } from './ports/schedule-repository.port'
 
 export interface UpdateScheduleInput {
   actor: Actor
   id: string
   name?: string
+  type?: ScheduleType
   days?: ScheduleDayPattern[]
 }
 
@@ -21,6 +22,7 @@ export class UpdateScheduleUseCase implements UseCase<UpdateScheduleInput, Worki
     // never taken from the caller, even implicitly via a stale field.
     const patch: Partial<WorkingSchedule> = {
       ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.type !== undefined ? { type: input.type } : {}),
       ...(input.days !== undefined ? { days: input.days, weeklyHours: computeWeeklyHours(input.days) } : {}),
     }
 

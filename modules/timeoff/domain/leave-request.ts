@@ -26,6 +26,11 @@ export interface LeaveRequestProps {
   status: LeaveStatus
   /** The allocation the approval drew from — needed to restore on refusal. */
   allocationId?: string | null
+  /**
+   * Who decided it. `null` on an auto-approved request: the type's approval
+   * workflow decided, not a person, and there is nobody to record here — see
+   * `approve()`.
+   */
   decidedByEmployeeId?: string | null
   decidedAt?: Date | null
 }
@@ -116,7 +121,14 @@ export class LeaveRequest {
     this.props = { ...this.props, status: this.state.submit().name }
   }
 
-  approve(decidedByEmployeeId: string, allocationId: string | null): void {
+  /**
+   * `decidedByEmployeeId` is `null` for a type configured to auto-approve:
+   * the request still walks to_approve -> approved through this same method
+   * (see `leave-request-state.ts`), but the approval was driven by the
+   * type's policy at submission time rather than by a person clicking
+   * Approve, so there is no human decider to record.
+   */
+  approve(decidedByEmployeeId: string | null, allocationId: string | null): void {
     this.props = {
       ...this.props,
       status: this.state.approve().name,

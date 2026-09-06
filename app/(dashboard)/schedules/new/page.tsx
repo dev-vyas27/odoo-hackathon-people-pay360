@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { CreateScheduleBody } from '@/modules/employment/schemas'
+import {
+  computeWeeklyHours,
+  isFullTimeSchedule,
+  type CreateScheduleBody,
+} from '@/modules/employment/schemas'
 import { useCreateResource } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
 import { Button } from '@/components/ui/button'
@@ -15,6 +19,15 @@ const STANDARD_WEEK: CreateScheduleBody['days'] = [1, 2, 3, 4, 5].map((day) => (
   end: '17:00',
   breakMinutes: 60,
 }))
+
+/**
+ * Starting suggestion for `type`, from the same threshold that used to be the
+ * ONLY answer. It is a suggestion, not a derivation: the field is editable and
+ * this only saves a click for the common case.
+ */
+const STANDARD_WEEK_TYPE = isFullTimeSchedule(computeWeeklyHours(STANDARD_WEEK))
+  ? 'full_time'
+  : 'part_time'
 
 export default function NewSchedulePage() {
   const router = useRouter()
@@ -31,7 +44,7 @@ export default function NewSchedulePage() {
 
       <ScheduleForm
         submitLabel="Create schedule"
-        defaultValues={{ name: '', days: STANDARD_WEEK }}
+        defaultValues={{ name: '', type: STANDARD_WEEK_TYPE, days: STANDARD_WEEK }}
         cancel={
           <Button variant="ghost" asChild>
             <Link href="/schedules">Cancel</Link>

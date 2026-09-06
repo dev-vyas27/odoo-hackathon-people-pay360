@@ -4,8 +4,9 @@
  * and payroll integration."
  *
  * Those four policy levers are the four flags on the type: `unit`,
- * `requiresAllocation`, the approval workflow every request goes through, and
- * `isPaid`, which is what payroll reads when prorating. Configuration, not code.
+ * `requiresAllocation`, `autoApprove` (the approval workflow — manual review
+ * by default, or skip straight to approved), and `isPaid`, which is what
+ * payroll reads when prorating. Configuration, not code.
  */
 import {
   DomainError,
@@ -28,6 +29,8 @@ export interface TimeOffTypeInput {
   code: string
   unit: LeaveUnit
   requiresAllocation: boolean
+  /** Skip the manual approval step: a submitted request lands as approved. */
+  autoApprove: boolean
   isPaid: boolean
   isActive: boolean
 }

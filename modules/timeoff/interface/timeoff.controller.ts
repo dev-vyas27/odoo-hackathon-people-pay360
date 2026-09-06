@@ -101,10 +101,9 @@ export async function requestLeave(
   const parsed = leaveRequestSchema.safeParse(body)
   if (!parsed.success) return Err(invalid(parsed.error.issues))
 
-  const { uow } = deps()
-  const { types, allocations, requests } = uow.repos
+  const { uow, events } = deps()
 
-  return new RequestLeaveUseCase(requests, allocations, types).execute({
+  return new RequestLeaveUseCase(uow, events).execute({
     actor,
     employeeId: parsed.data.employeeId,
     timeOffTypeId: parsed.data.timeOffTypeId,
@@ -117,7 +116,8 @@ export async function requestLeave(
 }
 
 export function submitLeave(actor: Actor, requestId: string): Promise<Result<LeaveRequestView>> {
-  return new SubmitLeaveUseCase(deps().uow).execute({ actor, requestId })
+  const { uow, events } = deps()
+  return new SubmitLeaveUseCase(uow, events).execute({ actor, requestId })
 }
 
 export function approveLeave(actor: Actor, requestId: string): Promise<Result<LeaveRequestView>> {

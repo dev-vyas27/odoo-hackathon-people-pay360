@@ -14,9 +14,11 @@ import {
   PORT_KEYS,
   type ContractQueryPort,
   type ScheduleQueryPort,
+  type ContractAlertsPort,
 } from '@/modules/shared'
 import { PostgresContractQuery } from './infrastructure/contract-query.adapter'
 import { PostgresScheduleQuery } from './infrastructure/schedule-query.adapter'
+import { PostgresContractAlerts } from './infrastructure/contract-alerts.adapter'
 
 // --- Domain, for callers that legitimately need the rules ------------------
 export { resolveApplicableContract, contractsOverlap } from './domain/contract-resolution'
@@ -46,6 +48,7 @@ export { PostgresScheduleQuery } from './infrastructure/schedule-query.adapter'
 export function registerEmployment(): void {
   providePort<ContractQueryPort>(PORT_KEYS.contractQuery, () => new PostgresContractQuery())
   providePort<ScheduleQueryPort>(PORT_KEYS.scheduleQuery, () => new PostgresScheduleQuery())
+  providePort<ContractAlertsPort>(PORT_KEYS.contractAlerts, () => new PostgresContractAlerts())
 }
 
 export function createContractQuery(): ContractQueryPort {
