@@ -1,5 +1,3 @@
-
-
 export const ROLES = [
   'employee',
   'hr_manager',
@@ -42,12 +40,13 @@ const crud = (...resources: Resource[]): Permission[] =>
 const readOnly = (...resources: Resource[]): Permission[] => resources.map((r) => perm(r, 'read'))
 
 const EMPLOYEE: Permission[] = [
-  
   perm('employee', 'read'),
   perm('attendance', 'read'),
   perm('attendance', 'create'),
   perm('leave_request', 'read'),
   perm('leave_request', 'create'),
+  perm('leave_request', 'update'),
+  perm('leave_request', 'delete'),
   perm('allocation', 'read'),
   perm('time_off_type', 'read'),
 ]

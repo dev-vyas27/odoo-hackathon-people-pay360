@@ -1,6 +1,3 @@
-
-
-
 import { describe, expect, it } from 'vitest'
 import { DomainError, Period } from '@/modules/shared'
 import { LeaveRequest } from './leave-request'
@@ -48,10 +45,6 @@ describe('leave request lifecycle', () => {
   })
 
   it('reaches approved with no human decider, for a type that auto-approves', () => {
-    
-    
-    
-    
     const request = draft()
     request.submit()
 
@@ -71,10 +64,11 @@ describe('leave request lifecycle', () => {
     expect(() => request.submit()).toThrowError(/refused/i)
   })
 
-  it('marks only draft requests editable', () => {
+  it('marks a request editable until it has been decided', () => {
     expect(stateOf('draft').isEditable).toBe(true)
-    expect(stateOf('to_approve').isEditable).toBe(false)
+    expect(stateOf('to_approve').isEditable).toBe(true)
     expect(stateOf('approved').isEditable).toBe(false)
+    expect(stateOf('refused').isEditable).toBe(false)
   })
 
   it('knows that only the approved state has consumed balance', () => {
@@ -98,11 +92,7 @@ describe('duration defaulting', () => {
     expect(() => LeaveRequest.defaultDuration(period, 'hour')).toThrowError(/explicit number of hours/)
   })
 
-  
-
-
   it('bills the working-day count rather than the calendar span', () => {
-    
     const fortnight = Period.of(day('2026-03-02'), day('2026-03-13'))
 
     expect(fortnight.days).toBe(12)

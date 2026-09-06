@@ -1,11 +1,9 @@
 'use client'
 
-
-
 import { use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LuArrowLeft, LuCheck, LuSend, LuTrash2, LuX } from 'react-icons/lu'
+import { LuArrowLeft, LuCheck, LuPencil, LuSend, LuTrash2, LuX } from 'react-icons/lu'
 import type { LeaveRequestDetail } from '@/modules/timeoff/schemas'
 import { useDeleteResource, useResourceAction, useResourceItem } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
@@ -19,7 +17,6 @@ import { formatDate, formatDateRange, formatDuration } from '../../_components/f
 const RESOURCE = 'time-off/requests'
 
 export default function LeaveRequestPage({ params }: { params: Promise<{ id: string }> }) {
-  
   const { id } = use(params)
   const router = useRouter()
 
@@ -150,8 +147,6 @@ export default function LeaveRequestPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      {
-}
       <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
         {request.canSubmit ? (
           <Button onClick={() => submit.mutate({ id })} disabled={busy}>
@@ -200,9 +195,18 @@ export default function LeaveRequestPage({ params }: { params: Promise<{ id: str
         ) : null}
 
         {request.canEdit ? (
+          <Button variant="outline" asChild disabled={busy} className="ml-auto">
+            <Link href={`/time-off/requests/${id}/edit`}>
+              <LuPencil aria-hidden />
+              Edit
+            </Link>
+          </Button>
+        ) : null}
+
+        {request.canEdit ? (
           <ConfirmDialog
             title="Withdraw this request?"
-            description="Only drafts can be withdrawn. This cannot be undone."
+            description="It is removed entirely and nobody is asked to decide on it. This cannot be undone."
             confirmLabel="Withdraw"
             destructive
             onConfirm={async () => {
@@ -210,7 +214,7 @@ export default function LeaveRequestPage({ params }: { params: Promise<{ id: str
               router.push('/time-off/requests')
             }}
             trigger={
-              <Button variant="ghost" disabled={busy} className="ml-auto">
+              <Button variant="ghost" disabled={busy}>
                 <LuTrash2 aria-hidden />
                 Withdraw
               </Button>

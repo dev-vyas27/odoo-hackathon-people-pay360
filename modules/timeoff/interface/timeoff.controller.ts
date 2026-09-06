@@ -1,6 +1,3 @@
-
-
-
 import {
   DomainError,
   Err,
@@ -18,6 +15,7 @@ import { RequestLeaveUseCase } from '../application/request-leave.use-case'
 import { ApproveLeaveUseCase } from '../application/approve-leave.use-case'
 import { RefuseLeaveUseCase } from '../application/refuse-leave.use-case'
 import { DeleteLeaveUseCase, SubmitLeaveUseCase } from '../application/submit-leave.use-case'
+import { UpdateLeaveUseCase } from '../application/update-leave.use-case'
 import { GetLeaveRequestUseCase, type LeaveRequestDetail } from '../application/get-leave-request.use-case'
 import {
   ListLeaveRequestsUseCase,
@@ -47,23 +45,16 @@ import {
   allocationSchema,
   balanceQuerySchema,
   leaveRequestSchema,
+  updateLeaveRequestSchema,
   timeOffTypeSchema,
 } from './timeoff.schema'
 
-
-
 const deps = () => ({
   uow: resolve('timeoff.uow', () => new PostgresUnitOfWork()),
-  
-  
-  
   employees: employeeLookup(),
-  
-  
   schedules: scheduleLookup(),
   events: container().eventBus,
 })
-
 
 function invalid(issues: { path: PropertyKey[]; message: string }[]): DomainError {
   const fieldErrors: Record<string, string> = {}
@@ -73,8 +64,6 @@ function invalid(issues: { path: PropertyKey[]; message: string }[]): DomainErro
   }
   return DomainError.validation('VALIDATION_FAILED', 'Check the highlighted fields', fieldErrors)
 }
-
-
 
 export function listLeaveRequests(
   actor: Actor,
@@ -128,11 +117,30 @@ export function refuseLeave(actor: Actor, requestId: string): Promise<Result<Lea
   return new RefuseLeaveUseCase(uow, events).execute({ actor, requestId })
 }
 
+export async function updateLeave(
+  actor: Actor,
+  requestId: string,
+  body: unknown,
+): Promise<Result<LeaveRequestView>> {
+  const parsed = updateLeaveRequestSchema.safeParse(body)
+  if (!parsed.success) return Err(invalid(parsed.error.issues))
+
+  const { uow, employees, schedules } = deps()
+
+  return new UpdateLeaveUseCase(uow, employees, schedules).execute({
+    actor,
+    requestId,
+    timeOffTypeId: parsed.data.timeOffTypeId,
+    start: parsed.data.start,
+    end: parsed.data.end,
+    duration: parsed.data.duration,
+    reason: parsed.data.reason === '' ? null : parsed.data.reason,
+  })
+}
+
 export function deleteLeave(actor: Actor, requestId: string): Promise<Result<true>> {
   return new DeleteLeaveUseCase(deps().uow).execute({ actor, requestId })
 }
-
-
 
 export function listAllocations(
   actor: Actor,
@@ -173,15 +181,11 @@ export async function decideAllocation(
   })
 }
 
-
-
 export async function getBalance(
   actor: Actor,
   params: Record<string, string>,
 ): Promise<Result<LeaveBalanceView[]>> {
   const parsed = balanceQuerySchema.safeParse({
-    
-    
     employeeId: params.employeeId || actor.employeeId || '',
     on: params.on || undefined,
   })
@@ -194,14 +198,10 @@ export async function getBalance(
   })
 }
 
-
-
 export interface EmployeeOption {
   id: string
   name: string
 }
-
-
 
 export async function listEmployeeOptions(actor: Actor): Promise<Result<EmployeeOption[]>> {
   const allowed = authorize(actor, 'leave_request', 'read')
@@ -218,8 +218,6 @@ export async function listEmployeeOptions(actor: Actor): Promise<Result<Employee
   const all = await employees.findEligible({ activeOn: new Date() })
   return Ok(all.map((employee) => ({ id: employee.id, name: employee.name })))
 }
-
-
 
 export function listTimeOffTypes(
   actor: Actor,
@@ -243,8 +241,6 @@ export async function updateTimeOffType(
   id: string,
   body: unknown,
 ): Promise<Result<TimeOffTypeView>> {
-  
-  
   const parsed = timeOffTypeSchema.partial().safeParse(body)
   if (!parsed.success) return Err(invalid(parsed.error.issues))
 

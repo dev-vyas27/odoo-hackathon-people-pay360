@@ -1,46 +1,39 @@
 import { describe, expect, it } from 'vitest'
 import { ACTIONS, RESOURCES, ROLES, can, scopeToSelf, type Permission } from './permissions'
 
-
-
-
 const EXPECTED: Record<string, Permission[]> = {
   employee: [
-    
     'employee:read',
     'attendance:read',
     'attendance:create',
     'leave_request:read',
     'leave_request:create',
+    'leave_request:update',
+    'leave_request:delete',
     'allocation:read',
     'time_off_type:read',
   ],
-
   hr_manager: [
     ...crud('employee', 'department', 'job_position', 'contract', 'working_schedule', 'attendance'),
     ...crud('time_off_type', 'allocation', 'leave_request'),
     'leave_request:approve',
     'allocation:approve',
   ] as Permission[],
-
   hr_payroll_user: [
     ...crud('employee', 'department', 'job_position', 'contract', 'working_schedule', 'attendance'),
     ...crud('time_off_type', 'allocation', 'leave_request'),
     'leave_request:approve',
     'allocation:approve',
-    
     'payrun:create',
     'payrun:read',
     'payrun:update',
     'payslip:create',
     'payslip:read',
     'payslip:update',
-    
     'salary_structure:read',
     'salary_rule:read',
     'dashboard:read',
   ] as Permission[],
-
   hr_payroll_manager: [
     ...crud('employee', 'department', 'job_position', 'contract', 'working_schedule', 'attendance'),
     ...crud('time_off_type', 'allocation', 'leave_request'),
@@ -50,7 +43,6 @@ const EXPECTED: Record<string, Permission[]> = {
     'payrun:approve',
     'dashboard:read',
   ] as Permission[],
-
   admin: [
     ...crud('employee', 'department', 'job_position', 'contract', 'working_schedule', 'attendance'),
     ...crud('time_off_type', 'allocation', 'leave_request'),
@@ -68,7 +60,6 @@ function crud(...resources: string[]): Permission[] {
     ['create', 'read', 'update', 'delete'].map((a) => `${r}:${a}` as Permission),
   )
 }
-
 
 function granted(role: string): string[] {
   const out: string[] = []
@@ -100,13 +91,22 @@ describe('the rules that make each role different', () => {
     }
   })
 
-  it('an employee may only create their own records, never edit or delete', () => {
-    
-
-
+  it('an employee writes only their own attendance and their own leave', () => {
     const writes = granted('employee').filter((p) => !p.endsWith(':read')).sort()
-    expect(writes).toEqual(['attendance:create', 'leave_request:create'])
-    expect(writes.every((p) => p.endsWith(':create'))).toBe(true)
+    expect(writes).toEqual([
+      'attendance:create',
+      'leave_request:create',
+      'leave_request:delete',
+      'leave_request:update',
+    ])
+  })
+
+  it('an employee still cannot touch anybody else’s records', () => {
+    expect(can('employee', 'leave_request', 'approve')).toBe(false)
+    expect(can('employee', 'allocation', 'approve')).toBe(false)
+    expect(can('employee', 'employee', 'update')).toBe(false)
+    expect(can('employee', 'employee', 'delete')).toBe(false)
+    expect(can('employee', 'attendance', 'update')).toBe(false)
   })
 
   it('an employee cannot touch payroll at all', () => {
@@ -152,8 +152,6 @@ describe('the rules that make each role different', () => {
   })
 
   it('each role includes everything the one below it can do', () => {
-    
-    
     const ladder = ['hr_manager', 'hr_payroll_user', 'hr_payroll_manager', 'admin'] as const
     for (let i = 1; i < ladder.length; i++) {
       const lower = new Set(granted(ladder[i - 1]))

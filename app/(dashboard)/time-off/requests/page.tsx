@@ -1,14 +1,14 @@
 'use client'
 
-
-
 import { useRouter } from 'next/navigation'
 import type { ColumnDef } from '@tanstack/react-table'
-import { LuPlus } from 'react-icons/lu'
+import { LuPencil, LuPlus, LuTrash2 } from 'react-icons/lu'
 import Link from 'next/link'
 import { LEAVE_STATUSES } from '@/modules/shared'
 import type { LeaveRequestListItem, TimeOffTypeView } from '@/modules/timeoff/schemas'
-import { useResourceList } from '@/hooks/use-resource'
+import { useDeleteResource, useResourceList } from '@/hooks/use-resource'
+import { useCan } from '@/components/auth/current-user'
+import { useConfirm } from '@/components/resource/confirm-dialog'
 import { PageHeader } from '@/components/resource/page-header'
 import { ResourceTable } from '@/components/resource/resource-table'
 import { StatusBadge } from '@/components/resource/status-badge'
@@ -22,7 +22,10 @@ const STATUS_OPTIONS = LEAVE_STATUSES.map((status) => ({
   label: status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
 }))
 
-const columns: ColumnDef<LeaveRequestListItem, unknown>[] = [
+const isPending = (status: LeaveRequestListItem['status']) =>
+  status === 'to_approve' || status === 'draft'
+
+const BASE_COLUMNS: ColumnDef<LeaveRequestListItem, unknown>[] = [
   {
     accessorKey: 'employeeName',
     header: 'Employee',
@@ -32,9 +35,6 @@ const columns: ColumnDef<LeaveRequestListItem, unknown>[] = [
   {
     id: 'dates',
     header: 'Dates',
-    
-    
-    
     meta: { sortKey: 'startsOn' },
     cell: ({ row }) => (
       <span className="tabular">{formatDateRange(row.original.start, row.original.end)}</span>
@@ -61,8 +61,67 @@ export default function LeaveRequestsPage() {
   const params = useFilterParams(['status', 'timeOffTypeId'])
   const { page, isLoading } = useResourceList<LeaveRequestListItem>('time-off/requests', params)
 
-  
+  const canEdit = useCan('leave_request', 'update')
+  const canDelete = useCan('leave_request', 'delete')
+  const withdraw = useDeleteResource('time-off/requests', {
+    successMessage: 'Request withdrawn',
+  })
+  const { confirm, dialog } = useConfirm()
 
+  const columns: ColumnDef<LeaveRequestListItem, unknown>[] =
+    canEdit || canDelete
+      ? [
+          ...BASE_COLUMNS,
+          {
+            id: 'actions',
+            header: '',
+            enableSorting: false,
+            cell: ({ row }) => {
+              if (!isPending(row.original.status)) return null
+              const request = row.original
+
+              return (
+                <div className="flex items-center justify-end gap-1">
+                  {canEdit ? (
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label={`Edit ${request.timeOffTypeName} request`}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        router.push(`/time-off/requests/${request.id}/edit`)
+                      }}
+                    >
+                      <LuPencil aria-hidden />
+                    </Button>
+                  ) : null}
+
+                  {canDelete ? (
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label={`Withdraw ${request.timeOffTypeName} request`}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        confirm({
+                          title: 'Withdraw this request?',
+                          description:
+                            'It is removed entirely and nobody is asked to decide on it. Raise a new request if you change your mind.',
+                          confirmLabel: 'Withdraw',
+                          destructive: true,
+                          onConfirm: () => withdraw.mutateAsync(request.id),
+                        })
+                      }}
+                    >
+                      <LuTrash2 className="text-destructive" aria-hidden />
+                    </Button>
+                  ) : null}
+                </div>
+              )
+            },
+          },
+        ]
+      : BASE_COLUMNS
 
   const types = useResourceList<TimeOffTypeView>('time-off/types', { limit: 100 })
   const typeOptions = types.page.items.map((t) => ({ value: t.id, label: t.name }))
@@ -104,6 +163,7 @@ export default function LeaveRequestsPage() {
       />
 
       <Pagination page={page.page} pages={page.pages} total={page.total} limit={page.limit} />
+      {dialog}
     </div>
   )
 }

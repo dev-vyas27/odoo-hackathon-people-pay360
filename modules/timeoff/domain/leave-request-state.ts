@@ -1,6 +1,3 @@
-
-
-
 import { DomainError, type LeaveStatus } from '@/modules/shared'
 
 export interface LeaveRequestState {
@@ -33,7 +30,7 @@ const DraftState: LeaveRequestState = {
 
 const ToApproveState: LeaveRequestState = {
   name: 'to_approve',
-  isEditable: false,
+  isEditable: true,
   consumesBalance: false,
   submit: () => illegal('to_approve', 'submitted twice'),
   approve: () => ApprovedState,
@@ -46,8 +43,6 @@ const ApprovedState: LeaveRequestState = {
   consumesBalance: true,
   submit: () => illegal('approved', 'submitted again'),
   approve: () => illegal('approved', 'approved twice'),
-  
-  
   refuse: () => RefusedState,
 }
 

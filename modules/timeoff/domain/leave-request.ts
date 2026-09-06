@@ -1,6 +1,3 @@
-
-
-
 import { DomainError, Period, type LeaveStatus, type LeaveUnit } from '@/modules/shared'
 import { stateOf, type LeaveRequestState } from './leave-request-state'
 
@@ -17,8 +14,6 @@ export interface LeaveRequestProps {
   
   allocationId?: string | null
   
-
-
   decidedByEmployeeId?: string | null
   decidedAt?: Date | null
 }
@@ -49,9 +44,6 @@ export class LeaveRequest {
     }
     return new LeaveRequest(props)
   }
-
-  
-
 
   static defaultDuration(
     period: Period,
@@ -112,7 +104,6 @@ export class LeaveRequest {
     return this.state.consumesBalance
   }
 
-  
   overlaps(other: { period: Period; id: string }): boolean {
     return other.id !== this.props.id && this.props.period.overlaps(other.period)
   }
@@ -121,8 +112,38 @@ export class LeaveRequest {
     this.props = { ...this.props, status: this.state.submit().name }
   }
 
-  
+  amend(patch: {
+    timeOffTypeId?: string
+    period?: Period
+    unit?: LeaveUnit
+    duration?: number
+    reason?: string | null
+  }): void {
+    if (!this.isEditable) {
+      throw DomainError.rule(
+        'LEAVE_NOT_EDITABLE',
+        `A ${this.props.status.replace(/_/g, ' ')} request can no longer be changed`,
+        { status: this.props.status },
+      )
+    }
 
+    const duration = patch.duration ?? this.props.duration
+    if (duration <= 0) {
+      throw DomainError.validation(
+        'LEAVE_DURATION_INVALID',
+        'A leave request must be longer than zero',
+      )
+    }
+
+    this.props = {
+      ...this.props,
+      timeOffTypeId: patch.timeOffTypeId ?? this.props.timeOffTypeId,
+      period: patch.period ?? this.props.period,
+      unit: patch.unit ?? this.props.unit,
+      duration,
+      reason: patch.reason === undefined ? this.props.reason : patch.reason,
+    }
+  }
 
   approve(decidedByEmployeeId: string | null, allocationId: string | null): void {
     this.props = {
@@ -143,7 +164,6 @@ export class LeaveRequest {
     }
   }
 
-  
   releaseAllocation(): void {
     this.props = { ...this.props, allocationId: null }
   }

@@ -1,6 +1,3 @@
-
-
-
 export {
   listLeaveRequests,
   getLeaveRequest,
@@ -8,6 +5,7 @@ export {
   submitLeave,
   approveLeave,
   refuseLeave,
+  updateLeave,
   deleteLeave,
   listAllocations,
   allocate,
@@ -28,7 +26,5 @@ export type { TimeOffTypeView } from './domain/time-off-type'
 export { ALLOCATION_STATUSES } from './domain/allocation'
 export type { AllocationView, AllocationStatus } from './domain/allocation'
 export type { LeaveRequestView } from './domain/leave-request'
-
-
 
 export { registerTimeOff } from './register'

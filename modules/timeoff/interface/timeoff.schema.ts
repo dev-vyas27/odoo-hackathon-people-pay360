@@ -1,10 +1,5 @@
-
-
-
 import { z } from 'zod'
 import { LEAVE_UNITS, dateField, dateRangeRefinement, nonEmpty, uuid } from '@/modules/shared'
-
-
 
 export const timeOffTypeSchema = z.object({
   name: nonEmpty('Name', 80),
@@ -18,15 +13,12 @@ export const timeOffTypeSchema = z.object({
     .regex(/^[A-Z0-9_]+$/, 'Letters, numbers and underscores only'),
   unit: z.enum(LEAVE_UNITS),
   requiresAllocation: z.boolean(),
-  
   autoApprove: z.boolean(),
   isPaid: z.boolean(),
   isActive: z.boolean(),
 })
 
 export type TimeOffTypeValues = z.infer<typeof timeOffTypeSchema>
-
-
 
 export const allocationSchema = z
   .object({
@@ -40,7 +32,6 @@ export const allocationSchema = z
     validTo: dateField,
     note: z.string().trim().max(200).optional().or(z.literal('')),
   })
-  
   
   .superRefine((data, ctx) => {
     dateRangeRefinement({ start: data.validFrom, end: data.validTo }, ctx)
@@ -59,17 +50,12 @@ export const allocationDecisionSchema = z.object({
   decision: z.enum(['approve', 'refuse']),
 })
 
-
-
 export const leaveRequestSchema = z
   .object({
     employeeId: uuid,
     timeOffTypeId: uuid,
     start: dateField,
     end: dateField,
-    
-
-
     duration: z
       .number()
       .positive('Duration must be more than zero')
@@ -90,6 +76,29 @@ export const leaveRequestSchema = z
 
 export type LeaveRequestValues = z.infer<typeof leaveRequestSchema>
 
+export const updateLeaveRequestSchema = z
+  .object({
+    timeOffTypeId: uuid.optional(),
+    start: dateField.optional(),
+    end: dateField.optional(),
+    duration: z
+      .number()
+      .positive('Duration must be more than zero')
+      .max(365, 'That is longer than a year')
+      .optional(),
+    reason: z.string().trim().max(300).optional().or(z.literal('')),
+  })
+  .superRefine((data, ctx) => {
+    if (data.start && data.end && data.end < data.start) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['end'],
+        message: 'The leave cannot end before it starts',
+      })
+    }
+  })
+
+export type UpdateLeaveRequestValues = z.infer<typeof updateLeaveRequestSchema>
 
 export const balanceQuerySchema = z.object({
   employeeId: uuid,
