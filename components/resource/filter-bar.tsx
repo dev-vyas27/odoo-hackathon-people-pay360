@@ -40,6 +40,7 @@ export interface FilterDefinition {
 export interface FilterBarProps {
   filters?: FilterDefinition[]
   searchPlaceholder?: string
+  showSearch?: boolean
   /** Rendered on the right — usually a "New" button. */
   actions?: React.ReactNode
   className?: string
@@ -51,6 +52,7 @@ const ALL = '__all__'
 export function FilterBar({
   filters = [],
   searchPlaceholder = 'Search...',
+  showSearch = true,
   actions,
   className,
 }: FilterBarProps) {
@@ -79,30 +81,34 @@ export function FilterBar({
    * with a `router.replace` per character the URL history also thrashes.
    */
   useEffect(() => {
+    if (!showSearch) return
     const current = params.get('search') ?? ''
     if (search === current) return
     const timer = setTimeout(() => apply({ search: search || undefined }), 300)
     return () => clearTimeout(timer)
-  }, [search, params, apply])
+  }, [search, params, apply, showSearch])
 
   const hasActiveFilters =
-    Boolean(params.get('search')) || filters.some((f) => Boolean(params.get(f.name)))
+    (showSearch && Boolean(params.get('search'))) ||
+    filters.some((f) => Boolean(params.get(f.name)))
 
   return (
     <div className={cn('flex flex-wrap items-center gap-3 pb-5', className)}>
-      <div className="relative min-w-[14rem] flex-1 max-w-sm">
-        <LuSearch
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={searchPlaceholder}
-          className="pl-9"
-          aria-label="Search"
-        />
-      </div>
+      {showSearch ? (
+        <div className="relative min-w-[14rem] flex-1 max-w-sm">
+          <LuSearch
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={searchPlaceholder}
+            className="pl-9"
+            aria-label="Search"
+          />
+        </div>
+      ) : null}
 
       {filters.map((filter) => (
         <Select

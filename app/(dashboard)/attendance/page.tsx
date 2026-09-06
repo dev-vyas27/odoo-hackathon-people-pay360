@@ -55,16 +55,20 @@ export default function AttendancePage() {
   const employeeOptions = employees.page.items.map((e) => ({ value: e.id, label: e.name }))
 
   const columns: ColumnDef<AttendanceListItem, unknown>[] = [
-    {
-      id: 'employee',
-      header: 'Employee',
-      enableSorting: false,
-      cell: ({ row }) => (
-        <span className="font-medium">
-          {employeeNames.get(row.original.employeeId) ?? row.original.employeeId.slice(0, 8)}
-        </span>
-      ),
-    },
+    ...(selfService
+      ? []
+      : [
+          {
+            id: 'employee',
+            header: 'Employee',
+            enableSorting: false,
+            cell: ({ row }: { row: { original: AttendanceListItem } }) => (
+              <span className="font-medium">
+                {employeeNames.get(row.original.employeeId) ?? row.original.employeeId.slice(0, 8)}
+              </span>
+            ),
+          },
+        ]),
     {
       accessorKey: 'checkIn',
       header: 'Date',
@@ -120,11 +124,16 @@ export default function AttendancePage() {
       />
 
       <FilterBar
+        showSearch={!selfService}
         searchPlaceholder="Search attendance..."
-        filters={[
-          { name: 'employeeId', label: 'Employee', options: employeeOptions },
-          { name: 'status', label: 'Status', options: STATUS_OPTIONS },
-        ]}
+        filters={
+          selfService
+            ? [{ name: 'status', label: 'Status', options: STATUS_OPTIONS }]
+            : [
+                { name: 'employeeId', label: 'Employee', options: employeeOptions },
+                { name: 'status', label: 'Status', options: STATUS_OPTIONS },
+              ]
+        }
       />
 
       <ResourceTable
