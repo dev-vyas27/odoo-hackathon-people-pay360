@@ -34,7 +34,7 @@ export function DemoAccountsPanel({
   return (
     <section className="relative space-y-2">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="eyebrow text-white">Demo accounts</h2>
+        <h2 className="eyebrow !text-white">Demo accounts</h2>
         <p className="text-xs text-primary-300">Pick one to fill the form</p>
       </div>
 
