@@ -50,7 +50,7 @@ export function LoginForm({
         cancel={
           <Link
             href="/forgot-password"
-            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            className="ml-auto text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
             Forgot your password?
           </Link>
