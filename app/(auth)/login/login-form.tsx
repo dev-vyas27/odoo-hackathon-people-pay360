@@ -40,6 +40,7 @@ export function LoginForm({
 
       <ResourceForm<LoginValues>
         surface={false}
+        submitFullWidth
         schema={loginSchema}
         submitLabel="Sign in"
         defaultValues={{
@@ -57,9 +58,11 @@ export function LoginForm({
           { name: "password", label: "Password", type: "password", span: 2 },
         ]}
         cancel={
+          // Centred beneath a full-width Sign in, not beside it: it is the way
+          // out of this screen, not the second half of a choice.
           <Link
             href="/forgot-password"
-            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            className="self-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
             Forgot your password?
           </Link>

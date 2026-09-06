@@ -5,6 +5,10 @@
  * from a redirect the proxy built, but anyone can type a URL, and blindly
  * following `?next=https://evil.example` after a successful login is a textbook
  * open redirect. Only same-origin absolute paths survive.
+ *
+ * The page itself is thin: it decides who may see what, and hands the whole
+ * decision to `LoginScreen`, which owns the two-panel sheet. See brand-panel.tsx
+ * for why the sheet is shaped the way it is.
  */
 import { redirect } from 'next/navigation'
 import { getActor } from '@/lib/auth'
@@ -30,14 +34,7 @@ export default async function LoginPage({
   const { next } = await searchParams
 
   return (
-    <>
-      <div className="space-y-3">
-        <h1 className="text-xl font-medium">Sign in</h1>
-        <p className="text-base text-muted-foreground">
-          Sign in with your work email.
-        </p>
-      </div>
-
+    <div className="relative z-10 w-full max-w-4xl">
       {/*
         The flag is read here, on the SERVER, and the accounts are passed down
         already resolved — the credentials never reach a client bundle unless
@@ -47,6 +44,6 @@ export default async function LoginPage({
         changed in the seed cannot leave a stale one on this screen.
       */}
       <LoginScreen next={safeNext(next)} accounts={isDemoSeedEnabled() ? DEMO_CREDENTIALS : []} />
-    </>
+    </div>
   )
 }
