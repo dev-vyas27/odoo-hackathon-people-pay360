@@ -29,7 +29,28 @@ const SECTION_RESOURCE: Array<{ prefix: string; resource: Resource }> = [
   { prefix: '/admin', resource: 'user' },
 ]
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/health']
+/**
+ * `/api/demo/seed` is here because it creates the accounts you would need in
+ * order to authenticate, so requiring authentication would make it useless. It
+ * guards itself with the `DEMO_SEED_ENABLED` flag and 404s when that is off —
+ * see lib/demo-mode.ts.
+ */
+const PUBLIC_PATHS = [
+  '/login',
+  '/api/auth/login',
+  '/api/health',
+  '/api/demo/seed',
+  /**
+   * Redeeming an invitation. Unauthenticated by necessity — the person cannot
+   * sign in until they have done it. The 32-byte single-use token in the URL
+   * is the authentication; see set-password.use-case.ts.
+   */
+  '/set-password',
+  '/api/auth/set-password',
+  /** Requesting a reset link. Anonymous by definition — they cannot sign in. */
+  '/forgot-password',
+  '/api/auth/forgot-password',
+]
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl

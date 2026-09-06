@@ -12,14 +12,19 @@
  */
 import { z } from 'zod'
 
-/** A Mongo ObjectId as it arrives from JSON. */
-export const objectId = z
-  .string()
-  .regex(/^[0-9a-fA-F]{24}$/, 'Not a valid id')
+/**
+ * Every primary key in this schema is a uuid (`gen_random_uuid()`).
+ *
+ * Validating the format at the edge matters: passing a malformed string into
+ * a `uuid` column raises
+ * `22P02 invalid input syntax`, which surfaces as a 500. Catching it here turns
+ * that into a 400 with a field-level message.
+ */
+export const uuid = z.string().uuid('Not a valid id')
 
 /** Optional reference: empty select values arrive as '' and must become undefined. */
-export const optionalObjectId = z
-  .union([objectId, z.literal('')])
+export const optionalUuid = z
+  .union([uuid, z.literal('')])
   .optional()
   .transform((v) => (v === '' ? undefined : v))
 
@@ -35,7 +40,15 @@ export const email = z.string().trim().toLowerCase().email('Enter a valid email 
 export const money = z
   .number({ message: 'Enter an amount' })
   .nonnegative('Amount cannot be negative')
-  .refine((n) => Number.isInteger(Math.round(n * 100)), 'At most 2 decimal places')
+  /**
+   * `Number.isInteger(Math.round(n * 100))` was the obvious way to write this
+   * and it never rejected anything: Math.round always returns an integer, so
+   * the predicate was constant-true and 100.123 was accepted as a wage.
+   * Compare the scaled value against its own rounding instead, with a
+   * tolerance for binary floating point — 100.12 * 100 is 10011.999999999998,
+   * which an exact comparison would reject.
+   */
+  .refine((n) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-9, 'At most 2 decimal places')
 
 export const percentage = z
   .number({ message: 'Enter a percentage' })

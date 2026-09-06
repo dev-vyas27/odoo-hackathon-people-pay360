@@ -1,0 +1,254 @@
+/**
+ * Attendance — AGGREGATE ROOT.
+ *
+ * One check-in/check-out cycle for one employee. Worked hours are never
+ * stored redundantly — they are always derived from checkIn/checkOut/break
+ * through worked-hours.service, so the two can never drift apart.
+ */
+import { DomainError, Err, Ok, type Result } from '@/modules/shared'
+import { computeWorkedHours } from './worked-hours.service'
+import { deriveStatus, type AttendanceStatus, type DailySchedule } from './exception'
+import type { WorkMode } from './work-mode'
+
+export interface AttendanceProps {
+  id: string
+  employeeId: string
+  checkIn: Date
+  checkOut: Date | null
+  breakMinutes: number
+  /** Where they worked. Null on records predating self-service check-in. */
+  workMode: WorkMode | null
+  /** True once the record has been hand-corrected by an authorized user. */
+  manual: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface NewAttendanceInput {
+  employeeId: string
+  checkIn: Date
+  breakMinutes?: number
+  workMode?: WorkMode | null
+}
+
+const MS_PER_DAY = 86_400_000
+
+/**
+ * A night shift's check-out belongs to the FOLLOWING calendar day.
+ *
+ * `computeWorkedHours` already treats a check-out that is numerically earlier
+ * than the check-in as having rolled past midnight, so 23:00 -> 06:00 measured
+ * seven hours correctly. What nobody did was carry that decision into the value
+ * we store: the raw 06:00 timestamp went to the database, where
+ * `attendances_checkout_after_checkin` refused it outright. A night shift was
+ * therefore impossible to record end to end, even though the domain was written
+ * to support one.
+ *
+ * Moving the timestamp forward a day is not a workaround for the constraint —
+ * it is what actually happened. The constraint was right and the stored value
+ * was wrong.
+ */
+function resolveCheckOut(checkIn: Date, checkOut: Date): Date {
+  if (checkOut.getTime() >= checkIn.getTime()) return checkOut
+  return new Date(checkOut.getTime() + MS_PER_DAY)
+}
+
+export class Attendance {
+  private constructor(private readonly props: AttendanceProps) {}
+
+  static checkIn(input: NewAttendanceInput): Result<Attendance> {
+    const breakMinutes = input.breakMinutes ?? 0
+    if (!input.employeeId) {
+      return Err(DomainError.validation('EMPLOYEE_REQUIRED', 'employeeId is required'))
+    }
+    if (!Number.isFinite(breakMinutes) || breakMinutes < 0) {
+      return Err(DomainError.validation('INVALID_BREAK_MINUTES', 'Break minutes must be a non-negative number'))
+    }
+    const now = new Date()
+    return Ok(
+      new Attendance({
+        id: '',
+        employeeId: input.employeeId,
+        checkIn: input.checkIn,
+        checkOut: null,
+        breakMinutes,
+        workMode: input.workMode ?? null,
+        manual: false,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    )
+  }
+
+  /** Rebuild from persisted data. Trusted — validation already happened once. */
+  static reconstitute(props: AttendanceProps): Attendance {
+    return new Attendance(props)
+  }
+
+  get id(): string {
+    return this.props.id
+  }
+  get employeeId(): string {
+    return this.props.employeeId
+  }
+  get checkIn(): Date {
+    return this.props.checkIn
+  }
+  get checkOut(): Date | null {
+    return this.props.checkOut
+  }
+  get breakMinutes(): number {
+    return this.props.breakMinutes
+  }
+  get workMode(): WorkMode | null {
+    return this.props.workMode
+  }
+  /** Open shift — checked in and not yet out. */
+  get isOpen(): boolean {
+    return this.props.checkOut === null
+  }
+  get manual(): boolean {
+    return this.props.manual
+  }
+  get createdAt(): Date {
+    return this.props.createdAt
+  }
+  get updatedAt(): Date {
+    return this.props.updatedAt
+  }
+
+  toProps(): AttendanceProps {
+    return { ...this.props }
+  }
+
+  /**
+   * `private` is a TypeScript-only marker: `props` is still an own enumerable
+   * property at runtime, so `JSON.stringify(attendance)` serialised the
+   * aggregate's internals and every attendance response came back shaped as
+   * `{ attendance: { props: { … } } }`. That leaked the domain's internal
+   * layout into the public API and forced clients to read `item.props.id`
+   * while every other module returns a flat record. Serialising as the flat
+   * props keeps the wire contract stable if the internals ever change.
+   */
+  toJSON(): AttendanceProps {
+    return this.toProps()
+  }
+
+  /** Worked hours, or an Err (e.g. MISSING_CHECKOUT) when they cannot be computed yet. */
+  workedHours(): Result<number> {
+    return computeWorkedHours(this.props.checkIn, this.props.checkOut, this.props.breakMinutes)
+  }
+
+  /** Worked hours if computable, otherwise null — convenient for status derivation and stats. */
+  workedHoursOrNull(): number | null {
+    const result = this.workedHours()
+    return result.ok ? result.value : null
+  }
+
+  status(schedule: DailySchedule | null): AttendanceStatus {
+    return deriveStatus(
+      {
+        checkIn: this.props.checkIn,
+        checkOut: this.props.checkOut,
+        workedHours: this.workedHoursOrNull(),
+        manual: this.props.manual,
+      },
+      schedule,
+    )
+  }
+
+  recordCheckOut(checkOut: Date, breakMinutes?: number): Result<Attendance> {
+    if (this.props.checkOut) {
+      return Err(DomainError.conflict('ALREADY_CHECKED_OUT', 'This attendance record already has a check-out'))
+    }
+    const nextBreak = breakMinutes ?? this.props.breakMinutes
+    const resolved = resolveCheckOut(this.props.checkIn, checkOut)
+    const validated = computeWorkedHours(this.props.checkIn, resolved, nextBreak)
+    if (!validated.ok) return Err(validated.error)
+
+    return Ok(
+      new Attendance({
+        ...this.props,
+        checkOut: resolved,
+        breakMinutes: nextBreak,
+        updatedAt: new Date(),
+      }),
+    )
+  }
+
+  /**
+   * Clock back in on a shift that was already closed today.
+   *
+   * The day is ONE record, not one per session — `attendances` has a unique
+   * constraint on (employee, day) and payroll reads one row per person per day.
+   * So coming back after lunch reopens the existing record rather than starting
+   * a second one, and the time spent away becomes the break.
+   *
+   * That is what makes break time measured rather than typed in: nobody has to
+   * remember how long they were out, because the system already watched them
+   * leave and come back.
+   *
+   * `workMode` is re-asked and re-applied, because it can genuinely change —
+   * morning in the office, afternoon from home. The last answer of the day is
+   * the one stored, which is a simplification worth naming: a single day cannot
+   * currently record two locations.
+   */
+  resume(at: Date, workMode?: WorkMode | null): Result<Attendance> {
+    const closedAt = this.props.checkOut
+    if (!closedAt) {
+      return Err(
+        DomainError.conflict('ALREADY_CHECKED_IN', 'This shift is already open — check out first'),
+      )
+    }
+    if (at.getTime() < closedAt.getTime()) {
+      return Err(
+        DomainError.validation(
+          'RESUME_BEFORE_CHECKOUT',
+          'Cannot resume a shift before it was checked out',
+        ),
+      )
+    }
+
+    const away = Math.round((at.getTime() - closedAt.getTime()) / 60_000)
+
+    return Ok(
+      new Attendance({
+        ...this.props,
+        checkOut: null,
+        breakMinutes: this.props.breakMinutes + away,
+        workMode: workMode === undefined ? this.props.workMode : workMode,
+        updatedAt: new Date(),
+      }),
+    )
+  }
+
+  /** Authorized correction. Always flips `manual` on, whatever else changes. */
+  correct(patch: { checkIn?: Date; checkOut?: Date | null; breakMinutes?: number }): Result<Attendance> {
+    const nextCheckIn = patch.checkIn ?? this.props.checkIn
+    const patched = patch.checkOut === undefined ? this.props.checkOut : patch.checkOut
+    const nextCheckOut = patched ? resolveCheckOut(nextCheckIn, patched) : patched
+    const nextBreak = patch.breakMinutes ?? this.props.breakMinutes
+
+    if (!Number.isFinite(nextBreak) || nextBreak < 0) {
+      return Err(DomainError.validation('INVALID_BREAK_MINUTES', 'Break minutes must be a non-negative number'))
+    }
+
+    // Only validate worked-hours maths when the record is (or becomes) complete —
+    // a correction is allowed to leave a check-out blank.
+    if (nextCheckOut) {
+      const validated = computeWorkedHours(nextCheckIn, nextCheckOut, nextBreak)
+      if (!validated.ok) return Err(validated.error)
+    }
+
+    return Ok(
+      new Attendance({
+        ...this.props,
+        checkIn: nextCheckIn,
+        checkOut: nextCheckOut,
+        breakMinutes: nextBreak,
+        manual: true,
+        updatedAt: new Date(),
+      }),
+    )
+  }
+}
