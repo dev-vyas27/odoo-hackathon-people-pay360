@@ -57,9 +57,22 @@ export interface EmployeeListItem {
   name: string
   email: string
   departmentId: string | null
+  /**
+   * Resolved server-side, alongside the id.
+   *
+   * The screens used to look this up by fetching every department and matching
+   * on the client, which silently produced a blank for anyone without
+   * `department:read` — a plain employee could not see their own department.
+   * A name you are already allowed to see travels with the record.
+   * See interface/placement-names.ts.
+   */
+  departmentName: string | null
   jobPositionId: string | null
+  jobPositionName: string | null
   managerId: string | null
+  managerName: string | null
   workingScheduleId: string | null
+  workingScheduleName: string | null
   employeeType: 'full_time' | 'part_time' | 'contract' | 'intern'
   bankAccount: string | null
   isActive: boolean

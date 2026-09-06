@@ -49,7 +49,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { EmployeeForm } from '../_components/employee-form'
-import { useDepartmentOptions, useJobPositionOptions } from '../../_components/options'
 
 /** `limit: 1` — we want the envelope's `total`, not the rows. */
 const COUNT_ONLY = { limit: 1 } as const
@@ -85,15 +84,31 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   })
   const archive = useDeleteResource('employees', { successMessage: 'Employee archived' })
 
-  // Named lookups for the identity strip. Both are already cached by the form's
-  // own pickers, so this costs nothing extra.
-  const departments = useDepartmentOptions()
-  const positions = useJobPositionOptions()
-
   const contracts = useRelatedCount('contracts', id)
   const attendance = useRelatedCount('attendance', id)
   const timeOff = useRelatedCount('time-off/requests', id)
   const allocations = useRelatedCount('time-off/allocations', id)
+
+  /**
+   * A count you are not allowed to read is not zero.
+   *
+   * These come from four list endpoints, each with its own permission. A plain
+   * employee holds no `contract:read`, so that request 403s, the envelope
+   * defaults to an empty page, and the tile renders a confident "0 Contracts"
+   * beside somebody who has one. The button also linked to a page the proxy
+   * would bounce them off.
+   *
+   * So each tile is gated on the same permission its endpoint checks: shown
+   * with a real number, or not shown. The file header already argued that a
+   * wrong count is worse than a missing one — this is the same rule applied to
+   * the reader rather than to the fetch.
+   */
+  const canSee = {
+    contracts: useCan('contract', 'read'),
+    attendance: useCan('attendance', 'read'),
+    timeOff: useCan('leave_request', 'read'),
+    allocations: useCan('allocation', 'read'),
+  }
 
   if (isLoading || !employee) {
     return (
@@ -106,11 +121,20 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     )
   }
 
-  const departmentName = departments.options.find((o) => o.value === employee.departmentId)?.label
-  const positionName = positions.options.find((o) => o.value === employee.jobPositionId)?.label
-
-  /** "Sales · Account Executive · Full Time", skipping whatever is not set. */
-  const placement = [departmentName, positionName, EMPLOYEE_TYPE_LABELS[employee.employeeType]]
+  /**
+   * "Sales · Account Executive · Full Time", skipping whatever is not set.
+   *
+   * The names come WITH the record. They used to be looked up by fetching every
+   * department and job position and matching on the id, which quietly produced
+   * a blank for anyone without `department:read` — a plain employee could not
+   * see their own department here while an admin looking at the same record
+   * could. See modules/people/interface/placement-names.ts.
+   */
+  const placement = [
+    employee.departmentName,
+    employee.jobPositionName,
+    EMPLOYEE_TYPE_LABELS[employee.employeeType],
+  ]
     .filter(Boolean)
     .join(' · ')
 
@@ -171,30 +195,38 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
       {/* 2. WHAT ELSE ───────────────────────────────────────────────────── */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <SmartButton
-          icon={LuFileText}
-          label="Contracts"
-          count={contracts}
-          href={`/contracts?employeeId=${employee.id}`}
-        />
-        <SmartButton
-          icon={LuCalendarClock}
-          label="Attendance"
-          count={attendance}
-          href={`/attendance?employeeId=${employee.id}`}
-        />
-        <SmartButton
-          icon={LuPlaneTakeoff}
-          label="Time Off"
-          count={timeOff}
-          href={`/time-off/requests?employeeId=${employee.id}`}
-        />
-        <SmartButton
-          icon={LuWallet}
-          label="Allocations"
-          count={allocations}
-          href={`/time-off/allocations?employeeId=${employee.id}`}
-        />
+        {canSee.contracts ? (
+          <SmartButton
+            icon={LuFileText}
+            label="Contracts"
+            count={contracts}
+            href={`/contracts?employeeId=${employee.id}`}
+          />
+        ) : null}
+        {canSee.attendance ? (
+          <SmartButton
+            icon={LuCalendarClock}
+            label="Attendance"
+            count={attendance}
+            href={`/attendance?employeeId=${employee.id}`}
+          />
+        ) : null}
+        {canSee.timeOff ? (
+          <SmartButton
+            icon={LuPlaneTakeoff}
+            label="Time Off"
+            count={timeOff}
+            href={`/time-off/requests?employeeId=${employee.id}`}
+          />
+        ) : null}
+        {canSee.allocations ? (
+          <SmartButton
+            icon={LuWallet}
+            label="Allocations"
+            count={allocations}
+            href={`/time-off/allocations?employeeId=${employee.id}`}
+          />
+        ) : null}
       </div>
 
       {/* 3. EDIT ────────────────────────────────────────────────────────── */}
@@ -203,6 +235,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           <EmployeeForm
             employeeId={employee.id}
             submitLabel="Save changes"
+            /* So each select can label its current value even when the viewer
+               cannot read the reference list it came from. */
+            currentNames={{
+              departmentName: employee.departmentName,
+              jobPositionName: employee.jobPositionName,
+              managerName: employee.managerName,
+              workingScheduleName: employee.workingScheduleName,
+            }}
             defaultValues={{
               name: employee.name,
               email: employee.email,

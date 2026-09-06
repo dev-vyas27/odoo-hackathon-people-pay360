@@ -8,6 +8,7 @@
  * but not changeable.
  */
 import { createEmployeeSchema, type CreateEmployeeBody } from '@/modules/people/schemas'
+import type { SelectOption } from '@/components/resource/resource-form'
 import { isFullTimeSchedule } from '@/modules/employment/schemas'
 import { useCan } from '@/components/auth/current-user'
 import { ResourceForm } from '@/components/resource/resource-form'
@@ -38,6 +39,33 @@ function schedulesFor<T extends { weeklyHours: number }>(
   return schedules
 }
 
+/**
+ * Guarantee the CURRENT value has a label, whatever is in the options list.
+ *
+ * A `<Select>` renders its placeholder when the selected value matches no
+ * option, which turns two unrelated situations into the same blank box:
+ *
+ *   - the viewer cannot read the reference table. A plain employee holds no
+ *     `department:read`, so every option list here arrives empty and their own
+ *     department, position, manager and schedule all vanish from their own
+ *     record. That was the reported bug.
+ *   - the referenced row is archived, so it is correctly absent from a list of
+ *     ACTIVE choices — which would blank the field for an administrator too.
+ *
+ * Both are fixed by the same thing: prepend what the record actually says. The
+ * name comes from the server with the record, so it needs no permission the
+ * reader does not already have.
+ */
+function withCurrent(
+  options: SelectOption[],
+  value: string | null | undefined,
+  label: string | null | undefined,
+): SelectOption[] {
+  if (!value || !label) return options
+  if (options.some((option) => option.value === value)) return options
+  return [{ value, label }, ...options]
+}
+
 export function EmployeeForm({
   defaultValues,
   submitLabel,
@@ -45,12 +73,23 @@ export function EmployeeForm({
   cancel,
   /** Editing: the employee cannot be offered as their own manager. */
   employeeId,
+  currentNames,
 }: {
   defaultValues: CreateEmployeeBody
   submitLabel: string
   onSubmit: (values: CreateEmployeeBody) => Promise<void>
   cancel?: React.ReactNode
   employeeId?: string
+  /**
+   * What the record's references are actually called, resolved server-side.
+   * Absent when creating, since nothing is selected yet.
+   */
+  currentNames?: {
+    departmentName: string | null
+    jobPositionName: string | null
+    managerName: string | null
+    workingScheduleName: string | null
+  }
 }) {
   const departments = useDepartmentOptions()
   const positions = useJobPositionOptions()
@@ -130,7 +169,11 @@ export function EmployeeForm({
           name: 'departmentId',
           label: 'Department',
           type: 'select',
-          options: departments.options,
+          options: withCurrent(
+            departments.options,
+            values.departmentId,
+            currentNames?.departmentName,
+          ),
           placeholder: departments.isLoading ? 'Loading...' : 'Select department',
           section: 'Organisation',
         },
@@ -138,7 +181,11 @@ export function EmployeeForm({
           name: 'jobPositionId',
           label: 'Job position',
           type: 'select',
-          options: positions.options,
+          options: withCurrent(
+            positions.options,
+            values.jobPositionId,
+            currentNames?.jobPositionName,
+          ),
           placeholder: positions.isLoading ? 'Loading...' : 'Select position',
           section: 'Organisation',
         },
@@ -146,7 +193,7 @@ export function EmployeeForm({
           name: 'managerId',
           label: 'Manager',
           type: 'select',
-          options: managers.options,
+          options: withCurrent(managers.options, values.managerId, currentNames?.managerName),
           placeholder: managers.isLoading ? 'Loading...' : 'Select manager',
           section: 'Organisation',
         },
@@ -155,10 +202,14 @@ export function EmployeeForm({
           label: 'Working schedule',
           type: 'select',
           // Narrowed to the schedules that suit the chosen employee type.
-          options: schedulesFor(values.employeeType, schedules.items).map((s) => ({
-            value: s.id,
-            label: `${s.name} (${s.weeklyHours}h)`,
-          })),
+          options: withCurrent(
+            schedulesFor(values.employeeType, schedules.items).map((s) => ({
+              value: s.id,
+              label: `${s.name} (${s.weeklyHours}h)`,
+            })),
+            values.workingScheduleId,
+            currentNames?.workingScheduleName,
+          ),
           placeholder: schedules.isLoading ? 'Loading...' : 'Select schedule',
           description:
             values.employeeType === 'full_time'

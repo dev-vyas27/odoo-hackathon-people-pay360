@@ -18,12 +18,9 @@ const UNASSIGNED = 'Unassigned'
 
 export function EmployeeKanban({
   employees,
-  departmentNames,
   isLoading,
 }: {
   employees: EmployeeListItem[]
-  /** id -> name, so a card can show a department without a second fetch. */
-  departmentNames: Map<string, string>
   isLoading?: boolean
 }) {
   if (isLoading) {
@@ -47,9 +44,7 @@ export function EmployeeKanban({
   // Group by department, preserving the order employees arrived in.
   const columns = new Map<string, EmployeeListItem[]>()
   for (const employee of employees) {
-    const key = employee.departmentId
-      ? (departmentNames.get(employee.departmentId) ?? UNASSIGNED)
-      : UNASSIGNED
+    const key = employee.departmentName ?? UNASSIGNED
     const bucket = columns.get(key) ?? []
     bucket.push(employee)
     columns.set(key, bucket)

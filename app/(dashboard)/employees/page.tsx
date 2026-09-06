@@ -13,7 +13,6 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { LuLayoutGrid, LuList, LuPlus } from 'react-icons/lu'
 import {
   EMPLOYEE_TYPE_LABELS,
-  type DepartmentListItem,
   type EmployeeListItem,
 } from '@/modules/people/schemas'
 import { useResourceList } from '@/hooks/use-resource'
@@ -40,10 +39,6 @@ export default function EmployeesPage() {
   const params = useFilterParams(['employeeType', 'isActive'])
   const { page, isLoading } = useResourceList<EmployeeListItem>('employees', params)
 
-  // Departments are a handful of rows and every card and cell needs the name.
-  const departments = useResourceList<DepartmentListItem>('departments', { limit: 200 })
-  const departmentNames = new Map(departments.page.items.map((d) => [d.id, d.name]))
-
   function setView(next: 'list' | 'kanban') {
     const query = new URLSearchParams(searchParams.toString())
     if (next === 'list') query.delete('view')
@@ -62,10 +57,7 @@ export default function EmployeesPage() {
       id: 'department',
       header: 'Department',
       enableSorting: false,
-      cell: ({ row }) =>
-        row.original.departmentId
-          ? (departmentNames.get(row.original.departmentId) ?? '—')
-          : '—',
+      cell: ({ row }) => row.original.departmentName ?? '—',
     },
     {
       accessorKey: 'employeeType',
@@ -121,11 +113,7 @@ export default function EmployeesPage() {
       />
 
       {view === 'kanban' ? (
-        <EmployeeKanban
-          employees={page.items}
-          departmentNames={departmentNames}
-          isLoading={isLoading}
-        />
+        <EmployeeKanban employees={page.items} isLoading={isLoading} />
       ) : (
         <ResourceTable
           data={page.items}
