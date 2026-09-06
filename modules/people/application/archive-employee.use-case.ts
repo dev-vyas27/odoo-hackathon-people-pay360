@@ -16,11 +16,6 @@ export interface ArchiveEmployeeInput {
   id: string
 }
 
-/**
- * Archiving is a soft-delete: `isActive` flips to false and `EmployeeArchived`
- * is published so other modules (schedules, dashboards) can react without
- * this module knowing who is listening.
- */
 export class ArchiveEmployeeUseCase implements UseCase<ArchiveEmployeeInput, Employee> {
   constructor(
     private readonly repo: EmployeeRepositoryPort,

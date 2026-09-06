@@ -1,10 +1,6 @@
-/**
- * Everything the processing screen renders in one round trip.
- *
- * Warnings are recomputed on read so the screen always shows the CURRENT state
- * of the world — a contract fixed in another tab should clear its warning here
- * without anyone recomputing the run.
- */
+
+
+
 import {
   authorize,
   DomainError,
@@ -57,12 +53,9 @@ export class GetPayrunDetailUseCase implements UseCase<GetPayrunDetailInput, Pay
     return Ok({ payrun, payslips, warnings })
   }
 
-  /**
-   * Warning checks need employees and contracts from Dev B's modules. Those are
-   * stubs until Phase 3, so a failure here must not blank out an otherwise
-   * readable payrun — the screen still shows the run and its payslips, and the
-   * warning panel says it could not be evaluated.
-   */
+  
+
+
   private async warningsFor(payrun: Payrun, payslips: Payslip[]): Promise<PayrollWarning[]> {
     try {
       const employees = await this.employees.findManyByIds([...payrun.employeeIds])

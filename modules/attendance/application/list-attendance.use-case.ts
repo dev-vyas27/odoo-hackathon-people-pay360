@@ -1,11 +1,5 @@
-/**
- * ListAttendanceUseCase — paged, filterable by employee/date range/status.
- *
- * Row-level access: an `employee` role sees only their own attendance. We do
- * not trust a client-supplied `employeeId` filter for that role — it is
- * always overridden to the actor's own id, the same rule `authorizeOwned`
- * expresses everywhere else in this module.
- */
+
+
 import { authorize, Ok, scopeToSelf, type Actor, type PageQuery, type Paged, type Result } from '@/modules/shared'
 import type {
   AttendanceFilter,

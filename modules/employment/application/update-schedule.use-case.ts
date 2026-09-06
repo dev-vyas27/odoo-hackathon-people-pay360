@@ -18,8 +18,8 @@ export class UpdateScheduleUseCase implements UseCase<UpdateScheduleInput, Worki
     const auth = authorize(input.actor, 'working_schedule', 'update')
     if (!auth.ok) return auth
 
-    // weeklyHours is recomputed whenever the day pattern changes -- it is
-    // never taken from the caller, even implicitly via a stale field.
+    
+    
     const patch: Partial<WorkingSchedule> = {
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.type !== undefined ? { type: input.type } : {}),

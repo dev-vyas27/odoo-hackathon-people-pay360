@@ -1,20 +1,5 @@
-/**
- * Departments, working schedules, job positions and the whole workforce.
- *
- * The data itself lives in `../roster.ts`, which generates one company that
- * every other part reads. This file is only the translation from that shape
- * into rows.
- *
- * ── Two passes over employees, on purpose ──────────────────────────────────
- *
- * `manager_id` is a self-referencing foreign key, so a manager must exist as a
- * row before anyone can point at them. Within a single INSERT that works —
- * foreign-key triggers fire at the end of the statement — but the upsert helper
- * now splits large batches to stay under Postgres's bind-parameter ceiling, and
- * a manager landing in a later chunk than their report would fail. So every
- * employee is written with no manager, and the reporting lines are a second
- * UPDATE. Correct regardless of how the batch is divided.
- */
+
+
 import { SEED, seedId } from '../ids'
 import {
   DEPARTMENT_HEADS,
@@ -26,7 +11,6 @@ import {
 } from '../roster'
 import type { SeedPart } from '../types'
 
-/** Department key -> the fixed uuid it has always had. */
 const DEPARTMENT_ID: Record<DepartmentKey, string> = {
   engineering: SEED.departments.engineering,
   sales: SEED.departments.sales,
@@ -42,7 +26,7 @@ export { DEPARTMENT_ID }
 
 export const peopleSeed: SeedPart = {
   name: 'people',
-  // Parents first; --reset empties them in reverse. See SeedPart.tables.
+  
   tables: [
     'departments',
     'job_positions',
@@ -62,14 +46,8 @@ export const peopleSeed: SeedPart = {
     )
     ctx.log(`${departments} departments`)
 
-    /**
-     * Four shapes of working week, because the app lets a contract choose one
-     * and a single option makes that choice look decorative.
-     *
-     * `weekly_hours` is the sum of the day rows below it. Dev B's
-     * weekly-hours.service.ts computes the same figure rather than trusting
-     * this literal, so a mismatch here is a real bug the app will surface.
-     */
+    
+
     const schedules = await ctx.upsert('working_schedules', [
       { id: SCHEDULES.standard40, name: 'Standard 40h', weekly_hours: 40, is_active: true },
       { id: SCHEDULES.compressed36, name: 'Compressed 36h (Mon–Thu)', weekly_hours: 36, is_active: true },
@@ -86,13 +64,13 @@ export const peopleSeed: SeedPart = {
       breakMinutes: number
       offset: number
     }> = [
-      // 09:00–18:00 less an hour for lunch = 8h × 5 = 40.
+      
       { schedule: SCHEDULES.standard40, days: [1, 2, 3, 4, 5], startsAt: '09:00', endsAt: '18:00', breakMinutes: 60, offset: 100 },
-      // Four longer days: 09:00–19:00 less an hour = 9h × 4 = 36.
+      
       { schedule: SCHEDULES.compressed36, days: [1, 2, 3, 4], startsAt: '09:00', endsAt: '19:00', breakMinutes: 60, offset: 300 },
-      // 10:00–17:00 less an hour = 6h × 5 = 30.
+      
       { schedule: SCHEDULES.intern30, days: [1, 2, 3, 4, 5], startsAt: '10:00', endsAt: '17:00', breakMinutes: 60, offset: 400 },
-      // Mornings only, no break: 4h × 5 = 20.
+      
       { schedule: SCHEDULES.partTime20, days: [1, 2, 3, 4, 5], startsAt: '09:00', endsAt: '13:00', breakMinutes: 0, offset: 200 },
     ]
 
@@ -122,7 +100,7 @@ export const peopleSeed: SeedPart = {
     )
     ctx.log(`${positions} job positions`)
 
-    // Pass one: everybody, with no reporting line yet. See the file header.
+    
     const employees = await ctx.upsert(
       'employees',
       ROSTER.map((person) => ({
@@ -140,13 +118,8 @@ export const peopleSeed: SeedPart = {
     )
     ctx.log(`${employees} employees (${ROSTER.filter((p) => !p.isActive).length} archived)`)
 
-    /**
-     * Pass two: the reporting lines, in one statement.
-     *
-     * `UPDATE ... FROM (VALUES ...)` rather than a query per person — 170 round
-     * trips inside a transaction for data that fits in one statement is the
-     * kind of thing that makes a seed feel slow for no reason.
-     */
+    
+
     const links = ROSTER.filter((person) => person.managerId)
     if (links.length > 0) {
       const values: string[] = []
@@ -165,8 +138,8 @@ export const peopleSeed: SeedPart = {
     }
     ctx.log(`${links.length} reporting lines`)
 
-    // Departments got their manager FK in migration 0004, once employees
-    // existed. Same ordering problem, same solution: fill it in afterwards.
+    
+    
     for (const [key, headId] of Object.entries(DEPARTMENT_HEADS)) {
       await ctx.sql(`UPDATE departments SET manager_id = $1 WHERE id = $2`, [
         headId,

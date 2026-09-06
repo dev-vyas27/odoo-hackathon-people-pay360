@@ -1,10 +1,6 @@
-/**
- * The registry: an array, on purpose.
- *
- * Adding a fifth check is one import and one array entry. Neither the validate
- * use case nor the processing screen changes, because both ask the registry
- * rather than knowing which checks exist.
- */
+
+
+
 import type {
   IPayrollWarningCheck,
   PayrollWarning,
@@ -29,7 +25,7 @@ export function runWarningChecks(
   return checks.flatMap((check) => check.check(context))
 }
 
-/** Errors block validation; warnings do not. */
+
 export function blockingWarnings(warnings: readonly PayrollWarning[]): PayrollWarning[] {
   return warnings.filter((w) => w.severity === 'error')
 }

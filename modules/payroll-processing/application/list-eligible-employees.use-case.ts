@@ -1,11 +1,6 @@
-/**
- * Step 2 of the payrun wizard: who may be included in this run.
- *
- * Crucially this use case only READS. Choosing a structure and a period in step
- * 1 must not create anything — the spec calls that out specifically — so the
- * wizard asks this question, holds the answer in React state, and persists
- * nothing until Create Payrun is pressed.
- */
+
+
+
 import {
   authorize,
   Ok,
@@ -53,12 +48,12 @@ export class ListEligibleEmployeesUseCase
     const candidates = await this.employees.findEligible({
       departmentId,
       employeeType,
-      // An employee must exist on the day the period ends to be paid for it.
+      
       activeOn: period.end,
     })
 
-    // The contract is resolved FOR THE PERIOD, so the list already reflects who
-    // can genuinely be paid rather than who merely exists.
+    
+    
     const rows = await Promise.all(
       candidates.map(async (employee) => {
         const contract = await this.contracts.findApplicableContract(employee.id, period)

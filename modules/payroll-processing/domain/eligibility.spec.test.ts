@@ -61,8 +61,8 @@ describe('coversPeriod', () => {
   })
 
   it('distinguishes two contracts of the same employee by period', () => {
-    // The scenario the spec keeps returning to: an employee with an expired
-    // contract AND a current one. Each period must select its own.
+    
+    
     const expired = contract({
       id: 'old',
       start: new Date(Date.UTC(2025, 0, 1)),

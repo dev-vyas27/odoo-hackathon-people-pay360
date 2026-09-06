@@ -58,7 +58,7 @@ test.describe('UI — sign in and navigate', () => {
       expect(response?.status(), `${path} must not return a server error`).toBeLessThan(500)
       await page.waitForLoadState('networkidle', { timeout: 30_000 })
 
-      // Next renders a recognisable shell for an unhandled server exception.
+      
       await expect(page.locator('body')).not.toContainText(
         'Application error: a server-side exception',
       )
@@ -80,7 +80,7 @@ test.describe('UI — employee creation journey', () => {
     await page.getByLabel('Email').fill(uniqEmail())
     await page.getByRole('button', { name: 'Create employee' }).click()
 
-    // Lands on the detail page for the record it created.
+    
     await page.waitForURL(/\/employees\/[0-9a-f-]{36}/, { timeout: 30_000 })
     await expect(page.locator('body')).toContainText(name)
 
@@ -94,7 +94,7 @@ test.describe('UI — employee creation journey', () => {
     await page.goto('/employees/new')
     await page.getByRole('button', { name: 'Create employee' }).click()
 
-    // Must not navigate, and must show a field-level message.
+    
     await page.waitForTimeout(1500)
     expect(page.url(), 'an invalid form must not navigate').toContain('/employees/new')
     await expect(page.locator('body')).toContainText(/required|Enter a valid/i)
@@ -116,7 +116,7 @@ test.describe('UI — employee detail screen', () => {
   test('shows the saved values, not the placeholders', async ({ page }) => {
     await signIn(page)
 
-    // Pick a seeded employee that actually has its relations populated.
+    
     const listed = await page.request.get('/api/employees?limit=200')
     const items = (await listed.json()).data.items as any[]
     const target = items.find(
@@ -130,7 +130,7 @@ test.describe('UI — employee detail screen', () => {
     await expect(page.getByLabel('Name')).toHaveValue(target.name)
     await expect(page.getByLabel('Email')).toHaveValue(target.email)
 
-    // Every select must display a chosen value rather than its "Select ..." hint.
+    
     const combos = await page.locator('button[role="combobox"]').all()
     expect(combos.length).toBeGreaterThan(0)
     for (const combo of combos) {
@@ -160,12 +160,9 @@ test.describe('UI — employee detail screen', () => {
 })
 
 test.describe('UI — employee detail rules', () => {
-  /**
-   * Radix renders a hidden native <select> beside each trigger to carry the
-   * value into a form post, and it shares the field's accessible name — so
-   * `getByLabel` is ambiguous and resolves to something unclickable. The
-   * trigger is the element with role=combobox.
-   */
+  
+
+
   const selectFor = (page: Page, label: string) =>
     page.getByRole('combobox', { name: label })
 
@@ -181,12 +178,12 @@ test.describe('UI — employee detail rules', () => {
   test('email is read-only once the employee exists', async ({ page }) => {
     await signIn(page)
 
-    // Creating: editable.
+    
     await page.goto('/employees/new')
     await page.waitForLoadState('networkidle')
     await expect(page.getByLabel('Email'), 'a new employee needs an address').toBeEnabled()
 
-    // Editing: locked. The address is the sign-in credential since 0010.
+    
     const listed = await page.request.get('/api/employees?limit=200')
     const target = (await listed.json()).data.items[0]
     await page.goto(`/employees/${target.id}`)
@@ -196,7 +193,7 @@ test.describe('UI — employee detail rules', () => {
   })
 
   test('the manager list excludes the employee and their own reports', async ({ page, api }) => {
-    // Build a real two-level line: report -> lead.
+    
     const lead = await makeEmployee(api)
     const report = await makeEmployee(api, { managerId: lead.id })
     const indirect = await makeEmployee(api, { managerId: report.id })
@@ -222,11 +219,11 @@ test.describe('UI — employee detail rules', () => {
     await page.goto(`/employees/${employee.id}`)
     await page.waitForLoadState('networkidle')
 
-    // Intern: unrestricted, so both a full-time and a part-time schedule appear.
+    
     const asIntern = await optionsUnder(page, 'Working schedule')
     expect(asIntern.length, 'interns choose from every schedule').toBeGreaterThan(1)
 
-    // Full time: only full-time schedules, and one is chosen automatically.
+    
     await selectFor(page, 'Employee type').click()
     await page.getByRole('option', { name: 'Full Time' }).click()
     await page.waitForTimeout(600)
@@ -243,8 +240,8 @@ test.describe('UI — employee detail rules', () => {
       expect(hours, `${option} is not a full-time schedule`).toBeGreaterThanOrEqual(35)
     }
 
-    // Part time: the selection moves to a part-time schedule rather than
-    // leaving them on hours their pay would then be prorated against.
+    
+    
     await selectFor(page, 'Employee type').click()
     await page.getByRole('option', { name: 'Part Time' }).click()
     await page.waitForTimeout(600)
@@ -280,29 +277,24 @@ test.describe('UI — contract inherits the employee’s placement', () => {
     const schedule = page.getByRole('combobox', { name: 'Working schedule' })
     const inherited = page.locator('text=From the employee record').locator('..')
 
-    // Nothing to inherit yet.
+    
     await expect(schedule).toContainText('Select an employee first')
 
     await page.getByRole('combobox', { name: 'Employee' }).click()
     await page.getByRole('option', { name: target.name, exact: true }).click()
     await page.waitForTimeout(1000)
 
-    // The schedule is a real contract column, so it is a (locked) field.
+    
     await expect(schedule).not.toContainText('Select an employee first')
-    /**
-     * Locked is the point, not the polish: payroll prorates against
-     * `contract.workingScheduleId`, so a hand-edited schedule that disagrees
-     * with the employee's pays the wrong amount and nothing downstream notices.
-     */
+    
+
+
     await expect(schedule).toBeDisabled()
     await expect(page.getByLabel('Wage'), 'the rest of the form still works').toBeEnabled()
 
-    /**
-     * Department and job position are NOT inputs — `contracts` has no such
-     * columns and payroll joins them from the employee. They are shown as
-     * read-only context, so there is nothing to type into and nothing to
-     * silently discard.
-     */
+    
+
+
     await expect(inherited).toContainText('Department')
     await expect(inherited).toContainText('Job position')
     expect(
@@ -312,12 +304,9 @@ test.describe('UI — contract inherits the employee’s placement', () => {
   })
 
   test('a saved contract matches the employee it was created for', async ({ page, api }) => {
-    /**
-     * Builds its own employee rather than borrowing a seeded one. The seeded
-     * employees already hold OPEN-ENDED contracts, so any new contract for them
-     * overlaps and is refused with a 409 — a correct rejection that would make
-     * this test look like an auto-fill failure.
-     */
+    
+
+
     const department = await makeDepartment(api)
     const position = await makeJobPosition(api, department.id)
     void position
@@ -350,12 +339,9 @@ test.describe('UI — contract inherits the employee’s placement', () => {
 })
 
 test.describe('UI — stored dates reach their inputs', () => {
-  /**
-   * `<input type="date">` accepts only `YYYY-MM-DD`. Every screen holding a
-   * Date in `defaultValues` handed it an object, which the input silently
-   * rendered as blank — so an existing record opened with empty date boxes and
-   * the real value invisible in form state.
-   */
+  
+
+
   test('an attendance record shows its check-in and check-out times', async ({ page, api }) => {
     const employee = await makeEmployee(api)
     const created = await api.post('/api/attendance', {
@@ -377,14 +363,12 @@ test.describe('UI — stored dates reach their inputs', () => {
     await page.goto(`/attendance/${created.data.id}`)
     await page.waitForLoadState('networkidle')
 
-    // The crash that started this: StatusBadge calling .replace() on undefined.
+    
     expect(errors.filter((e) => !e.includes('favicon'))).toEqual([])
 
-    /**
-     * datetime-local, not date: these are timestamps, and a date input cannot
-     * carry a time — saving through one reset the clock to midnight and rewrote
-     * the hours a payslip prorates against.
-     */
+    
+
+
     const checkIn = page.getByLabel('Check in (UTC)')
     const checkOut = page.getByLabel('Check out (UTC)')
     await expect(checkIn).toHaveValue('2025-05-06T09:00')
@@ -423,7 +407,7 @@ test.describe('UI — stored dates reach their inputs', () => {
     await page.goto(`/attendance/${created.data.id}`)
     await page.waitForLoadState('networkidle')
 
-    // Change only the break, then save. The timestamps must survive untouched.
+    
     await page.getByLabel('Break (minutes)').fill('45')
     await page.getByRole('button', { name: 'Save correction' }).click()
     await page.waitForTimeout(2000)
@@ -450,13 +434,9 @@ test.describe('UI — schedule creation journey', () => {
 
 test.describe('UI — accessibility and form hygiene', () => {
   test('every select trigger has an associated label', async ({ page }) => {
-    /**
-     * The inputs-only check below missed this entirely: `FormControl` wrapped
-     * the Radix `<Select>` root, which is a context provider rather than a DOM
-     * element, so the id never reached the trigger. Every dropdown rendered
-     * with no accessible name — a screen reader announced "button, Full Time"
-     * without saying which field it belonged to.
-     */
+    
+
+
     await signIn(page)
     await page.goto('/employees/new')
     await page.waitForLoadState('networkidle')
@@ -484,9 +464,9 @@ test.describe('UI — accessibility and form hygiene', () => {
       document.querySelectorAll('input, textarea').forEach((el) => {
         const input = el as HTMLInputElement
         if (input.type === 'hidden') return
-        // Radix renders an aria-hidden proxy input behind Checkbox/Select to
-        // carry the value into a native form post. It is deliberately removed
-        // from the accessibility tree, so it needs no label.
+        
+        
+        
         if (input.getAttribute('aria-hidden') === 'true') return
         const id = input.id
         const hasLabel = id ? Boolean(document.querySelector(`label[for="${id}"]`)) : false

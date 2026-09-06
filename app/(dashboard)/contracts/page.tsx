@@ -1,16 +1,5 @@
 'use client'
 
-/**
- * The Contract list (spec A2).
- *
- * "List view must display key contract details like dates, wages, and status,
- * clearly highlighting the active contract." The highlight is the point of the
- * screen: an employee accumulates contracts over time and the reader needs to
- * see at a glance which one payroll will actually use.
- *
- * Reached with ?employeeId=... from the employee form's smart button, which is
- * why the employee filter is a real URL parameter rather than local state.
- */
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -57,8 +46,8 @@ export default function ContractsPage() {
     {
       accessorKey: 'start',
       header: 'Start',
-      // `startsOn` -> `starts_on`: BaseSqlRepository.buildOrderBy converts
-      // camelCase to the real column name and checks it against CONTRACT_COLUMNS.
+      
+      
       meta: { sortKey: 'startsOn' },
       cell: ({ row }) => <span className="tabular">{formatDate(row.original.start)}</span>,
     },
@@ -81,8 +70,8 @@ export default function ContractsPage() {
       id: 'status',
       header: 'Status',
       enableSorting: false,
-      // Presentation only. Payroll asks ContractQueryPort which contract applies
-      // to the period it is running, never this badge.
+      
+      
       cell: ({ row }) => (
         <StatusBadge
           status={

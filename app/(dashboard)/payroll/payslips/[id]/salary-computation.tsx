@@ -3,19 +3,11 @@ import type { PayslipView } from '@/modules/payroll-processing'
 import { cn } from '@/lib/utils'
 import { formatMoney } from '../../_lib/format'
 
-/**
- * The Salary Computation section.
- *
- * Lines are shown IN SEQUENCE ORDER WITH THEIR CODES, which is the single design
- * choice that makes the engine readable: you can see BASIC computed, HRA taken
- * as a percentage of it, GROSS summing them and NET subtracting the deductions —
- * the computation, not just its result.
- */
 export function SalaryComputation({ payslip }: { payslip: PayslipView }) {
-  // PayslipView carries Basic/Gross/Deductions/Net as precomputed totals but
-  // has no `allowances` total of its own, so it is summed here from the
-  // lines already on the view — each line already carries its category, and
-  // this is the same figure the individual allowance rows above add up to.
+  
+  
+  
+  
   const allowances = payslip.lines
     .filter((line) => line.category === 'allowance')
     .reduce((sum, line) => sum + line.amount, 0)

@@ -1,10 +1,6 @@
-/**
- * Wire format for the payroll API.
- *
- * Domain objects hold `Money` and `Period`; the wire holds numbers and ISO
- * strings. Doing that conversion in one place means the payrun list, the
- * processing screen and the payslip screen cannot each invent their own shape.
- */
+
+
+
 import type { Payrun } from '../domain/payrun'
 import type { PayrunStatus } from '../domain/payrun-state'
 

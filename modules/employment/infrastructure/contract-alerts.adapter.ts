@@ -1,28 +1,15 @@
-/**
- * Postgres implementation of the shared ContractAlertsPort.
- *
- * Spec B9's "contract attention items" for the dashboard. Moved here from
- * `lib/interim-stats.ts`, which had to read `contracts`/`employees` directly
- * because nobody had registered the real port yet — the SQL is unchanged from
- * that scaffolding, only its ownership.
- */
+
+
 import { query } from '@/lib/db'
 import type { ContractAlert, ContractAlertsPort, Period } from '@/modules/shared'
 import { NOT_AN_ADMIN } from '@/modules/people'
 
-/** `date` columns bind cleanly from 'YYYY-MM-DD'. */
 const d = (value: Date) => value.toISOString().slice(0, 10)
 
 export class PostgresContractAlerts implements ContractAlertsPort {
   async attentionItems(period: Period, withinDays: number): Promise<ContractAlert[]> {
-    /**
-     * Two problems, one query.
-     *
-     * The first branch: an active contract whose end date falls inside the
-     * warning window — payroll will stop working for that employee soon.
-     * The second: an active employee with NO contract covering the period at
-     * all — payroll cannot compute for them now.
-     */
+    
+
     const rows = await query<{
       contract_id: string | null
       employee_id: string

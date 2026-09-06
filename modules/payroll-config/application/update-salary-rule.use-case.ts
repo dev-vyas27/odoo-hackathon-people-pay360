@@ -29,8 +29,8 @@ export class UpdateSalaryRuleUseCase implements UseCase<UpdateSalaryRuleInput, S
       return Err(DomainError.notFound('RULE_NOT_FOUND', 'That salary rule no longer exists.'))
     }
 
-    // Re-run the full domain validation on the merged result, so a partial edit
-    // can never sneak past an invariant the create path enforces.
+    
+    
     const merged = attempt(() => createSalaryRule({ ...current, ...data, id }))
     if (!merged.ok) return merged
 

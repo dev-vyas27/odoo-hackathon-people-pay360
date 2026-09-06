@@ -1,9 +1,5 @@
-/**
- * Working-schedule request schemas.
- *
- * `weeklyHours` is deliberately absent: it is always computed server-side by
- * `computeWeeklyHours`, never accepted from a client payload.
- */
+
+
 import { z } from 'zod'
 import { nonEmpty, timeField } from '@/modules/shared'
 import { SCHEDULE_TYPES } from '../domain/working-schedule'

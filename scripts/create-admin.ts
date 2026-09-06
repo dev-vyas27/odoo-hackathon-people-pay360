@@ -1,22 +1,6 @@
-/**
- * Bootstrap the first administrator.
- *
- *   npm run create-admin
- *   npm run create-admin -- --email you@company.com --password "s3cret pass" --name "Your Name"
- *
- * Why a script and not a sign-up page: this application has no self-registration
- * by design. An endpoint that mints administrators is a hole you cannot close
- * later — someone always forgets to delete it before the demo. Bootstrapping
- * from the command line means the capability exists exactly where the person
- * holding the database credentials already is.
- *
- * Since migration 0010 this writes an EMPLOYEE. There is no separate `users`
- * table: an administrator is a person on file who happens to hold the admin
- * role, which is the model the product actually has.
- *
- * It is idempotent: run it twice and the second run resets the password of the
- * existing account rather than failing on the unique-email index.
- */
+
+
+
 import { createInterface } from 'node:readline'
 import { randomBytes } from 'node:crypto'
 import { closePool, ping } from '@/lib/db'
@@ -31,7 +15,7 @@ interface Options {
   generated: boolean
 }
 
-/** Minimal `--flag value` parsing. A CLI framework for four flags is overkill. */
+
 function parseArgs(argv: string[]): Record<string, string> {
   const out: Record<string, string> = {}
   for (let i = 0; i < argv.length; i += 1) {
@@ -43,11 +27,8 @@ function parseArgs(argv: string[]): Record<string, string> {
   return out
 }
 
-/**
- * A generated password is 24 hex characters rather than something memorable.
- * The intent is that you copy it once and change it — a "friendly" default like
- * `admin123` is the one that survives to production.
- */
+
+
 function generatePassword(): string {
   return randomBytes(12).toString('hex')
 }
@@ -74,10 +55,10 @@ function resolveOptions(argv: string[]): Options {
   }
 }
 
-/** Only asked when overwriting a real account, so an accidental re-run is safe. */
+
 async function confirmOverwrite(email: string): Promise<boolean> {
-  // A non-interactive shell (CI, a piped run) has no answer to give; treat the
-  // absence of a human as "no" rather than silently resetting a password.
+  
+  
   if (!process.stdin.isTTY) return false
 
   const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -100,12 +81,9 @@ async function main() {
   const existing = await accounts.findByEmail(options.email)
 
   if (existing) {
-    /**
-     * An employee who exists but has never had a login is not an overwrite — it
-     * is the ordinary "give this person an account" case. Only an existing
-     * LOGIN needs confirming, which also keeps this safe to run unattended
-     * against a database that already has the employee.
-     */
+    
+
+
     if (existing.hasLogin && !(await confirmOverwrite(options.email))) {
       console.log('\nLeft the existing account untouched.')
       console.log(`Pass --email with a different address to create another account.`)
@@ -143,7 +121,7 @@ function report(headline: string, options: Options) {
   console.log('\nSign in at http://localhost:3000/login\n')
 }
 
-/** Never print the database password, even into a local terminal. */
+
 function redact(uri: string): string {
   return uri.replace(/\/\/([^:]+):[^@]+@/, '//$1:****@')
 }

@@ -1,11 +1,6 @@
-/**
- * GET  /api/auth/set-password?token=  — is this link still valid, and whose
- * POST /api/auth/set-password         — redeem it
- *
- * PUBLIC by necessity: the whole point is that this person cannot sign in yet.
- * The token IS the authentication — 32 random bytes, single use, expiring — so
- * `proxy.ts` lists this path and the use case does the rest.
- */
+
+
+
 import { checkSetupLink, setPassword } from '@/modules/identity'
 import { handle, parseQuery, respond } from '@/lib/http'
 

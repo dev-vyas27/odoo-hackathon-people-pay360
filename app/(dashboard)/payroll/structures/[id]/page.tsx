@@ -51,8 +51,8 @@ export default async function EditSalaryStructurePage({
     rules: structure.rules.map((r) => ({ ruleId: r.ruleId, sequence: r.sequence })),
   }
 
-  // Rules included here but archived elsewhere still have to be selectable, or
-  // opening the form would silently drop them.
+  
+  
   const options = mergeById(available, rules.map((r) => toAvailableRule(r.rule)))
 
   return (
@@ -80,7 +80,7 @@ export default async function EditSalaryStructurePage({
           structure={values}
           structureId={structure.id}
           available={options}
-          // hr_payroll_user reads salary configuration; only a manager edits it.
+          
           readOnly={!can(actor.role, 'salary_structure', 'update')}
         />
       </div>
@@ -88,13 +88,8 @@ export default async function EditSalaryStructurePage({
   )
 }
 
-/**
- * What this structure produces for a sample wage.
- *
- * Runs the REAL engine, not an illustration: editing a rule and reloading shows
- * the numbers move, which is the whole point of the configuration screens being
- * functional rather than decorative.
- */
+
+
 const SAMPLE_WAGE = 50000
 
 function preview(rules: Array<{ rule: { code: string; name: string; category: string }; sequence: number }>): PreviewLine[] | null {
@@ -111,7 +106,7 @@ function preview(rules: Array<{ rule: { code: string; name: string; category: st
       amount: line.amount.toNumber(),
     }))
   } catch {
-    // A broken structure is already explained by the issues panel above.
+    
     return null
   }
 }

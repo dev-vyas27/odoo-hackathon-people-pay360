@@ -1,49 +1,13 @@
-/**
- * The workforce. One generated company, used by every seed part.
- *
- * Departments, posts, people, reporting lines and wages are all derived here
- * so that `people`, `employment`, `attendance`, `timeoff` and
- * `payroll-processing` all describe the SAME company. Before this they each
- * hardcoded their own five employees and had to be kept in step by hand — the
- * wage table in payroll-processing carried a comment reading "must match
- * employment.seed.ts", which is a comment that is one edit away from being a
- * lie. Now there is one source and nothing to synchronise.
- *
- * ── Deterministic, not random ──────────────────────────────────────────────
- *
- * Every value comes from a seeded PRNG, so the roster is byte-identical on
- * every run. That is not a nicety: the whole seed is `ON CONFLICT (id) DO
- * UPDATE` keyed on ids derived from the row index, so a person who changed
- * department between runs would leave their old attendance behind pointing at
- * the wrong team. Fixed output also means a rehearsed demo URL still opens the
- * same employee tomorrow.
- *
- * `Math.random()` would break both. Do not introduce it here.
- */
+
+
+
 import { SEED, seedId } from './ids'
 
-/**
- * Where the demo's mail goes.
- *
- * A public throwaway-mail service, so the "Send payslips" flow can be run end
- * to end and the result actually opened — nothing else in the system produces
- * evidence you can hold up. Addresses are name-derived, so `priya.sharma`'s
- * payslip lands in an inbox that reads as hers.
- *
- * These inboxes are PUBLIC: anyone who knows the address can read them. That is
- * fine for invented people and must never be pointed at real staff. Change this
- * one constant to a domain you control before this goes anywhere near a real
- * employee.
- */
+
+
 export const MAIL_DOMAIN = 'mailinator.com'
 
-// ───────────────────────────────────────────────────────────────────────────
-// Names
-//
-// Real, ordinary names from the two places this company hires: an Indian head
-// office and a US office. Deliberately not "Test User 42" — a demo where every
-// row reads as filler invites the reader to assume the rest is filler too.
-// ───────────────────────────────────────────────────────────────────────────
+
 
 const IN_GIVEN = [
   'Aarav', 'Aditya', 'Arjun', 'Rohan', 'Kabir', 'Ishaan', 'Karthik', 'Rahul', 'Siddharth',
@@ -83,19 +47,12 @@ const US_FAMILY = [
   'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Hill', 'Flores', 'Whitfield',
 ]
 
-// ───────────────────────────────────────────────────────────────────────────
-// Structure
-// ───────────────────────────────────────────────────────────────────────────
+
 
 export type Level = 'intern' | 'junior' | 'mid' | 'senior' | 'lead' | 'manager' | 'director'
 
-/**
- * Monthly wage band per level, in rupees.
- *
- * Bands rather than single figures, so a department's salary cost is not a
- * suspiciously round multiple of its headcount, and so the "Average salary"
- * tile reads as a real average rather than a repeated number.
- */
+
+
 const BANDS: Record<Level, [number, number]> = {
   intern: [18_000, 28_000],
   junior: [38_000, 62_000],
@@ -106,14 +63,8 @@ const BANDS: Record<Level, [number, number]> = {
   director: [340_000, 460_000],
 }
 
-/**
- * The US office is paid on a US market rate, converted.
- *
- * One payroll, one currency: this company runs its books in rupees, so a US
- * salary is stated here in rupees the way any Indian parent company would state
- * it. Without the multiplier the two offices would be indistinguishable on the
- * department cost chart, which is the one place the difference should show.
- */
+
+
 const US_MULTIPLIER = 2.4
 
 export type DepartmentKey =
@@ -129,7 +80,7 @@ export type DepartmentKey =
 interface Post {
   title: string
   level: Level
-  /** Roughly how many of this post the department has, relative to its peers. */
+  
   weight: number
 }
 
@@ -138,11 +89,11 @@ interface DepartmentSpec {
   name: string
   code: string
   headcount: number
-  /** The post the department head holds. Exactly one person gets it. */
+  
   head: Post
-  /** Middle management. Reports to the head; everyone else reports to them. */
+  
   managers: { post: Post; count: number }
-  /** Individual contributors, sampled by weight. */
+  
   posts: Post[]
 }
 
@@ -255,7 +206,7 @@ const DEPARTMENTS: DepartmentSpec[] = [
   },
 ]
 
-/** Every distinct post across the company, numbered for `seedId('job', n)`. */
+
 export const POSTS: Array<{ title: string; departmentKey: DepartmentKey; level: Level }> =
   DEPARTMENTS.flatMap((department) =>
     [department.head, department.managers.post, ...department.posts].map((post) => ({
@@ -269,9 +220,7 @@ const POST_INDEX = new Map(POSTS.map((post, i) => [`${post.departmentKey}:${post
 
 export const DEPARTMENT_SPECS = DEPARTMENTS
 
-// ───────────────────────────────────────────────────────────────────────────
-// Schedules
-// ───────────────────────────────────────────────────────────────────────────
+
 
 export const SCHEDULES = {
   standard40: SEED.schedules.standard40,
@@ -280,11 +229,9 @@ export const SCHEDULES = {
   intern30: seedId('sch', 4),
 } as const
 
-// ───────────────────────────────────────────────────────────────────────────
-// Generation
-// ───────────────────────────────────────────────────────────────────────────
 
-/** mulberry32 — small, fast, and identical on every platform. */
+
+
 function makeRng(seed: number): () => number {
   let a = seed >>> 0
   return () => {
@@ -296,7 +243,7 @@ function makeRng(seed: number): () => number {
 }
 
 export interface RosterPerson {
-  /** Index into `seedId('emp', n)`. 1-based. */
+  
   index: number
   id: string
   name: string
@@ -308,24 +255,17 @@ export interface RosterPerson {
   level: Level
   employeeType: 'full_time' | 'part_time' | 'contract' | 'intern'
   scheduleId: string
-  /** Monthly, in rupees. The contract wage and every payslip derive from this. */
+  
   wage: number
   bankAccount: string | null
   isActive: boolean
-  /** `seedId('emp', n)` of this person's manager, or null for a department head. */
+  
   managerId: string | null
   origin: 'IN' | 'US'
 }
 
-/**
- * The two people the demo script names.
- *
- * Kept at fixed indexes because `SEED.employees` promises they mean these
- * things: index 1 is the protagonist whose login demonstrates row-level
- * scoping, index 2 is the one carrying an expired contract alongside a current
- * one. Both are ordinary members of their departments otherwise — the cast is
- * pinned, not privileged.
- */
+
+
 const CAST: Array<Partial<RosterPerson> & { index: number; departmentKey: DepartmentKey }> = [
   {
     index: 1,
@@ -355,7 +295,7 @@ function slug(name: string): string {
     .join('.')
 }
 
-/** Pick by weight, so a department has ten engineers and two staff engineers. */
+
 function weighted<T extends { weight: number }>(items: T[], roll: number): T {
   const total = items.reduce((sum, item) => sum + item.weight, 0)
   let cursor = roll * total
@@ -372,7 +312,7 @@ function buildRoster(): RosterPerson[] {
   const usedNames = new Set<string>(CAST.map((entry) => entry.name!))
   const usedEmails = new Set<string>()
 
-  /** A name nobody else has. Falls back through the pool rather than looping. */
+  
   function uniqueName(origin: 'IN' | 'US'): string {
     const given = origin === 'IN' ? IN_GIVEN : US_GIVEN
     const family = origin === 'IN' ? IN_FAMILY : US_FAMILY
@@ -388,7 +328,7 @@ function buildRoster(): RosterPerson[] {
     throw new Error('Name pool exhausted — add more names to roster.ts')
   }
 
-  /** `priya.sharma@…`, with a numeric suffix only if it is genuinely taken. */
+  
   function uniqueEmail(name: string): string {
     const base = slug(name)
     let candidate = `${base}@${MAIL_DOMAIN}`
@@ -401,7 +341,7 @@ function buildRoster(): RosterPerson[] {
     return candidate
   }
 
-  /** Everything about a person that follows from their post and origin. */
+  
   function flesh(
     index: number,
     name: string,
@@ -433,15 +373,12 @@ function buildRoster(): RosterPerson[] {
             ? SCHEDULES.compressed36
             : SCHEDULES.standard40
 
-    /**
-     * A handful have no bank account on file, which is what gives the
-     * dashboard's "cannot be paid until filled in" alert something true to
-     * report. Never a head or a manager — an alert naming the VP of Engineering
-     * reads as broken data rather than as a real gap.
-     */
+    
+
+
     const missingBank = !options.protected && random() < 0.035
 
-    // A few people have left. Archived, not deleted: their payslips remain.
+    
     const isActive = options.protected || random() > 0.035
 
     return {
@@ -475,14 +412,9 @@ function buildRoster(): RosterPerson[] {
     }
   }
 
-  /**
-   * The named cast takes indexes 1 and 2 before anything else.
-   *
-   * `SEED.employees.demoLead` and `.twoContracts` are those two ids, and the
-   * timeoff and payroll parts reference them by name. Generating departments
-   * first would hand those indexes to whoever happened to come first in
-   * Engineering.
-   */
+  
+
+
   for (const entry of CAST) {
     people.push(
       flesh(
@@ -499,7 +431,7 @@ function buildRoster(): RosterPerson[] {
   let nextIndex = CAST.length + 1
 
   for (const department of DEPARTMENTS) {
-    // The cast already fills some of this department's seats.
+    
     const alreadyHere = people.filter((p) => p.departmentKey === department.key).length
     const remaining = Math.max(0, department.headcount - alreadyHere)
 
@@ -513,7 +445,7 @@ function buildRoster(): RosterPerson[] {
       const isHead = slot === 0
       const isManager = !isHead && managerIndexes.length < department.managers.count
 
-      // Roughly a third of the company sits in the US office.
+      
       const origin: 'IN' | 'US' = random() < 0.3 ? 'US' : 'IN'
       const post = isHead
         ? department.head
@@ -530,13 +462,9 @@ function buildRoster(): RosterPerson[] {
       )
     }
 
-    /**
-     * Reporting lines, once the department is fully built.
-     *
-     * The head reports to nobody, managers report to the head, and everyone
-     * else is spread across the managers round-robin. A second pass because a
-     * manager has to exist in the array before anyone can point at them.
-     */
+    
+
+
     const inDepartment = people.filter((person) => person.departmentKey === department.key)
     const head = inDepartment.find((person) => person.index === headIndex)
     const managers = inDepartment.filter((person) => managerIndexes.includes(person.index))
@@ -556,12 +484,12 @@ function buildRoster(): RosterPerson[] {
   return people.sort((a, b) => a.index - b.index)
 }
 
-/** Built once. Every seed part reads this same array. */
+
 export const ROSTER: RosterPerson[] = buildRoster()
 
 export const ROSTER_BY_ID = new Map(ROSTER.map((person) => [person.id, person]))
 
-/** The head of each department, for `departments.manager_id`. */
+
 export const DEPARTMENT_HEADS: Record<string, string> = Object.fromEntries(
   DEPARTMENTS.map((department) => {
     const head = ROSTER.find(
@@ -571,23 +499,11 @@ export const DEPARTMENT_HEADS: Record<string, string> = Object.fromEntries(
   }).filter(([, id]) => id !== ''),
 )
 
-/** Active people only — everything downstream of employment cares about these. */
+
 export const ACTIVE_ROSTER = ROSTER.filter((person) => person.isActive)
 
-/**
- * The people who can sign in, one per role.
- *
- * Four of the five are ORDINARY ROSTER MEMBERS promoted to a role, found by the
- * post they hold — the HR Manager is the person in Human Resources whose job
- * title is HR Manager, not a synthetic account standing beside the real ones.
- * That is how the product actually works: an administrator creates an employee,
- * and that employee is the account.
- *
- * The administrator is the exception and stays a row of its own with no
- * department. It operates the system rather than working in it, and the
- * employee list filters admins out for exactly that reason — promoting a roster
- * member would silently drop them from the headcount.
- */
+
+
 function findByTitle(title: string): RosterPerson {
   const person = ROSTER.find((candidate) => candidate.title === title && candidate.isActive)
   if (!person) throw new Error(`No active roster member holds the post "${title}"`)
@@ -602,7 +518,7 @@ export const STAFF = {
   employee: ROSTER_BY_ID.get(SEED.employees.demoLead)!,
 } as const
 
-/** Anyone with an elevated role, so the seed never treats them as a plain hire. */
+
 export const STAFF_IDS = new Set<string>([
   STAFF.admin,
   STAFF.hrManager.id,

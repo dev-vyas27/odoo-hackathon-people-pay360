@@ -1,17 +1,7 @@
 'use client'
 
-/**
- * ConfirmDialog — one place that asks "are you sure".
- *
- * Destructive and irreversible actions (delete an employee, validate a payrun,
- * mark a run paid) all need the same pause. Standardising it means the wording
- * and the danger styling cannot drift between modules, and it means the busy
- * state during the action is handled once rather than per screen.
- *
- * Two ways to use it:
- *   <ConfirmDialog trigger={<Button>Delete</Button>} onConfirm={...} />
- *   const confirm = useConfirm()   // imperative, for row menus
- */
+
+
 import { useCallback, useState } from 'react'
 import { LuLoaderCircle, LuTriangleAlert } from 'react-icons/lu'
 import {
@@ -30,17 +20,14 @@ export interface ConfirmDialogProps {
   description?: string
   confirmLabel?: string
   cancelLabel?: string
-  /** `true` paints the confirm button destructive and adds a warning glyph. */
+  
   destructive?: boolean
-  /**
-   * Awaited before the dialog closes. Typed loosely on purpose: callers hand it
-   * a TanStack `mutateAsync`, which resolves with the mutation's result rather
-   * than void, and forcing every call site to wrap that in `() => { ...; }` to
-   * discard the value would be noise.
-   */
+  
+
+
   onConfirm: () => unknown | Promise<unknown>
   trigger?: React.ReactNode
-  /** Controlled mode — omit `trigger` and drive it yourself. */
+  
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
@@ -68,8 +55,8 @@ export function ConfirmDialog({
       await onConfirm()
       setOpen(false)
     } finally {
-      // Always clear busy: if the action failed the user must be able to retry
-      // or cancel, and a permanently spinning button is a dead end.
+      
+      
       setBusy(false)
     }
   }
@@ -107,11 +94,8 @@ export function ConfirmDialog({
 
 type ConfirmRequest = Omit<ConfirmDialogProps, 'trigger' | 'open' | 'onOpenChange'>
 
-/**
- * Imperative variant. Render `dialog` once in the screen and call `confirm({...})`
- * from a row action, where wrapping each row in a `<ConfirmDialog>` would mean
- * one mounted dialog per row.
- */
+
+
 export function useConfirm() {
   const [request, setRequest] = useState<ConfirmRequest | null>(null)
 

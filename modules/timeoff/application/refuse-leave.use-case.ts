@@ -1,16 +1,6 @@
-/**
- * Refuse a leave request — and give the balance back if it had been approved.
- *
- * Refusing is how an approval is undone, so this is the mirror image of
- * `approve-leave`: same transaction, same locks, opposite direction. Skipping
- * the restore would quietly destroy an employee's entitlement, and it is the
- * kind of bug nobody notices until someone counts their remaining days in
- * December.
- *
- * `request.allocationId` is why this can be exact. With two overlapping
- * allocations, guessing which one to credit is wrong half the time; the
- * approval recorded which one it drew from.
- */
+
+
+
 import {
   DomainError,
   Err,
@@ -53,20 +43,17 @@ export class RefuseLeaveUseCase implements UseCase<RefuseLeaveInput, LeaveReques
           )
         }
 
-        /**
-         * Restore BEFORE the state change, for the same reason approval
-         * consumes before it: the state machine is what decides whether this
-         * transition is legal at all, and `consumesBalance` is only true while
-         * the request is still in the approved state.
-         */
+        
+
+
         if (request.consumesBalance && request.allocationId) {
           const allocation = await repos.allocations.findByIdForUpdate(request.allocationId)
           if (allocation) {
             allocation.restore(request.duration)
             await repos.allocations.save(allocation)
           }
-          // A missing allocation is not fatal here. It would mean the data is
-          // already inconsistent, and refusing the refusal helps nobody.
+          
+          
           request.releaseAllocation()
         }
 

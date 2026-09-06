@@ -1,6 +1,6 @@
-/**
- * Postgres implementation of SetupTokenRepositoryPort.
- */
+
+
+
 import { query, queryOne, transaction } from '@/lib/db'
 import type {
   SetupToken,
@@ -27,13 +27,9 @@ const toDomain = (row: TokenRow): SetupToken => ({
 })
 
 export class PostgresSetupTokenRepository implements SetupTokenRepositoryPort {
-  /**
-   * Delete-then-insert in one transaction.
-   *
-   * Issuing a new invitation must kill the old one, or "resend the link"
-   * quietly leaves the previous email working — and an admin who resent
-   * because the first went to the wrong address has achieved nothing.
-   */
+  
+
+
   async issue(input: {
     accountId: string
     tokenHash: string
@@ -63,13 +59,9 @@ export class PostgresSetupTokenRepository implements SetupTokenRepositoryPort {
     return row ? toDomain(row) : null
   }
 
-  /**
-   * `AND used_at IS NULL` in the WHERE, not a read-then-write.
-   *
-   * Two tabs redeeming the same link at once would both pass a prior "is it
-   * used?" check. Making the update itself conditional means the database
-   * decides, and exactly one of them gets a row back.
-   */
+  
+
+
   async markUsed(id: string): Promise<boolean> {
     const rows = await query<{ id: string }>(
       `UPDATE "${TABLE}" SET used_at = now()

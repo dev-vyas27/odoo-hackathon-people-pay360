@@ -1,11 +1,5 @@
-/**
- * Contract — aggregate root.
- *
- * A contract's validity range (`start`/`end`) is the input to
- * `contract-resolution.ts` and to write-time overlap prevention. `end: null`
- * means open-ended. History is never mutated: a new contract, not an edit to
- * an old one, is how a raise or promotion is recorded.
- */
+
+
 import type { Money } from '@/modules/shared'
 
 export interface Contract {

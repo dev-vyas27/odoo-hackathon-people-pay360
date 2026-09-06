@@ -1,10 +1,5 @@
-/**
- * CreateContractUseCase.
- *
- * Enforces spec A2 rule 3 at write time: a new contract whose validity range
- * overlaps an existing contract for the SAME employee is rejected, never
- * silently accepted and papered over later at read time.
- */
+
+
 import { Money, DomainError, Err, Ok, authorize, type Actor, type Result, type UseCase } from '@/modules/shared'
 import { contractsOverlap } from '../domain/contract-resolution'
 import type { Contract } from '../domain/contract'

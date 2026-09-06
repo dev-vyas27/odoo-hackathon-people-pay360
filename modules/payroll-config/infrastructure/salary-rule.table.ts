@@ -1,13 +1,6 @@
-/**
- * The `salary_rules` and `salary_structures` tables as TypeScript sees them.
- *
- * This file is the seam between the schema (migrations/0003_payroll_config.sql)
- * and the domain. Everything below is snake_case because that is what the
- * database calls these; everything above is camelCase.
- *
- * If you change a column here, there is a migration to write. If there is no
- * migration, this file is lying.
- */
+
+
+
 import type { SalaryCategory } from '@/modules/shared'
 import type { ComputationConfig, ComputationType } from '../domain/computation/computation.strategy'
 
@@ -20,7 +13,7 @@ export interface SalaryRuleRow {
   category: SalaryCategory
   sequence: number
   computation_type: ComputationType
-  /** numeric(14,2) — `pg` is configured in lib/db.ts to parse these as numbers. */
+  
   amount: number | null
   percentage: number | null
   base_rule_code: string | null
@@ -46,15 +39,8 @@ export const SALARY_RULE_COLUMNS = [
   'updated_at',
 ] as const
 
-/**
- * Row -> the discriminated union the domain works in.
- *
- * The three branches mirror `salary_rules_parameters_present`, so a row that
- * satisfies the CHECK always produces a valid config. The `?? 0` fallbacks
- * cannot fire on data the constraint allows; they exist so a hand-edited row
- * degrades to a validation error from `createSalaryRule` rather than to
- * `undefined` arithmetic deep inside the engine.
- */
+
+
 export function toComputation(row: SalaryRuleRow): ComputationConfig {
   switch (row.computation_type) {
     case 'percentage':
@@ -70,7 +56,7 @@ export function toComputation(row: SalaryRuleRow): ComputationConfig {
   }
 }
 
-/** The domain's config -> the four nullable parameter columns. */
+
 export function toComputationColumns(computation: ComputationConfig): {
   computation_type: ComputationType
   amount: number | null
@@ -127,11 +113,11 @@ export const SALARY_STRUCTURE_COLUMNS = [
   'updated_at',
 ] as const
 
-/** A row of the join table, plus the owning rule's own sequence for the default. */
+
 export interface StructureRuleRow {
   salary_structure_id: string
   salary_rule_id: string
-  /** NULL means "use the rule's own sequence" — see migration 0003. */
+  
   sequence_override: number | null
   rule_sequence: number
 }

@@ -1,18 +1,5 @@
-/**
- * Placeholder for dashboard sections that have not been built yet.
- *
- * A catch-all route has the lowest matching priority in the App Router, so the
- * moment someone adds `app/(dashboard)/employees/page.tsx` this stops rendering
- * for `/employees` — with no coordination and no file for anyone to delete.
- *
- * That property is the point. The obvious alternative, dropping a stub
- * `page.tsx` into each section folder, puts one of my files inside Dev B's and
- * Dev C's route trees, and every one of them becomes a merge conflict the day
- * they build the real screen. This is a single file that I own and that quietly
- * gets out of the way.
- *
- * Delete it once every section is real.
- */
+
+
 import Link from 'next/link'
 import { LuArrowLeft, LuHardHat } from 'react-icons/lu'
 import { getActor } from '@/lib/auth'
@@ -20,7 +7,6 @@ import { NAV_ITEMS, landingPathFor } from '@/components/layout/nav-items'
 import { PageHeader } from '@/components/resource/page-header'
 import { Button } from '@/components/ui/button'
 
-/** Who is building what, straight from docs/plans/. */
 const OWNERS: Record<string, { owner: string; plan: string; modules: string }> = {
   employees: { owner: 'Dev B', plan: 'DEV-B-hr-operations.md', modules: 'people' },
   contracts: { owner: 'Dev B', plan: 'DEV-B-hr-operations.md', modules: 'employment' },
@@ -41,7 +27,7 @@ export default async function SectionPlaceholder({
 }: {
   params: Promise<{ section: string[] }>
 }) {
-  // Next 16: params is a promise. Awaiting is mandatory, not stylistic.
+  
   const { section } = await params
   const actor = await getActor()
 

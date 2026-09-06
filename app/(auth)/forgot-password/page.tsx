@@ -1,10 +1,6 @@
-/**
- * "I forgot my password." Public — `proxy.ts` lists `/forgot-password`.
- *
- * Already signed in? Then there is nothing to recover, so this redirects to the
- * dashboard rather than letting somebody email themselves a reset link out of
- * a working session.
- */
+
+
+
 import { redirect } from 'next/navigation'
 import { getActor } from '@/lib/auth'
 import { landingPathFor } from '@/components/layout/nav-items'

@@ -1,18 +1,6 @@
-/**
- * PayrollStatsPort implementation — real aggregations for the dashboard.
- *
- * Everything is summed inside Postgres rather than in Node: the dashboard must
- * not download a thousand payslips to add them up. These are the queries the
- * KPI cards and charts run, and they are readable as SQL precisely because
- * there is no ORM in between.
- *
- * Only VALIDATED and PAID payslips count. Draft and computed figures are
- * working numbers, and reporting them as "salary paid" would overstate every
- * card on the dashboard.
- *
- * Amounts are `numeric` and come back as JS numbers (see the type parser in
- * lib/db.ts), already at two decimal places.
- */
+
+
+
 import type { Period } from '@/modules/shared'
 import { query, queryOne } from '@/lib/db'
 import type {
@@ -24,10 +12,10 @@ import type {
 } from '../application/ports/payroll-stats.port'
 import { PAYSLIPS_TABLE } from './payroll.tables'
 
-/** The statuses that represent money actually committed. */
+
 const COUNTED = `ps.status IN ('validated', 'paid')`
 
-/** Payslip overlaps the period: each range starts before the other ends. */
+
 const OVERLAPS = `ps.period_start <= $2 AND ps.period_end >= $1`
 
 export class PayrollStatsAdapter implements PayrollStatsPort {
@@ -35,9 +23,9 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
     const values: unknown[] = [period.start, period.end]
     let filters = ''
 
-    // `employees` is joined INNER, not LEFT: `e.id` is the payslip's own FK and
-    // unique, so this can only drop a payslip whose employee record vanished —
-    // never duplicate a row.
+    
+    
+    
     const needsEmployeeJoin = Boolean(departmentId || employeeType)
 
     if (departmentId) {
@@ -66,7 +54,7 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
     return {
       totalNet,
       payslipCount: count,
-      // Rounded to paise so the card never renders 41666.666666666664.
+      
       averageSalary: Math.round((totalNet / count) * 100) / 100,
     }
   }
@@ -78,10 +66,10 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
   ): Promise<DepartmentCost[]> {
     const values: unknown[] = [period.start, period.end]
     let filter = ''
-    // Filtering a BREAKDOWN by department to one department is not a
-    // contradiction: it is the honest way to answer "what did Engineering
-    // cost", which collapses the chart to a single bar rather than leaving it
-    // showing every other department's spend too.
+    
+    
+    
+    
     if (departmentId) {
       values.push(departmentId)
       filter += ` AND e.department_id = $${values.length}`
@@ -115,7 +103,7 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
   ): Promise<MonthlyTotal[]> {
     const span = Math.max(1, Math.trunc(months))
     const values: unknown[] = [span - 1]
-    // One join covers both filters; adding it twice would duplicate every row.
+    
     const join =
       departmentId || employeeType ? 'JOIN "employees" e ON e.id = ps.employee_id' : ''
     const conditions: string[] = []
@@ -129,14 +117,9 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
     }
     const filter = conditions.join('\n          ')
 
-    /**
-     * Grouped by the payslip's OWN month, not by when it was computed: a
-     * January run finalised in February belongs to January.
-     *
-     * date_trunc gives a real month boundary rather than string slicing, and
-     * the window is expressed in SQL so the server's clock — not the client's —
-     * decides what "the last six months" means.
-     */
+    
+
+
     const rows = await query<{ month: string; total: number }>(
       `SELECT to_char(date_trunc('month', ps.period_start), 'YYYY-MM') AS month,
               COALESCE(SUM(ps.net), 0) AS total
@@ -158,14 +141,9 @@ export class PayrollStatsAdapter implements PayrollStatsPort {
     departmentId?: string,
     employeeType?: string,
   ): Promise<DuplicatePayslip[]> {
-    /**
-     * The same employee paid twice for an overlapping period, across ANY runs.
-     *
-     * The database already forbids two payslips for one employee in one payrun
-     * (`payslips_one_per_employee_per_run`), so anything this finds came from
-     * two different runs covering the same month — exactly the operational
-     * alert the dashboard wants, and the case a UNIQUE constraint cannot catch.
-     */
+    
+
+
     const values: unknown[] = [period.start, period.end]
     let filter = ''
     if (departmentId) {

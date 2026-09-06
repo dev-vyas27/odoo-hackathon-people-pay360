@@ -1,16 +1,7 @@
 'use client'
 
-/**
- * FilterBar — search + selects that live in the URL, not in component state.
- *
- * Putting filter state in `searchParams` buys three things for free: the back
- * button works, a filtered view is a shareable link (which is exactly what
- * SmartButton relies on), and a refresh does not silently reset what the user
- * is looking at. Local `useState` gives none of that.
- *
- * Reading the values back is `useFilterParams()` below, so a list screen never
- * parses the query string itself.
- */
+
+
 import { useCallback, useEffect, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { LuSearch, LuX } from 'react-icons/lu'
@@ -31,7 +22,7 @@ export interface FilterOption {
 }
 
 export interface FilterDefinition {
-  /** Query-string key. Becomes `filters.<name>` on the server. */
+  
   name: string
   label: string
   options: FilterOption[]
@@ -41,12 +32,12 @@ export interface FilterBarProps {
   filters?: FilterDefinition[]
   searchPlaceholder?: string
   showSearch?: boolean
-  /** Rendered on the right — usually a "New" button. */
+  
   actions?: React.ReactNode
   className?: string
 }
 
-/** The sentinel Radix needs, because SelectItem forbids an empty string value. */
+
 const ALL = '__all__'
 
 export function FilterBar({
@@ -69,17 +60,16 @@ export function FilterBar({
         if (!value || value === ALL) next.delete(key)
         else next.set(key, value)
       }
-      // Any filter change invalidates the current page number.
+      
       next.delete('page')
       router.replace(`${pathname}?${next.toString()}`, { scroll: false })
     },
     [params, pathname, router],
   )
 
-  /**
-   * Debounce the search box. Without it every keystroke is a round trip, and
-   * with a `router.replace` per character the URL history also thrashes.
-   */
+  
+
+
   useEffect(() => {
     if (!showSearch) return
     const current = params.get('search') ?? ''
@@ -149,21 +139,8 @@ export function FilterBar({
   )
 }
 
-/**
- * Read the current filter state, ready to hand straight to `useResourceList`.
- *
- * `names` is the whitelist of filter keys this screen understands, so an
- * unrelated query param (say `?tab=history`) is not sent to the API as a filter
- * on a column that does not exist.
- *
- * `sort`/`order` are forwarded unconditionally rather than through `names`:
- * they are not a per-column filter a screen opts into, they are the paging
- * convention every list endpoint already understands (see `PAGING_KEYS` in
- * `lib/http.ts`), and `SortableHeader` below is what writes them into the URL.
- * Forwarding them here, once, is what makes a header click actually reach the
- * API — without it the URL would carry `?sort=startsOn` and the request would
- * never see it.
- */
+
+
 export function useFilterParams(names: string[] = []): Record<string, string | number> {
   const params = useSearchParams()
   const result: Record<string, string | number> = {}
@@ -188,16 +165,8 @@ export function useFilterParams(names: string[] = []): Record<string, string | n
   return result
 }
 
-/**
- * The URL-backed sort state: which column, which direction, and how to change
- * it. `ResourceTable` is the only caller — this is the "once, in the shared
- * layer" half of adding sortable columns; a screen never touches this hook.
- *
- * Three states per column, cycling on each click: unsorted -> asc -> desc ->
- * unsorted. Switching to a DIFFERENT column always starts at asc, matching
- * the affordance the table already drew with TanStack's client-side sorting
- * before this replaced it.
- */
+
+
 export function useSort(): {
   sort: string | null
   order: 'asc' | 'desc'
@@ -222,7 +191,7 @@ export function useSort(): {
         next.delete('sort')
         next.delete('order')
       }
-      // A re-sort is a new view of the same filtered set; page 1 is where it starts.
+      
       next.delete('page')
       router.replace(`${pathname}?${next.toString()}`, { scroll: false })
     },

@@ -1,10 +1,5 @@
-/**
- * ScheduleQueryPort — read-only view of working schedules for OTHER modules.
- *
- * `expectedHours`/`expectedDays` are payroll's proration denominators: how
- * much of a payroll period a schedule actually covers. Both count only the
- * weekdays the schedule's day pattern covers, never a flat calendar count.
- */
+
+
 import type { Period } from '@/modules/shared'
 
 export interface ScheduleSnapshot {

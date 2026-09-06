@@ -1,12 +1,6 @@
-/**
- * SalaryStructure — AGGREGATE ROOT: an ordered collection of salary rules.
- *
- * The structure owns WHICH rules apply and IN WHAT ORDER. The order is the whole
- * game: HRA cannot be 40% of BASIC unless BASIC has already run, and NET cannot
- * subtract PF unless PF has. Sequence is stored per structure rather than only
- * on the rule, so the same PF rule can sit at a different point in two different
- * structures without either one being edited.
- */
+
+
+
 import { DomainError } from '@/modules/shared'
 import type { SalaryRule } from './salary-rule'
 import { dependenciesOf } from './salary-rule'
@@ -19,7 +13,7 @@ export interface StructureRuleRef {
 export interface SalaryStructure {
   readonly id: string
   readonly name: string
-  /** Stable identifier for the structure itself. `salary_structures.code`. */
+  
   readonly code: string
   readonly rules: readonly StructureRuleRef[]
   readonly active: boolean
@@ -33,7 +27,7 @@ export interface SalaryStructureInput {
   active?: boolean
 }
 
-/** Uppercase identifier, e.g. STD_MONTHLY. Matches salary_structures_code_key. */
+
 export const STRUCTURE_CODE_PATTERN = /^[A-Z][A-Z0-9_]*$/
 
 export function createSalaryStructure(input: SalaryStructureInput): SalaryStructure {
@@ -80,10 +74,8 @@ export function createSalaryStructure(input: SalaryStructureInput): SalaryStruct
   }
 }
 
-/**
- * A structure with its rule references resolved to the actual rules, in
- * execution order. This is what the engine and the payslip factory consume.
- */
+
+
 export interface ResolvedSalaryStructure {
   readonly id: string
   readonly name: string
@@ -91,13 +83,8 @@ export interface ResolvedSalaryStructure {
   readonly rules: ReadonlyArray<{ rule: SalaryRule; sequence: number }>
 }
 
-/**
- * Join a structure to its rules, in sequence order.
- *
- * A reference pointing at a rule that no longer exists is an error rather than a
- * silent omission: a payslip missing its PF line because a rule was deleted last
- * week is a bug nobody notices until an audit.
- */
+
+
 export function resolveStructure(
   structure: SalaryStructure,
   rulesById: ReadonlyMap<string, SalaryRule>,
@@ -128,14 +115,8 @@ export interface StructureIssue {
   readonly message: string
 }
 
-/**
- * Static analysis of a resolved structure, for the config screen.
- *
- * Reports every ordering problem at once — duplicate codes, references to rules
- * that are not in this structure, and references to rules that run LATER — so
- * the user fixes them in the form instead of discovering them one at a time
- * during a payrun.
- */
+
+
 export function inspectStructure(structure: ResolvedSalaryStructure): StructureIssue[] {
   const issues: StructureIssue[] = []
   const availableSoFar = new Set<string>()

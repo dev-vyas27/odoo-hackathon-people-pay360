@@ -144,13 +144,8 @@ test.describe('People — employees', () => {
   })
 
   test('the detail endpoint returns a FLAT record, not the use case shape', async ({ api }) => {
-    /**
-     * It used to return `{ employee: {...}, counts: {...} }` while the screen
-     * was typed against a flat `EmployeeDetailView`. Every field read as
-     * undefined, so the form rendered empty and every select fell back to its
-     * placeholder — while `counts` lined up by coincidence and made it look
-     * like a form bug rather than a contract bug.
-     */
+    
+
     const dept = await makeDepartment(api)
     const employee = await makeEmployee(api, { departmentId: dept.id, bankAccount: '5555' })
 
@@ -251,11 +246,8 @@ test.describe('People — administrator accounts are not staff', () => {
   })
 
   test('the paging total counts what the list actually shows', async ({ api }) => {
-    /**
-     * The reason the filter lives in the repository rather than the UI: a
-     * client-side filter leaves `total` counting rows the user cannot see, so
-     * page 2 of a 1-page list is reachable and empty.
-     */
+    
+
     const listed = await api.get('/api/employees?limit=200')
     const withAdmins = await api.get('/api/employees?limit=200&includeAdmins=true')
 

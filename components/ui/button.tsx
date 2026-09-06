@@ -8,8 +8,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Hover darkens down the plum ramp rather than fading opacity — a
-        // translucent button sitting on the tinted page ground goes muddy.
+        
+        
         default:
           "bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover active:bg-primary-active",
         destructive:

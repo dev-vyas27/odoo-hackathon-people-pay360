@@ -1,10 +1,6 @@
-/**
- * Fixtures shared by this module's domain tests.
- *
- * Everything payroll needs from Dev B arrives as a plain snapshot, so the tests
- * build those snapshots directly and never touch a port, an adapter or a
- * database. This file is test-only and is not exported from index.ts.
- */
+
+
+
 import { Period } from '@/modules/shared'
 import type { EmployeeSummary } from '@/modules/shared'
 import type { ContractSnapshot } from '@/modules/shared'
@@ -50,7 +46,7 @@ export function contract(overrides: Partial<ContractSnapshot> = {}): ContractSna
   }
 }
 
-/** The BASIC/HRA/TA/GROSS/PF/TAX/NET structure from the plan document. */
+
 export function standardStructure(): ResolvedSalaryStructure {
   const rules: SalaryRule[] = [
     createSalaryRule({
@@ -59,8 +55,8 @@ export function standardStructure(): ResolvedSalaryStructure {
       code: 'BASIC',
       category: 'basic',
       sequence: 10,
-      // Reads the wage of the contract resolved for the period being run, and
-      // prorates it by attendance — both through reserved engine inputs.
+      
+      
       computation: { type: 'formula', expression: 'WAGE * WORKED_RATIO' },
     }),
     createSalaryRule({

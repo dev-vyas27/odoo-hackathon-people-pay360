@@ -1,15 +1,5 @@
-/**
- * Per-type approval workflow, end to end through the use cases.
- *
- * The gap this closes: every leave type used to run through one hardcoded
- * global state machine (`leave-request-state.ts`), so nothing could skip
- * manual review. A Time Off Type can now set `autoApprove`, and these tests
- * are the claim that submitting a request of such a type actually lands
- * approved — with its allocation actually consumed, not silently skipped —
- * while a type left at the default keeps behaving exactly as before.
- *
- * Fakes only, no database — see test-support/in-memory-unit-of-work.ts.
- */
+
+
 import { describe, expect, it } from 'vitest'
 import { InMemoryEventBus, Period, unwrap, type Actor, type DomainEvent } from '@/modules/shared'
 import { RequestLeaveUseCase } from './request-leave.use-case'
@@ -23,7 +13,6 @@ const day = (iso: string) => new Date(`${iso}T00:00:00.000Z`)
 const hr: Actor = { employeeId: 'hr-1', role: 'hr_manager', email: 'hr@co.com', name: 'HR' }
 const employeeId = 'employee-1'
 
-/** Records every event published, so a test can assert one fired (or didn't). */
 function trackedBus(): { bus: InMemoryEventBus; published: DomainEvent[] } {
   const bus = new InMemoryEventBus()
   const published: DomainEvent[] = []
@@ -83,7 +72,7 @@ describe('RequestLeaveUseCase — auto-approval', () => {
     const view = unwrap(result)
     expect(view.status).toBe('approved')
     expect(view.allocationId).toBe(allocation.id)
-    // 5 inclusive calendar days, Mon through Fri.
+    
     expect(uow.allocations.rows.get(allocation.id)?.taken).toBe(5)
     expect(published).toHaveLength(1)
     expect(published[0]).toMatchObject({ requestId: view.id, employeeId })
@@ -123,7 +112,7 @@ describe('RequestLeaveUseCase — auto-approval', () => {
     const uow = new InMemoryUnitOfWork()
     const { bus } = trackedBus()
     const type = seedAutoApproveType(uow)
-    // Not enough for the 5-day request below.
+    
     uow.allocations.seed({
       employeeId,
       timeOffTypeId: type.id,
@@ -272,7 +261,7 @@ describe('refusing an auto-approved request', () => {
     )
     expect(uow.allocations.rows.get(allocation.id)?.taken).toBe(5)
 
-    // A different actor decides — refusing your own request is still forbidden.
+    
     const refused = unwrap(
       await new RefuseLeaveUseCase(uow, bus).execute({ actor: hr, requestId: approved.id }),
     )

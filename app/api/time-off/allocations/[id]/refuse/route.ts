@@ -1,9 +1,6 @@
-/**
- * POST /api/time-off/allocations/[id]/refuse
- *
- * Refused if nothing has been taken against it yet — withdrawing a balance
- * somebody has already spent would leave approved leave funded by nothing.
- */
+
+
+
 import { decideAllocation } from '@/modules/timeoff'
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'

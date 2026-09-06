@@ -1,18 +1,5 @@
 'use client'
 
-/**
- * The Pay Run list.
- *
- * This used to fetch up to 50 payruns ONCE (a server component with a hardcoded
- * `limit: 50`) and filter/search them in the browser over whatever happened to
- * be in that array. `FilterBar` wrote `?search=` and `?status=` into the URL
- * exactly like every other list screen, but nothing here ever read them back
- * from the server — and there was no `Pagination`, so a 51st payrun simply
- * could not be found by any filter. `useResourceList` against `/api/payruns`
- * (which already supports search, status and sort — see
- * `postgres-payrun.repository.ts`) is the same pattern every other list in the
- * app uses, and gets paging back for free.
- */
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -44,8 +31,8 @@ const columns: ColumnDef<PayrunView, unknown>[] = [
   {
     accessorKey: 'periodStart',
     header: 'Period',
-    // The repository's SORTABLE set is the raw column name, not camelCase —
-    // see postgres-payrun.repository.ts.
+    
+    
     meta: { sortKey: 'period_start' },
     cell: ({ row }) => (
       <span className="tabular">

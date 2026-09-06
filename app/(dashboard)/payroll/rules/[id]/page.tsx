@@ -16,7 +16,7 @@ export default async function EditSalaryRulePage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  // Next 16: params is a promise and must be awaited.
+  
   const { id } = await params
   const actor = await pageActor()
 
@@ -56,7 +56,7 @@ export default async function EditSalaryRulePage({
         title={rule.name}
         description={`Code ${rule.code} · runs at sequence ${rule.sequence}`}
         actions={
-          // hr_payroll_user reads salary configuration but may not archive it.
+          
           can(actor.role, 'salary_rule', 'delete') ? (
             <ArchiveRuleButton id={rule.id} name={rule.name} active={rule.active} />
           ) : null
@@ -66,7 +66,7 @@ export default async function EditSalaryRulePage({
         rule={toSalaryRuleFormValues(rule)}
         ruleId={rule.id}
         availableCodes={availableCodes}
-        // hr_payroll_user reads salary configuration; only a manager edits it.
+        
         readOnly={!can(actor.role, 'salary_rule', 'update')}
       />
     </>

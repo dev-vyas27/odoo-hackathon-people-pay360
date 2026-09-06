@@ -1,13 +1,7 @@
 'use client'
 
-/**
- * Archive, not delete.
- *
- * Historical payslips name the rules that produced their lines, so a rule is
- * only ever deactivated. The API refuses even that while a live structure still
- * includes the rule, and its message names the structures — which is why the
- * error is shown verbatim rather than replaced with something generic.
- */
+
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'

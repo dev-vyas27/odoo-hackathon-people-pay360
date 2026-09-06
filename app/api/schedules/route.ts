@@ -6,8 +6,8 @@ import { createScheduleSchema, listSchedules, createSchedule } from '@/modules/e
 export async function GET(req: NextRequest) {
   return handle(async () => {
     const actor = await requireActor()
-    // See the note in app/api/contracts/route.ts: parsing with pageQuerySchema
-    // discards every non-paging filter.
+    
+    
     return respond(await listSchedules(actor, parsePageQuery(req.url)))
   })
 }

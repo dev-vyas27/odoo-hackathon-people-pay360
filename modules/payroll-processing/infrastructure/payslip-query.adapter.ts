@@ -1,9 +1,6 @@
-/**
- * PayslipQueryPort implementation — the projection Delivery renders.
- *
- * Money becomes plain rounded numbers exactly once, here, so the PDF, the email
- * and the screen all show the same figure.
- */
+
+
+
 import type {
   PayslipLineView,
   PayslipQueryPort,

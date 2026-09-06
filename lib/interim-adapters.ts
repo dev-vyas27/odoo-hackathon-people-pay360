@@ -1,23 +1,6 @@
-/**
- * ⚠ SCAFFOLDING — delete when Dev B's `people` module registers for real.
- *
- * Time Off needs employee names for its list views and an employee picker for
- * its forms. Both go through `EmployeeLookupPort`, which `people` owns and has
- * not published yet. The null object in
- * `modules/timeoff/application/ports/employee-lookup.port.ts` keeps the module
- * COMPILING without it, but it returns placeholder names and an empty picker,
- * which makes the screens impossible to demonstrate.
- *
- * So this reads the `employees` table directly. It is deliberately in `lib/`
- * rather than inside a module: it is not anyone's domain logic, it is a
- * temporary bridge, and putting it here means nobody mistakes it for the real
- * implementation.
- *
- * `providePort` is first-wins, and `bootstrap.ts` calls this LAST. The moment
- * Dev B calls `registerPeople()` ahead of it, their adapter takes over and this
- * one is never consulted again — no code changes anywhere else, and the only
- * cleanup is deleting this file plus one line in bootstrap.
- */
+
+
+
 import { query } from '@/lib/db'
 import {
   PORT_KEYS,
@@ -94,7 +77,7 @@ const interimEmployeeLookup: EmployeeLookupPort = {
   },
 }
 
-/** Fills any port nobody has claimed yet. Called last, so real wins over interim. */
+
 export function registerInterimAdapters(): void {
   if (!container().ports.has(PORT_KEYS.employeeLookup)) {
     console.warn(

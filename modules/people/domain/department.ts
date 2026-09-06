@@ -1,10 +1,5 @@
-/**
- * Department — simple aggregate. Organisational grouping for employees.
- *
- * A department may itself have a parent (org chart) and a manager (an
- * employee id). Both are optional and unvalidated for existence here — that
- * is a cross-aggregate concern the use case resolves via the repository.
- */
+
+
 import { DomainError } from '@/modules/shared'
 import { Ok, Err, type Result } from '@/modules/shared'
 

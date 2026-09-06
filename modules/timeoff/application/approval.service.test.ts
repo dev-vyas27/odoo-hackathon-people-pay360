@@ -1,14 +1,5 @@
-/**
- * `consumeAllocationForApproval` is the one function every approval path —
- * manual (`approve-leave`) and every auto-approve path (`request-leave`,
- * `submit-leave`) — runs through to fund a request. If it ever approved
- * without consuming, or consumed without the caller then approving, the
- * balance and the request history would silently disagree — which is exactly
- * what the reviewer flagged as the risk of bolting auto-approval on.
- *
- * No database: repos are the in-memory fakes, same as every other use-case
- * test in this module.
- */
+
+
 import { describe, expect, it } from 'vitest'
 import { DomainError, Period } from '@/modules/shared'
 import { LeaveRequest } from '../domain/leave-request'
@@ -109,7 +100,7 @@ describe('consumeAllocationForApproval', () => {
       consumeAllocationForApproval(uow.repos, type, makeRequest(uow, type.id, 3)),
     ).rejects.toThrowError(DomainError)
 
-    // The failed consume must not have left a partial deduction behind.
+    
     expect(uow.allocations.rows.get(allocation.id)?.taken).toBe(0)
   })
 })

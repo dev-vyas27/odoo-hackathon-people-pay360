@@ -2,14 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { Period } from '@/modules/shared'
 import { createPayrun, reconstitutePayrun } from './payrun'
 
-/**
- * Creating and reading back are different operations with different rules.
- *
- * The repository used to call `createPayrun` on every read, so a create-time
- * invariant ran against rows that already existed. One payrun whose last
- * employee had been removed threw on load and took the whole payrun LIST with
- * it — every other run became unreadable because of one unusual row.
- */
 const base = {
   id: 'run-1',
   name: 'June 2026',

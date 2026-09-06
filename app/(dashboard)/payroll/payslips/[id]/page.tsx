@@ -46,14 +46,14 @@ export default async function PayslipPage({ params }: { params: Promise<{ id: st
                 Back to pay run
               </Link>
             </Button>
-            {/* Rendered by the delivery module. Inline preview here… */}
+            {}
             <Button asChild variant="outline">
               <a href={`/api/payslips/${payslip.id}/pdf`} target="_blank" rel="noreferrer">
                 <LuPrinter className="size-4" aria-hidden />
                 Print PDF
               </a>
             </Button>
-            {/* …and the same route with ?download=1 for a save dialog. */}
+            {}
             <Button asChild>
               <a href={`/api/payslips/${payslip.id}/pdf?download=1`}>
                 <LuDownload className="size-4" aria-hidden />

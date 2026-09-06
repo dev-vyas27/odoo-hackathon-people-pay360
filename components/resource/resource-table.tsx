@@ -1,28 +1,7 @@
 'use client'
 
-/**
- * ResourceTable — one generic List view for every model in the system.
- *
- * The spec needs List views for ~12 aggregates. Hand-writing twelve tables
- * (each with sorting, paging, search, empty and loading states) is roughly a
- * day of work and twelve places for bugs to hide. Instead each module supplies
- * a column definition and this renders it.
- *
- * Adding a new model to the app is then a config object, not a component.
- *
- * ── Sorting ──────────────────────────────────────────────────────────────────
- * This used to hand `state.sorting` to TanStack's `getSortedRowModel`, which
- * reorders whatever rows happen to be in `data` — i.e. only the current page.
- * That is wrong the moment a list has a second page: click "Start" ascending
- * on page 2 and you get page 2's rows sorted among themselves, not rows 21-40
- * of the truly-sorted set. Sorting has to happen in SQL, so this component
- * does no reordering of its own at all. A column becomes sortable by giving it
- * `meta: { sortKey: '<api sort param>' }`; clicking its header writes
- * `?sort=&order=` into the URL via `useSort()`, `useFilterParams` forwards
- * those to the API, and the repository's own allowlist decides what `sortKey`
- * is actually allowed to mean. Only date columns are given a `sortKey` — see
- * the column defs on each list screen.
- */
+
+
 import {
   flexRender,
   getCoreRowModel,
@@ -42,21 +21,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { useSort } from './filter-bar'
 
-/**
- * Module augmentation is TanStack's documented way to type `columnDef.meta` —
- * see https://tanstack.com/table/latest/docs/api/core/column-def#meta. Adding
- * `sortKey` here is what lets a column def write `meta: { sortKey: 'startsOn' }`
- * with autocomplete and a type error on a typo, everywhere in the app, from
- * this one declaration.
- */
+
+
 declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- required to match TanStack's ColumnMeta<TData, TValue> signature for declaration merging
+  
   interface ColumnMeta<TData, TValue> {
-    /**
-     * The `sort=` value this column's header writes when clicked. Only set
-     * this on a DATE column — the whole point of scoping it here is that a
-     * column with no `sortKey` renders as plain, unclickable text.
-     */
+    
+
+
     sortKey?: string
   }
 }
@@ -66,7 +38,7 @@ export interface ResourceTableProps<T> {
   columns: ColumnDef<T, unknown>[]
   isLoading?: boolean
   onRowClick?: (row: T) => void
-  /** Shown when there are genuinely no records (not while loading). */
+  
   emptyMessage?: string
   emptyAction?: React.ReactNode
 }
@@ -81,17 +53,17 @@ export function ResourceTable<T>({
 }: ResourceTableProps<T>) {
   const { sort, order, toggle } = useSort()
 
-  // The React Compiler lint rule cannot memoize TanStack's returned functions.
-  // That is expected and safe here: the table instance is recreated per render
-  // by design, exactly as TanStack documents.
-  // eslint-disable-next-line react-hooks/incompatible-library
+  
+  
+  
+  
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    // No getSortedRowModel: sorting is server-side (see the comment at the top
-    // of this file), so the rows TanStack sees are rendered in the order the
-    // API returned them, full stop.
+    
+    
+    
   })
 
   if (isLoading) {

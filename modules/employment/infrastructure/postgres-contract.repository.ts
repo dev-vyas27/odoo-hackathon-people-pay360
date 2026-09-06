@@ -1,9 +1,6 @@
-/**
- * Postgres implementation of ContractRepositoryPort.
- *
- * `wage` crosses the boundary here: Money in the domain, numeric in the table.
- * Nothing above this file sees a raw number, and nothing below sees Money.
- */
+
+
+
 import { query } from '@/lib/db'
 import { Money, type PageQuery } from '@/modules/shared'
 import { BaseSqlRepository, type SqlValue } from '@/modules/shared/server'
@@ -19,15 +16,9 @@ export class PostgresContractRepository
   protected readonly columns = CONTRACT_COLUMNS
   protected readonly defaultSort = 'starts_on'
 
-  /**
-   * `contracts` has no free-text column of its own — `searchable` stays empty
-   * on purpose, or every keystroke would ILIKE a uuid or a decimal wage and
-   * never match. What a person typing into this screen's search box actually
-   * means is "find the employee named X", and that name lives on `employees`,
-   * a table this repository does not otherwise touch. An EXISTS subquery,
-   * bolted onto whatever the base class already built, reaches it without
-   * turning this into a join-aware repository for every other filter too.
-   */
+  
+
+
   protected buildWhere(
     q: PageQuery,
     startIndex = 1,
@@ -51,9 +42,9 @@ export class PostgresContractRepository
       wage: Money.of(Number(row.wage)),
       salaryStructureId: row.salary_structure_id,
       workingScheduleId: row.working_schedule_id,
-      // Neither column exists on `contracts`; the ContractQueryPort adapter
-      // supplies them by joining through the employee. A repository returning
-      // the aggregate leaves them null rather than inventing a value.
+      
+      
+      
       departmentId: null,
       jobPositionName: null,
       start: row.starts_on,
@@ -82,7 +73,7 @@ export class PostgresContractRepository
     return this.updateRow(id, this.toRow(data))
   }
 
-  /** Newest first — this drives the Contracts smart button on the employee form. */
+  
   async findByEmployee(employeeId: string): Promise<Contract[]> {
     const rows = await query<ContractRow>(
       `SELECT ${this.selection} FROM "${CONTRACTS_TABLE}"

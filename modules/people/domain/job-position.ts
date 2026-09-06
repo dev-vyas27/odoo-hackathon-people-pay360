@@ -1,7 +1,5 @@
-/**
- * JobPosition — a titled role an employee can hold, optionally scoped to a
- * department (e.g. "Software Engineer" in "Engineering").
- */
+
+
 import { DomainError } from '@/modules/shared'
 import { Ok, Err, type Result } from '@/modules/shared'
 

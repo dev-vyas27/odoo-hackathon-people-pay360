@@ -1,17 +1,6 @@
-/**
- * Give someone a login. Admin-only, and the check lives here rather than in the
- * route so that the seed script and any future CLI inherit the same rule.
- *
- * Two shapes, because an account is now an employee row:
- *
- *   the email is unknown          -> create the employee AND its credentials
- *   the email is a known employee -> grant that person a login
- *
- * The second case used to be an `EMAIL_TAKEN` conflict, and rejecting it would
- * now be wrong: "this person exists in HR and needs an account" is the ordinary
- * request, not a mistake. Granting a login to someone who already has one is
- * still a conflict — that is a password reset, and it should say so.
- */
+
+
+
 import {
   DomainError,
   Err,
@@ -42,16 +31,14 @@ export class CreateAccountUseCase implements UseCase<CreateAccountInput, Account
 
     const email = normalizeEmail(input.email)
     const existing = await this.accounts.findByEmail(email)
-    /**
-     * Always NULL. Nobody but the account holder chooses their password, so the
-     * account is born without one and an invitation link is emailed — see
-     * InviteAccountUseCase.
-     */
+    
+
+
     const passwordHash = null
 
     if (existing) {
-      // Somebody who can already sign in does not need creating again. The
-      // administration screen has "Send a set-password link" for a reset.
+      
+      
       if (existing.hasLogin) {
         return Err(
           DomainError.conflict(

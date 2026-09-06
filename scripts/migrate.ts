@@ -1,22 +1,6 @@
-/**
- * The migration runner. No library — it is about eighty lines of logic and a
- * dependency here would be a dependency in the deployment story too.
- *
- *   npm run migrate            apply everything pending
- *   npm run migrate -- --status  show what is applied and what is not
- *
- * Three properties that matter:
- *
- *   1. Each file runs inside its own transaction. A migration that fails
- *      halfway leaves the database exactly as it was, rather than half-migrated
- *      with no record of it — which is the state that takes an afternoon to
- *      untangle.
- *   2. Applied files are checksummed. Editing a migration that has already run
- *      is refused, because at that point the schema in the database and the SQL
- *      in the repository disagree and nothing will tell you which is right.
- *   3. An advisory lock means two processes starting at once (a deploy and a
- *      developer, say) cannot both apply the same migration.
- */
+
+
+
 import { createHash } from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -24,7 +8,7 @@ import { closePool, pool, query } from '@/lib/db'
 
 const MIGRATIONS_DIR = path.join(process.cwd(), 'migrations')
 
-/** Any positive integer; it only has to be the same in every process. */
+
 const LOCK_ID = 987_654_321
 
 interface AppliedMigration {
@@ -34,8 +18,8 @@ interface AppliedMigration {
 }
 
 async function ensureMigrationsTable(): Promise<void> {
-  // Created by the runner rather than by 0001, because 0001 cannot record that
-  // it ran into a table that does not exist yet.
+  
+  
   await query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       filename    text PRIMARY KEY,
@@ -48,7 +32,7 @@ async function ensureMigrationsTable(): Promise<void> {
 async function readMigrationFiles(): Promise<Array<{ filename: string; sql: string }>> {
   const names = (await readdir(MIGRATIONS_DIR))
     .filter((name) => name.endsWith('.sql'))
-    // Zero-padded numeric prefixes, so lexicographic order IS execution order.
+    
     .sort()
 
   return Promise.all(
@@ -60,8 +44,8 @@ async function readMigrationFiles(): Promise<Array<{ filename: string; sql: stri
 }
 
 const checksum = (sql: string) =>
-  // Newlines are normalised first: a file checked out on Windows must not read
-  // as modified against one applied from a Linux CI runner.
+  
+  
   createHash('sha256').update(sql.replace(/\r\n/g, '\n')).digest('hex').slice(0, 16)
 
 async function status(): Promise<void> {
@@ -94,7 +78,7 @@ async function migrate(): Promise<void> {
 
   const client = await pool().connect()
   try {
-    // Blocks until any other migrating process finishes.
+    
     await client.query('SELECT pg_advisory_lock($1)', [LOCK_ID])
 
     const files = await readMigrationFiles()
@@ -153,7 +137,7 @@ async function main() {
   else await migrate()
 }
 
-/** Never print the database password. */
+
 function redact(url: string): string {
   return url.replace(/\/\/([^:]+):[^@]+@/, '//$1:****@')
 }

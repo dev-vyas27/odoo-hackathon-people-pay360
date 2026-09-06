@@ -1,15 +1,5 @@
-/**
- * Postgres implementation of the shared EmployeeStatsPort.
- *
- * Headcount and roster-health queries for the dashboard (spec A7/B9). Moved
- * here from `lib/interim-stats.ts`, which had to read these tables directly
- * because nobody had registered the real port yet — the SQL is unchanged from
- * that scaffolding, only its ownership.
- *
- * "An administrator is not a member of staff" is applied via NOT_AN_ADMIN so a
- * headcount here can never disagree with the employee list, which applies the
- * same constant.
- */
+
+
 import { query } from '@/lib/db'
 import type { EmployeeStatsPort, EmployeeType } from '@/modules/shared'
 import { NOT_AN_ADMIN } from './people.tables'
@@ -32,11 +22,8 @@ export class PostgresEmployeeStats implements EmployeeStatsPort {
     departmentId?: string
     employeeType?: string
   }): Promise<Array<{ departmentId: string; departmentName: string; count: number }>> {
-    /**
-     * LEFT JOIN from departments, not from employees: a department with nobody
-     * in it still belongs on the breakdown and still belongs in the filter
-     * dropdown. Joining the other way would make it vanish.
-     */
+    
+
     const rows = await query<{ department_id: string; department_name: string; count: number }>(
       `SELECT d.id            AS department_id,
               d.name          AS department_name,
@@ -72,15 +59,8 @@ export class PostgresEmployeeStats implements EmployeeStatsPort {
   }
 
   async missingBankDetails(): Promise<Array<{ employeeId: string; name: string }>> {
-    /**
-     * Spec B9's "missing required information" alert. Dev C's payrun validation
-     * reads the same column before finalising.
-     *
-     * Administrators are excluded: the alert exists to catch someone who cannot
-     * be PAID, and an operator account was never going to be. Left in, it
-     * reported a problem nobody could fix — there is no bank account to add for
-     * a login.
-     */
+    
+
     const rows = await query<{ id: string; name: string }>(
       `SELECT id, name
          FROM employees

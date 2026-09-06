@@ -9,7 +9,7 @@ import { ListEmployeesUseCase } from './list-employees.use-case'
 import { ArchiveEmployeeUseCase } from './archive-employee.use-case'
 import { GetEmployeeDetailUseCase } from './get-employee-detail.use-case'
 
-/** Hand-written in-memory fake implementing the port — no database involved. */
+
 class FakeEmployeeRepository implements EmployeeRepositoryPort {
   private rows = new Map<string, Employee>()
   private seq = 0

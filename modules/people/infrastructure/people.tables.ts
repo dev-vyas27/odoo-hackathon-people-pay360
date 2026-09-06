@@ -1,14 +1,5 @@
-/**
- * The people tables as TypeScript sees them.
- *
- * The seam between the schema (migrations/0002_organisation.sql and
- * 0004_people.sql) and the domain: snake_case below, camelCase above, and the
- * translation happens in exactly one place.
- *
- * If you change a column here there is a migration to write — and the
- * migrations are owned by the platform developer, so the change starts as a
- * conversation, not as an edit to this file.
- */
+
+
 import type { EmployeeType } from '../domain/employee-type'
 
 export interface EmployeeRow {
@@ -29,24 +20,6 @@ export interface EmployeeRow {
 
 export const EMPLOYEES_TABLE = 'employees'
 
-/**
- * "An administrator is not a member of staff", as SQL.
- *
- * Migration 0010 made every login an employee row, so the account somebody
- * administers the system with now sits in the same table as real staff. It has
- * no department, no contract and no job position, because it is the operator
- * rather than a person on the payroll.
- *
- * This lives here, once, because the rule is needed in two places that would
- * otherwise drift: the employee list (see `buildWhere` in
- * postgres-employee.repository.ts) and the dashboard's people statistics. A
- * list showing eight beside a headcount reading nine is the kind of
- * disagreement that makes someone stop trusting both numbers.
- *
- * It is a constant, never interpolated from input, so it carries no injection
- * risk and `role` can stay out of `EMPLOYEE_COLUMNS` — and therefore off the
- * wire. Prefix it (`e.`) when the query joins.
- */
 export const NOT_AN_ADMIN = `role <> 'admin'`
 export const EMPLOYEE_COLUMNS = [
   'id',
@@ -104,10 +77,6 @@ export const JOB_POSITION_COLUMNS = [
   'updated_at',
 ] as const
 
-/**
- * Postgres unique-violation. Surfaced as a domain conflict rather than a 500 —
- * "that email is already taken" is a business answer, not a crash.
- */
 export const UNIQUE_VIOLATION = '23505'
 
 export function isUniqueViolation(reason: unknown): boolean {

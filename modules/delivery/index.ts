@@ -1,13 +1,6 @@
-/**
- * Public surface of the "delivery" module.
- *
- * Everything other modules are allowed to use is re-exported HERE and nowhere
- * else. Internals under domain/, application/, infrastructure/ and interface/
- * are private and the ESLint boundary rule will reject imports that reach in.
- *
- * CLIENT-SAFE: pure document vocabulary only. Anything that touches pdfkit, the
- * AWS SDK or a request lives in `@/modules/delivery/server`.
- */
+
+
+
 export {
   buildPayslipDocument,
   fileNameFor,
@@ -24,8 +17,8 @@ export {
 
 export { amountInWords } from "./domain/money-words";
 
-/** Publishes MailerPort. `lib/bootstrap.ts` calls this once per process. */
+
 export { registerDelivery } from "./register";
 
-/** POST /api/payruns/[id]/send — bulk payslip delivery. */
+
 export { sendPayrunPayslips } from "./interface/payslip-pdf.controller";

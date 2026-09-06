@@ -8,7 +8,7 @@ import { useCan } from '@/components/auth/current-user'
 import { StructuresTable } from './structures-table'
 
 export default function SalaryStructuresPage() {
-  // hr_payroll_user reads salary configuration; only a manager may change it.
+  
   const canCreate = useCan('salary_structure', 'create')
 
   return (

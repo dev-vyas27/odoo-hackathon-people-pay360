@@ -1,11 +1,6 @@
-/**
- * (employee, contract, structure, period) -> Payslip.
- *
- * Pure: it receives snapshots and returns an aggregate. No repository, no
- * database, no HTTP — which is why the whole computation can be tested with
- * literals in milliseconds, and why "which contract applies" is decided by the
- * CALLER (through ContractQueryPort) rather than guessed at here.
- */
+
+
+
 import { Money, type Period } from '@/modules/shared'
 import { runRuleEngine, type ResolvedSalaryStructure } from '@/modules/payroll-config'
 import type { Payslip } from './payslip'
@@ -18,11 +13,11 @@ export interface PayslipFactoryInput {
   employeeName: string
   employeeEmail?: string | null
   departmentId: string | null
-  /** The contract resolved for THIS period, not the employee's latest. */
+  
   contract: { id: string; wage: number }
   structure: ResolvedSalaryStructure
   period: Period
-  /** Time actually worked and expected, in the same unit. Drives WORKED_RATIO. */
+  
   workedDays: number
   workedUnits: number
   expectedUnits: number
@@ -54,11 +49,8 @@ export function createPayslip(input: PayslipFactoryInput): Payslip {
   }
 }
 
-/**
- * A schedule that expects nothing in the period means there is nothing to
- * prorate against — pay the full amount rather than zero, because dividing by
- * an absent denominator should not silently wipe out someone's salary.
- */
+
+
 function prorationRatio(worked: number, expected: number): number {
   if (expected <= 0) return 1
   return worked / expected

@@ -1,25 +1,7 @@
 'use client'
 
-/**
- * The Employee hub (spec B2).
- *
- * Three bands, in the order somebody actually reads them:
- *
- *   1. WHO — an identity strip: initials, name, where they sit, whether they
- *      are active. Answerable at a glance, without reading a form.
- *   2. WHAT ELSE — the smart buttons, each opening the related list already
- *      filtered to this person. The spec calls these the main navigation
- *      device, so they sit above the form rather than below it.
- *   3. EDIT — the form, grouped into Identity / Organisation / Pay and hours /
- *      Status instead of nine inputs in one undifferentiated grid.
- *
- * The counts are fetched from the same endpoints the buttons link to. The
- * original design took them from the detail call to save round trips, which was
- * the better idea — but that call hardcodes them to zero (those aggregates
- * belong to other modules, and no count port exists yet). A confident "0
- * Contracts" beside an employee who has two is worse than three small requests.
- * See the note in get-employee-detail.use-case.ts.
- */
+
+
 import { use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -50,7 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { EmployeeForm } from '../_components/employee-form'
 
-/** `limit: 1` — we want the envelope's `total`, not the rows. */
+
 const COUNT_ONLY = { limit: 1 } as const
 
 function useRelatedCount(resource: string, employeeId: string) {
@@ -58,7 +40,7 @@ function useRelatedCount(resource: string, employeeId: string) {
   return page.total
 }
 
-/** Two initials, or one for a mononym. Cheap avatar, no upload story needed. */
+
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return '?'
@@ -67,15 +49,13 @@ function initialsOf(name: string): string {
 }
 
 export default function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  // Next 16: route params arrive as a promise.
+  
   const { id } = use(params)
   const router = useRouter()
 
-  /**
-   * An employee may open their OWN record (the use case scopes the read) but
-   * must not be offered Archive — the API refuses it, and a button that always
-   * 403s reads as a broken app rather than as a permission boundary.
-   */
+  
+
+
   const canArchive = useCan('employee', 'delete')
 
   const { data: employee, isLoading } = useResourceItem<EmployeeDetailView>('employees', id)
@@ -89,20 +69,9 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const timeOff = useRelatedCount('time-off/requests', id)
   const allocations = useRelatedCount('time-off/allocations', id)
 
-  /**
-   * A count you are not allowed to read is not zero.
-   *
-   * These come from four list endpoints, each with its own permission. A plain
-   * employee holds no `contract:read`, so that request 403s, the envelope
-   * defaults to an empty page, and the tile renders a confident "0 Contracts"
-   * beside somebody who has one. The button also linked to a page the proxy
-   * would bounce them off.
-   *
-   * So each tile is gated on the same permission its endpoint checks: shown
-   * with a real number, or not shown. The file header already argued that a
-   * wrong count is worse than a missing one — this is the same rule applied to
-   * the reader rather than to the fetch.
-   */
+  
+
+
   const canSee = {
     contracts: useCan('contract', 'read'),
     attendance: useCan('attendance', 'read'),
@@ -121,15 +90,9 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     )
   }
 
-  /**
-   * "Sales · Account Executive · Full Time", skipping whatever is not set.
-   *
-   * The names come WITH the record. They used to be looked up by fetching every
-   * department and job position and matching on the id, which quietly produced
-   * a blank for anyone without `department:read` — a plain employee could not
-   * see their own department here while an admin looking at the same record
-   * could. See modules/people/interface/placement-names.ts.
-   */
+  
+
+
   const placement = [
     employee.departmentName,
     employee.jobPositionName,
@@ -168,7 +131,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         }
       />
 
-      {/* 1. WHO ─────────────────────────────────────────────────────────── */}
+      {}
       <Card className="mb-6">
         <CardContent className="flex flex-wrap items-center gap-4 py-5">
           <span
@@ -193,7 +156,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         </CardContent>
       </Card>
 
-      {/* 2. WHAT ELSE ───────────────────────────────────────────────────── */}
+      {}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {canSee.contracts ? (
           <SmartButton
@@ -229,14 +192,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         ) : null}
       </div>
 
-      {/* 3. EDIT ────────────────────────────────────────────────────────── */}
+      {}
       <Card>
         <CardContent className="py-6">
           <EmployeeForm
             employeeId={employee.id}
             submitLabel="Save changes"
-            /* So each select can label its current value even when the viewer
-               cannot read the reference list it came from. */
+            
+
             currentNames={{
               departmentName: employee.departmentName,
               jobPositionName: employee.jobPositionName,

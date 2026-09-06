@@ -1,9 +1,6 @@
-/**
- * The shared kernel. The ONE module every other module may depend on.
- *
- * Keep this small and stable: anything added here becomes coupling for all ten
- * modules. If only two modules need it, it belongs in a port, not in here.
- */
+
+
+
 export { Money } from './domain/money'
 export { Period, startOfDay } from './domain/period'
 export { DomainError, type ErrorKind } from './domain/domain-error'
@@ -64,11 +61,8 @@ export {
   type PageQueryInput,
 } from './contracts/schema'
 
-/**
- * Cross-module contracts. Values (the `as const` unions) and types both, so a
- * module can build a <select> from `EMPLOYEE_TYPES` without a second source of
- * truth.
- */
+
+
 export {
   EMPLOYEE_TYPES,
   LEAVE_UNITS,
@@ -122,14 +116,8 @@ export {
   type Container,
 } from './container'
 
-/**
- * The business calendar.
- *
- * Lives in the shared kernel rather than in `lib/` because "which day is this
- * shift on" is a domain question, not an app-level formatting one — and the
- * architecture rule that keeps `modules/**` off `lib/**` is right to say so.
- * Pure functions, no I/O, safe on both sides of the wire.
- */
+
+
 export {
   IST_OFFSET_MS,
   IST_LABEL,

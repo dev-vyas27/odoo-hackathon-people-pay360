@@ -1,27 +1,5 @@
 'use client'
 
-/**
- * One form for creating and editing a contract.
- *
- * The date range is the important part: overlapping contracts for the same
- * employee are rejected by the use case AND by an exclusion constraint in the
- * database, so a clash surfaces as a clear 409 rather than corrupt history.
- * Leaving the end date empty means open-ended.
- *
- * ── Department and job position are NOT fields here ─────────────────────────
- *
- * They used to be, and they were editable inputs whose values went nowhere:
- * `contracts` has no such columns, so the API took them, returned 201 and threw
- * them away. Both are derived — `contract-query.adapter.ts` joins them through
- * the employee, which is what payroll reads. So they are shown as read-only
- * context below, sourced from the selected employee, and nothing pretends they
- * can be typed.
- *
- * The working schedule IS a real contract column and is a field, but a locked
- * one: payroll prorates a payslip against `contract.workingScheduleId`, so a
- * hand-edited schedule that disagrees with the employee's pays the wrong amount
- * and nothing downstream would notice.
- */
 import { useWatch, useFormContext } from 'react-hook-form'
 import { createContractSchema, type CreateContractBody } from '@/modules/employment/schemas'
 import type { SalaryStructureListItem } from '@/modules/payroll-config'
@@ -35,22 +13,14 @@ import {
   useScheduleOptions,
 } from '../../_components/options'
 
-/**
- * Salary structure options, fetched the same way `options.ts` fetches every
- * other reference list — a large single page rather than paging, since a
- * structure list is tens of rows, not thousands. Lives here rather than in
- * the shared `options.ts` because that file is scoped to modules already
- * wired through it; payroll-config's list route is `/api/payroll/structures`,
- * not `/api/structures`, so `useResourceList` is pointed at it directly.
- */
 function useSalaryStructureOptions(enabled: boolean) {
-  // No `active` filter, matching `useScheduleOptions` above: a contract whose
-  // structure was archived after the fact must still show it on edit rather
-  // than silently blanking the field (see the note on `withCurrent` in
-  // employee-form.tsx for why that specific failure mode is worth avoiding).
-  //
-  // Skipped entirely without `salary_structure:read` — an HR Manager holds
-  // contract CRUD but no payroll permission, so the request would only 403.
+  
+  
+  
+  
+  
+  
+  
   const { page, isLoading } = useResourceList<SalaryStructureListItem>(
     'payroll/structures',
     { limit: 200 },
@@ -62,10 +32,6 @@ function useSalaryStructureOptions(enabled: boolean) {
   }
 }
 
-/**
- * Rendered inside ResourceForm, so it can watch the live employee selection and
- * show what this contract will inherit the moment one is chosen.
- */
 function InheritedFromEmployee({
   employees,
   departments,
@@ -113,7 +79,7 @@ export function ContractForm({
   submitLabel,
   onSubmit,
   cancel,
-  /** Editing: an existing contract does not change hands. */
+  
   employeeLocked = false,
 }: {
   defaultValues: CreateContractBody
@@ -126,9 +92,9 @@ export function ContractForm({
   const departments = useDepartmentOptions()
   const positions = useJobPositionOptions()
   const schedules = useScheduleOptions()
-  // Spec grants salary-structure read from HR Payroll User up; an HR Manager
-  // has contract CRUD without it. Disable rather than render an empty select,
-  // which reads as a broken field rather than one that isn't theirs to set.
+  
+  
+  
   const canReadStructures = useCan('salary_structure', 'read')
   const salaryStructures = useSalaryStructureOptions(canReadStructures)
 
@@ -139,15 +105,8 @@ export function ContractForm({
       defaultValues={defaultValues}
       cancel={cancel}
       onSubmit={onSubmit}
-      /**
-       * Copy the employee's schedule onto the contract as soon as one is chosen.
-       *
-       * Only while CREATING. On an existing contract the schedule is a
-       * historical fact: the employee may have moved onto different hours since,
-       * and rewriting the contract to match today would restate what somebody
-       * was actually paid against — the same reason payroll resolves a contract
-       * by period rather than taking the latest.
-       */
+      
+
       derive={
         employeeLocked
           ? undefined
@@ -205,7 +164,7 @@ export function ContractForm({
           type: 'select',
           options: schedules.options,
           span: 2,
-          // Locked: see the note at the top of this file.
+          
           disabled: true,
           placeholder: 'Select an employee first',
           description: employeeLocked

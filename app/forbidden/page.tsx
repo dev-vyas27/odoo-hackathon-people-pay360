@@ -1,11 +1,5 @@
-/**
- * Where `proxy.ts` sends a signed-in user who wandered into a section their role
- * cannot read.
- *
- * Deliberately not a 404: pretending the page does not exist would be confusing
- * for a colleague who can see the same URL in someone else's browser. It states
- * the role, because the first question is always "what am I logged in as".
- */
+
+
 import Link from 'next/link'
 import { LuLock } from 'react-icons/lu'
 import { ROLE_LABELS } from '@/modules/shared'

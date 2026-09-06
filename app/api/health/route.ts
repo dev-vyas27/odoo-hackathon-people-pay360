@@ -1,9 +1,6 @@
-/**
- * Liveness + database reachability.
- *
- * First thing to hit when something looks broken: it separates "the app is
- * down" from "Postgres is unreachable", which are very different 3am problems.
- */
+
+
+
 import { ping } from '@/lib/db'
 import { handle } from '@/lib/http'
 

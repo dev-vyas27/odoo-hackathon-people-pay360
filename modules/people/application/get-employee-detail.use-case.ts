@@ -19,13 +19,6 @@ export interface GetEmployeeDetailInput {
   id: string
 }
 
-/**
- * The Employee hub screen is built from ONE call, not four client-side round
- * trips: the record plus the smart-button counts (Contracts, Attendance,
- * Time Off, Allocations). Those other aggregates are owned by other modules
- * we are not allowed to import here, so their counts are stubbed at 0 until
- * this module wires real query ports for them.
- */
 export class GetEmployeeDetailUseCase implements UseCase<GetEmployeeDetailInput, EmployeeDetail> {
   constructor(private readonly repo: EmployeeRepositoryPort) {}
 

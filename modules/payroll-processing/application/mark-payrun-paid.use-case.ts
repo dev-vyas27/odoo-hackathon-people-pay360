@@ -1,10 +1,6 @@
-/**
- * Mark a validated payrun as paid.
- *
- * The aggregate refuses this on anything but a validated run, so the "someone
- * clicked Mark Paid on a draft" bug cannot exist. Publishes `payrun.paid` for
- * Delivery and Analytics.
- */
+
+
+
 import {
   authorize,
   DomainError,

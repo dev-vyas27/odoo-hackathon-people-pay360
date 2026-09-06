@@ -1,18 +1,5 @@
-/**
- * Hand-written in-memory fakes for the three Time Off repositories, plus a
- * unit of work — no database involved, matching the project rule that use
- * cases are tested against fakes (see e.g. `modules/people/application/
- * employee-use-cases.test.ts`).
- *
- * `transaction()` snapshots all three tables before running the callback and
- * restores them if it throws. That is not decoration: the property this
- * module cares most about — approving (manually or automatically) and
- * consuming the allocation happen together or not at all — is exactly the
- * property a fake that "commits" everything unconditionally would hide.
- *
- * `findByIdForUpdate` behaves exactly like `findById`: a test runs on one
- * thread, so there is nothing to lock against.
- */
+
+
 import { paged, type PageQuery, type Paged, type Period } from '@/modules/shared'
 import { Allocation, type AllocationProps } from '../../domain/allocation'
 import { LeaveRequest, type LeaveRequestProps } from '../../domain/leave-request'
@@ -157,12 +144,8 @@ export class InMemoryUnitOfWork implements UnitOfWorkPort {
     return { types: this.types, allocations: this.allocations, requests: this.requests }
   }
 
-  /**
-   * Snapshot-and-restore stands in for a real ROLLBACK: if `work` throws,
-   * every table goes back to exactly what it held before the callback ran, so
-   * a test can assert "nothing was created" rather than only "an error came
-   * back".
-   */
+  
+
   async transaction<T>(work: (repos: TimeOffRepositories) => Promise<T>): Promise<T> {
     const snapshot = {
       types: new Map(this.types.rows),

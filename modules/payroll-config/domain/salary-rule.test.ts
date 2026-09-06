@@ -26,8 +26,8 @@ describe('createSalaryRule', () => {
   })
 
   it('refuses to let a rule claim a reserved engine code', () => {
-    // The engine supplies these; a rule shadowing one would make a formula mean
-    // something different depending on the structure it appears in.
+    
+    
     for (const reserved of ['WAGE', 'WORKED_RATIO', 'WORKED_DAYS']) {
       expect(() => createSalaryRule({ ...base, code: reserved })).toThrow(/reserved by the engine/)
     }

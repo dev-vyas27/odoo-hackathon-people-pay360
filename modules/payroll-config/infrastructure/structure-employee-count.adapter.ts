@@ -1,19 +1,5 @@
-/**
- * Postgres implementation of StructureEmployeeCountPort.
- *
- * Reads the `contracts` table directly — owned by modules/employment, not
- * this module — the same way employment's own contract-query.adapter.ts
- * reads `employees` (owned by modules/people) and payroll-processing's
- * payroll-stats.adapter.ts does the same. See the port file for why this is
- * the right cross-module pattern here instead of going through a port that
- * does not exist yet.
- *
- * "Currently active" = status = 'active' AND today's date falls inside the
- * contract's validity range (open-ended when `ends_on` is null). Grouped and
- * counted with COUNT(DISTINCT employee_id) so a structure never gets credited
- * twice for one employee, and batched across the whole page of structures in
- * one query rather than one query per structure.
- */
+
+
 import { query } from '@/lib/db'
 import type { StructureEmployeeCountPort } from '../application/ports/structure-employee-count.port'
 

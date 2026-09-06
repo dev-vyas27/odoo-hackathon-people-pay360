@@ -16,14 +16,6 @@ export interface ListEmployeesInput {
   query: PageQuery
 }
 
-/**
- * List / search / filter employees.
- *
- * Row-level access lives here, not in `proxy.ts`: an `employee` role can list
- * "employees" but the result must be scoped to nobody but themselves, since
- * they have no employeeId to compare a single record against the way
- * `authorizeOwned` does for a get-by-id.
- */
 export class ListEmployeesUseCase implements UseCase<ListEmployeesInput, Paged<Employee>> {
   constructor(private readonly repo: EmployeeRepositoryPort) {}
 

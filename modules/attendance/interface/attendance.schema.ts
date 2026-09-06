@@ -1,8 +1,6 @@
-/**
- * zod schemas for the attendance API. Reused verbatim by the route handlers
- * (interface/attendance.controller.ts) so client and server can never drift —
- * there is no separate "form schema" here because this module ships no UI.
- */
+
+
+
 import { z } from 'zod'
 import { dateField, uuid, optionalUuid, pageQuerySchema } from '@/modules/shared'
 import { WORK_MODES } from '../domain/work-mode'
@@ -20,7 +18,7 @@ export const checkInSchema = z.object({
   employeeId: uuid,
   checkIn: dateField.optional(),
   breakMinutes: z.number().nonnegative().optional(),
-  /** Asked at the moment of clocking in — see domain/work-mode.ts. */
+  
   workMode: z.enum(WORK_MODES).optional(),
 })
 export type CheckInBody = z.infer<typeof checkInSchema>

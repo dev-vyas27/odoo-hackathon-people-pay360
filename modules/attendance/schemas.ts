@@ -1,8 +1,6 @@
-/**
- * Client-safe surface of `attendance`.
- *
- * See modules/people/schemas.ts for why this file exists.
- */
+
+
+
 export {
   ATTENDANCE_STATUSES,
   checkInSchema,
@@ -15,12 +13,8 @@ export {
   type ListAttendanceQuery,
 } from './interface/attendance.schema'
 
-/**
- * Work mode is a pure value object — no database, no adapters — so it belongs
- * on the client barrel too. The check-in dialog needs the labels, and reaching
- * for `@/modules/attendance` to get them would pull the Postgres repository
- * (and therefore `pg`) into a browser bundle.
- */
+
+
 export {
   WORK_MODES,
   WORK_MODE_LABELS,
@@ -28,7 +22,7 @@ export {
   type WorkMode,
 } from './domain/work-mode'
 
-/** The clock widget's state. See application/get-today-attendance.use-case.ts. */
+
 export interface TodayAttendanceView {
   day: string
   now: string

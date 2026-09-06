@@ -1,10 +1,5 @@
-/**
- * CreateWorkingScheduleUseCase.
- *
- * `weeklyHours` is never accepted from the caller -- it is derived here from
- * `days` via `computeWeeklyHours` (spec A3), the same rule the domain layer
- * unit-tests directly.
- */
+
+
 import { authorize, Ok, type Actor, type Result, type UseCase } from '@/modules/shared'
 import { computeWeeklyHours, type ScheduleDayPattern } from '../domain/weekly-hours.service'
 import type { ScheduleType, WorkingSchedule } from '../domain/working-schedule'

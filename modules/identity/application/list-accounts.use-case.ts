@@ -1,13 +1,5 @@
-/**
- * The account administration list. Admin-only, and it returns `AccountView` so
- * a password hash cannot reach a response body even if a controller forgets to
- * project.
- *
- * Note this lists EMPLOYEES, since 0010 made them the same rows. Pass
- * `filters.hasLogin = 'true'` to see only the ones who can actually sign in;
- * unfiltered it is every person on file, which is usually what an administrator
- * wants when deciding who still needs an account.
- */
+
+
 import {
   Ok,
   authorize,

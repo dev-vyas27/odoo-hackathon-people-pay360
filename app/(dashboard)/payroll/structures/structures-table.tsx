@@ -1,16 +1,5 @@
 'use client'
 
-/**
- * The Salary Structure list.
- *
- * Previously fetched up to 100 structures once from a server component and
- * filtered them client-side; `FilterBar`'s `?search=`/`?active=` never reached
- * the server, and nothing beyond the hardcoded 100 could ever be found. This
- * matches the pattern every other list screen uses: `useResourceList` against
- * `/api/payroll/structures`, which already applies search/filter/sort in SQL
- * (see `postgres-salary-structure.repository.ts`, which extends
- * `BaseSqlRepository`) and returns real paging.
- */
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -63,7 +52,7 @@ export function StructuresTable() {
   const params = useFilterParams(['active'])
   const { page, isLoading } = useResourceList<SalaryStructureListItem>('payroll/structures', params)
 
-  // hr_payroll_user reads salary configuration but cannot add to it.
+  
   const canCreate = useCan('salary_structure', 'create')
 
   return (

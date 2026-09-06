@@ -1,11 +1,6 @@
-/**
- * Postgres implementation of AttendanceRepositoryPort.
- *
- * Written by hand rather than extending BaseSqlRepository: the port's shape is
- * its own (`save`, `findOpenForEmployee`, a typed filter) and the status column
- * needs the manual-flag translation on every read and write, which a generic
- * projection cannot express.
- */
+
+
+
 import { query, queryOne } from '@/lib/db'
 import {
   DomainError,
@@ -38,8 +33,8 @@ function toDomain(row: AttendanceRow): Attendance {
   return Attendance.reconstitute({
     id: row.id,
     employeeId: row.employee_id,
-    // checked_in_at is nullable in the schema (an absence has no check-in) but
-    // the domain requires one; worked_on is the honest fallback.
+    
+    
     checkIn: row.checked_in_at ?? row.worked_on,
     checkOut: row.checked_out_at,
     breakMinutes: row.break_minutes,
@@ -60,7 +55,7 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
     return { attendance: toDomain(row), status: toDomainStatus(row.status, row.is_manual) }
   }
 
-  /** The employee's outstanding check-in, if any — drives check-out. */
+  
   async findOpenForEmployee(employeeId: string): Promise<Attendance | null> {
     const row = await queryOne<AttendanceRow>(
       `SELECT ${SELECTION} FROM "${ATTENDANCES_TABLE}"
@@ -71,13 +66,9 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
     return row ? toDomain(row) : null
   }
 
-  /**
-   * The record for one employee on one IST day, open or closed.
-   *
-   * `findOpenForEmployee` cannot answer this: coming back from lunch means
-   * finding a CLOSED record and reopening it, and an open-only lookup returns
-   * nothing at exactly the moment the answer matters.
-   */
+  
+
+
   async findForEmployeeOnDay(employeeId: string, workedOn: Date): Promise<AttendanceRecord | null> {
     const row = await queryOne<AttendanceRow>(
       `SELECT ${SELECTION} FROM "${ATTENDANCES_TABLE}"
@@ -88,23 +79,9 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
     return { attendance: toDomain(row), status: toDomainStatus(row.status, row.is_manual) }
   }
 
-  /**
-   * Close shifts left open on a day that has already ended.
-   *
-   * Somebody who forgets to check out would otherwise carry one open record
-   * forever: every later check-in would be refused as ALREADY_CHECKED_IN, and
-   * their worked hours would never be computable. So an open shift from a past
-   * IST day is closed at 23:59:59 of the day it belongs to.
-   *
-   * Done lazily, on read and before check-in, rather than by a scheduler —
-   * there is no job runner in this deployment, and a sweep that only runs when
-   * somebody looks is still correct: the value written depends on the shift's
-   * own day, never on when the sweep happened to fire.
-   *
-   * `worked_hours` is recomputed here in SQL rather than round-tripping through
-   * the aggregate, because this can touch many employees at once and none of
-   * them are the caller.
-   */
+  
+
+
   async closeStaleOpenShifts(before: Date): Promise<number> {
     const result = await query<{ id: string }>(
       `UPDATE "${ATTENDANCES_TABLE}"
@@ -124,17 +101,9 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
     return result.length
   }
 
-  /**
-   * Insert or update in one statement.
-   *
-   * ON CONFLICT turns the UNIQUE (employee_id, worked_on) constraint from an
-   * error into the intended behaviour for a same-day re-save, while a genuine
-   * duplicate from a different record still surfaces as a domain conflict.
-   *
-   * `worked_hours` and `status` are denormalised at write time — they were
-   * already computed by the use case, and storing them keeps the stats
-   * aggregations from re-deriving exception logic per row.
-   */
+  
+
+
   async save(attendance: Attendance, status: AttendanceStatus): Promise<Attendance> {
     const stored = toStoredStatus(status)
     const workedOn = workedOnFor(attendance.checkIn)
@@ -215,7 +184,7 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
       conditions.push(`worked_on <= $${values.length}::date`)
     }
     if (filter.status) {
-      // 'manual' is a flag in the table, not a status value.
+      
       if (filter.status === 'manual') {
         conditions.push('is_manual = true')
       } else {
@@ -226,8 +195,8 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
 
-    // Sort column arrives from a query string, so it is chosen from a fixed set
-    // rather than interpolated — an identifier cannot be a bind parameter.
+    
+    
     const sortable = new Set(['worked_on', 'created_at', 'status'])
     const sort = q.sort && sortable.has(q.sort) ? q.sort : 'worked_on'
     const direction = q.order === 'asc' ? 'ASC' : 'DESC'
@@ -248,7 +217,7 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
     return paged(
       rows.map((row) => ({
         attendance: toDomain(row),
-        // is_manual wins, matching deriveStatus's precedence — see attendance.table.ts.
+        
         status: toDomainStatus(row.status, row.is_manual),
       })),
       total?.count ?? 0,

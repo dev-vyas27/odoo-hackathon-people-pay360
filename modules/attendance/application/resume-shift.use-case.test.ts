@@ -6,16 +6,8 @@ import { InMemoryAttendanceRepository } from './test-support/in-memory-attendanc
 import { FakeScheduleLookup } from './test-support/fake-schedule-lookup'
 import type { Actor } from '@/modules/shared'
 
-/**
- * The break rule, and the day boundary it lives inside.
- *
- * These two behaviours decide what an employee is paid, so they are pinned here
- * rather than left to the screen to demonstrate:
- *
- *   - checking out and back in makes the time away a BREAK, on the same record
- *   - a shift left open past midnight is closed against ITS OWN day, not
- *     whenever somebody next happens to look
- */
+
+
 
 const EMPLOYEE = '656d7000-0000-4000-8000-000000000001'
 
@@ -26,13 +18,8 @@ const employee: Actor = {
   name: 'Priya Sharma',
 }
 
-/**
- * An IST wall-clock time on a fixed day, as the UTC instant it really is.
- *
- * `Date.UTC` takes a ZERO-based month, so the `- 1` is load-bearing: without it
- * every date in this file silently shifted a month, which only showed up in the
- * one assertion that compared an absolute day rather than a duration.
- */
+
+
 const ist = (day: string, hhmm: string) => {
   const [year, month, date] = day.split('-').map(Number)
   const [hours, minutes] = hhmm.split(':').map(Number)
@@ -67,7 +54,7 @@ describe('a day with a break in the middle of it', () => {
     })
     expect(closed.ok).toBe(true)
 
-    // Back at 13:45 — three quarters of an hour away.
+    
     const resumed = await checkIn.execute({
       actor: employee,
       employeeId: EMPLOYEE,
@@ -79,9 +66,9 @@ describe('a day with a break in the middle of it', () => {
 
     expect(resumed.value.attendance.breakMinutes).toBe(45)
     expect(resumed.value.attendance.isOpen).toBe(true)
-    // The SAME record, not a second one — payroll reads one row per day.
+    
     expect(resumed.value.attendance.id).toBe(opened.value.attendance.id)
-    // The location can change over a day; the latest answer is the stored one.
+    
     expect(resumed.value.attendance.workMode).toBe('home')
   })
 
@@ -111,7 +98,7 @@ describe('a day with a break in the middle of it', () => {
 
     expect(final.ok).toBe(true)
     if (!final.ok) return
-    // 09:00 → 18:00 is nine hours, less the hour spent away.
+    
     expect(final.value.attendance.workedHoursOrNull()).toBe(8)
   })
 
@@ -138,7 +125,7 @@ describe('a shift nobody closed', () => {
     const repo = new InMemoryAttendanceRepository()
     const checkIn = new CheckInUseCase(repo, new FakeScheduleLookup())
 
-    // Monday: clocked in, went home without checking out.
+    
     const forgotten = await checkIn.execute({
       actor: employee,
       employeeId: EMPLOYEE,
@@ -146,11 +133,9 @@ describe('a shift nobody closed', () => {
     })
     if (!forgotten.ok) throw new Error('setup failed')
 
-    /**
-     * Tuesday. Without the sweep this is refused as ALREADY_CHECKED_IN against
-     * Monday's shift, and stays refused forever — one forgotten check-out would
-     * lock the employee out of the feature until HR intervened.
-     */
+    
+
+
     const tuesday = await checkIn.execute({
       actor: employee,
       employeeId: EMPLOYEE,
@@ -162,7 +147,7 @@ describe('a shift nobody closed', () => {
 
     const monday = await repo.findById(forgotten.value.attendance.id)
     expect(monday?.attendance.isOpen).toBe(false)
-    // Closed at the end of MONDAY — not at the moment the sweep happened to run.
+    
     expect(monday?.attendance.checkOut?.toISOString().slice(0, 10)).toBe('2026-03-09')
   })
 })

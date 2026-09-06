@@ -1,15 +1,6 @@
-/**
- * This module's composition root.
- *
- * The only file that names concrete adapters. Use cases receive ports through
- * their constructors, so a test can hand them a Map-backed fake and nothing else
- * in the module has an opinion about Postgres.
- *
- * Repositories are cached on the shared container: Next's dev server
- * re-evaluates modules on every edit, and rebuilding them each time would leak
- * an object graph per reload. The Postgres pool itself is cached separately in
- * lib/db.ts for the same reason.
- */
+
+
+
 import { resolve } from '@/modules/shared/container'
 import type { SalaryRuleRepositoryPort } from './application/ports/salary-rule-repository.port'
 import type { SalaryStructureRepositoryPort } from './application/ports/salary-structure-repository.port'
@@ -31,7 +22,7 @@ export function salaryStructureRepository(): SalaryStructureRepositoryPort {
   )
 }
 
-/** Published to payroll-processing: structures with their rules resolved. */
+
 export function createSalaryStructureQuery(): SalaryStructureQueryPort {
   return resolve(
     'payroll-config.salary-structure-query',
@@ -39,7 +30,7 @@ export function createSalaryStructureQuery(): SalaryStructureQueryPort {
   )
 }
 
-/** How many employees each structure currently has attached, for the Structures screens. */
+
 export function structureEmployeeCount(): StructureEmployeeCountPort {
   return resolve(
     'payroll-config.structure-employee-count',

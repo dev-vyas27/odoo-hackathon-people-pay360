@@ -1,17 +1,7 @@
 'use client'
 
-/**
- * A sparkline-style area chart for the monthly trend, drawn as one SVG path.
- *
- * `preserveAspectRatio="none"` with a viewBox lets it stretch to any container
- * width without recalculating anything on resize — no ResizeObserver, no
- * measurement pass, no layout thrash. The cost is that stroke width scales too,
- * which `vectorEffect="non-scaling-stroke"` cancels out.
- *
- * The baseline is always zero rather than the minimum value. Starting the axis
- * at the minimum is the classic way to make a 2% change look like a cliff, and
- * this is a chart about money.
- */
+
+
 import type { SeriesPoint } from '@/modules/shared'
 import { cn } from '@/lib/utils'
 
@@ -49,7 +39,7 @@ export function LineChart({
   }))
 
   const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-  // Close the path down to the baseline to fill the area underneath.
+  
   const area = `${line} L ${WIDTH} ${HEIGHT} L 0 ${HEIGHT} Z`
 
   const latest = data[data.length - 1]
@@ -87,8 +77,8 @@ export function LineChart({
         ))}
       </svg>
 
-      {/* Month labels under the line. Every other one on narrow screens, so
-          twelve months do not collapse into an unreadable smear. */}
+      {
+}
       <ol className="mt-2 flex justify-between text-[0.65rem] text-muted-foreground">
         {data.map((point, index) => (
           <li

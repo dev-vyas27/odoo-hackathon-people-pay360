@@ -1,14 +1,5 @@
 'use client'
 
-/**
- * The Attendance form (spec B3): "supports manual corrections restricted to
- * authorized users."
- *
- * `canCorrect` arrives as a prop from the server page, which is where the actor
- * actually lives — the same shape the dashboard layout uses for TopNav. Hiding
- * the form is a courtesy, never the control: CorrectAttendanceUseCase checks
- * the permission again, so a hand-crafted PATCH is refused regardless.
- */
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { LuTriangleAlert } from 'react-icons/lu'
@@ -97,13 +88,8 @@ export function AttendanceDetail({ id, canCorrect }: { id: string; canCorrect: b
             await update.mutateAsync({ id, values })
           }}
           fields={[
-            /**
-             * `datetime-local`, not `date`. These are timestamps — worked hours
-             * are the difference between them — and a date input cannot carry a
-             * time, so saving a correction through one reset the clock to
-             * midnight and rewrote the hours a payslip prorates against. Shown
-             * in UTC, matching every other time on these screens.
-             */
+            
+
             { name: 'checkIn', label: 'Check in (UTC)', type: 'datetime-local' },
             { name: 'checkOut', label: 'Check out (UTC)', type: 'datetime-local' },
             {

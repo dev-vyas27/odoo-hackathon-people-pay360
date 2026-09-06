@@ -1,12 +1,5 @@
 'use client'
 
-/**
- * Smart button — the Odoo-style counter that opens a filtered related list.
- *
- * The spec asks for these on the Employee form ("Contracts 3", "Attendance 42").
- * They are the main navigation device of the app, so they live in the shared
- * kit rather than being re-implemented per module.
- */
 import Link from 'next/link'
 import type { IconType } from 'react-icons'
 import { cn } from '@/lib/utils'

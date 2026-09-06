@@ -1,12 +1,6 @@
-/**
- * computation type -> strategy.
- *
- * The engine looks a rule's strategy up here and calls it. Supporting a new kind
- * of computation is therefore one new class plus one line in this map, with no
- * edit to the engine, the aggregates or the persistence layer. Strategy +
- * Registry is what makes the rule engine open for extension and closed for
- * modification.
- */
+
+
+
 import { DomainError } from '@/modules/shared'
 import type {
   ComputationConfig,
@@ -36,7 +30,7 @@ export function getStrategy(type: ComputationType): ComputationStrategy {
   return strategy
 }
 
-/** Convenience for the engine: look the strategy up and run it. */
+
 export function computeWith(config: ComputationConfig, ctx: RuleComputationContext) {
   return getStrategy(config.type).compute(config, ctx)
 }

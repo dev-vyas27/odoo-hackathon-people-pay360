@@ -50,8 +50,8 @@ test.describe('Security — authentication', () => {
       password: 'definitely-not-the-password',
     })
     expect(r.status).toBe(401)
-    // The message must be ambiguous between the two fields: naming only the
-    // password would confirm to an attacker that the account exists.
+    
+    
     const message = (r.error?.message ?? '').toLowerCase()
     expect(message).toContain('email')
     expect(message).toContain('password')
@@ -112,7 +112,7 @@ test.describe('Security — injection and input abuse', () => {
     const r = await api.get('/api/employees?sort=name;DROP%20TABLE%20users--')
     expect(r.status, 'a hostile sort column must fall back, not 500').toBe(200)
 
-    // Prove the table is still there.
+    
     const check = await api.get('/api/employees?limit=1')
     expect(check.status).toBe(200)
   })
@@ -127,13 +127,9 @@ test.describe('Security — injection and input abuse', () => {
     expect(r.status).toBe(200)
   })
 
-  /**
-   * The app REJECTS these rather than clamping them. That is a defensible
-   * choice, so the assertion is the invariant that actually matters: never a
-   * 500, and never silently honoured. It is worth knowing the two paging
-   * paths disagree — `pageQuerySchema` rejects while `normalizePageQuery`
-   * clamps — see the QA report.
-   */
+  
+
+
   test('an oversized limit is refused or clamped, never honoured', async ({ api }) => {
     const r = await api.get('/api/employees?limit=100000')
     expect(r.status).toBeLessThan(500)
@@ -183,13 +179,9 @@ test.describe('Security — injection and input abuse', () => {
 
 test.describe('Security — authorization boundaries', () => {
   test('the permission matrix is enforced for a plain employee role', async ({ api, playwright, baseURL }) => {
-    /**
-     * Create an employee, then give THAT employee a working login.
-     *
-     * Since 0010 there is no separate user record to bind, and an account is
-     * born WITHOUT a password — `grantLogin` walks the real invite ->
-     * set-password path rather than pretending a shortcut exists.
-     */
+    
+
+
     const employee = await makeEmployee(api)
     const { email, password } = await grantLogin(api, employee)
 
@@ -197,7 +189,7 @@ test.describe('Security — authorization boundaries', () => {
     const login = await ctx.post('/api/auth/login', { data: { email, password } })
     expect(login.status(), 'the new employee account must be able to sign in').toBe(200)
 
-    // An employee must NOT be able to create employees or read payroll config.
+    
     const create = await ctx.post('/api/employees', {
       data: { name: uniq('Nope'), email: uniqEmail(), employeeType: 'full_time' },
     })
@@ -221,7 +213,7 @@ test.describe('Security — authorization boundaries', () => {
     const theirs = await makeEmployee(api)
     const { email, password } = await grantLogin(api, mine)
 
-    // Someone else's attendance record, created by the admin.
+    
     const theirAttendance = await api.post('/api/attendance', {
       employeeId: theirs.id,
       checkIn: '2025-03-10T09:00:00.000Z',
@@ -243,16 +235,9 @@ test.describe('Security — authorization boundaries', () => {
 })
 
 test.describe('Security — the UI offers only what the role may do', () => {
-  /**
-   * The API already refuses these, and every use case re-checks — so this is
-   * about not OFFERING an action that will 403. An employee shown
-   * "+ New employee" clicks it, gets a permission error and reads the app as
-   * broken rather than as correctly restricted.
-   *
-   * The buttons are gated with `can()` from the same permission table the
-   * server authorises against, which is why the screen and the API cannot
-   * drift apart.
-   */
+  
+
+
   test('a plain employee sees no create or destroy actions', async ({ api, page }) => {
     const employee = await makeEmployee(api)
     const { email, password } = await grantLogin(api, employee)
@@ -263,7 +248,7 @@ test.describe('Security — the UI offers only what the role may do', () => {
     await page.getByRole('button', { name: 'Sign in' }).click()
     await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 30_000 })
 
-    // The reported bug: "+ New employee" on the employee list.
+    
     await page.goto('/employees')
     await page.waitForLoadState('networkidle')
     await expect(
@@ -272,7 +257,7 @@ test.describe('Security — the UI offers only what the role may do', () => {
     ).toHaveCount(0)
     await expect(page.getByRole('link', { name: /Add the first one/i })).toHaveCount(0)
 
-    // Their own record: readable, but not archivable.
+    
     await page.goto(`/employees/${employee.id}`)
     await page.waitForLoadState('networkidle')
     await expect(
@@ -280,7 +265,7 @@ test.describe('Security — the UI offers only what the role may do', () => {
       'an employee may not archive anybody, including themselves',
     ).toHaveCount(0)
 
-    // Leave policy and allocations are HR configuration.
+    
     await page.goto('/time-off/types')
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('link', { name: /New type/i })).toHaveCount(0)
@@ -292,10 +277,9 @@ test.describe('Security — the UI offers only what the role may do', () => {
       'an employee sees their entitlement but cannot grant one',
     ).toHaveCount(0)
 
-    /**
-     * ...but the things they CAN do must still be offered. A permission sweep
-     * that hides everything is its own bug.
-     */
+    
+
+
     await page.goto('/time-off/requests')
     await page.waitForLoadState('networkidle')
     await expect(
@@ -305,8 +289,8 @@ test.describe('Security — the UI offers only what the role may do', () => {
   })
 
   test('an HR manager still sees the actions they are entitled to', async ({ page }) => {
-    // The QA account is an admin — the control that proves the gate is
-    // permission-driven rather than "hidden for everyone".
+    
+    
     await page.goto('/login')
     await page.getByLabel('Email').fill(QA_EMAIL)
     await page.getByLabel('Password').fill(QA_PASSWORD)

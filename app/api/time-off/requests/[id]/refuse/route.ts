@@ -1,8 +1,6 @@
-/**
- * POST /api/time-off/requests/[id]/refuse
- *
- * Refusing an already-approved request restores the balance it consumed.
- */
+
+
+
 import { refuseLeave } from '@/modules/timeoff'
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'

@@ -1,10 +1,6 @@
-/**
- * Time Off's controller: parse, delegate, return a Result.
- *
- * It never touches cookies or Response — that is the route handler's job. Which
- * is what keeps every route file down to the promised five lines, and keeps
- * these functions callable from a test or a script.
- */
+
+
+
 import {
   DomainError,
   Err,
@@ -54,23 +50,21 @@ import {
   timeOffTypeSchema,
 } from './timeoff.schema'
 
-/**
- * Wiring, cached per process by `resolve`. Swapping in a fake unit of work for
- * a test is a matter of seeding the container, not of editing this file.
- */
+
+
 const deps = () => ({
   uow: resolve('timeoff.uow', () => new PostgresUnitOfWork()),
-  // Resolved per call, not cached: before Dev B registers the real adapter this
-  // returns the null object, and it must start returning real names the moment
-  // they do — without a restart.
+  
+  
+  
   employees: employeeLookup(),
-  // Same reasoning as `employees`: resolved per call so leave duration starts
-  // respecting real working patterns the moment `employment` registers.
+  
+  
   schedules: scheduleLookup(),
   events: container().eventBus,
 })
 
-/** Turn a zod failure into the same DomainError shape every other failure uses. */
+
 function invalid(issues: { path: PropertyKey[]; message: string }[]): DomainError {
   const fieldErrors: Record<string, string> = {}
   for (const issue of issues) {
@@ -80,7 +74,7 @@ function invalid(issues: { path: PropertyKey[]; message: string }[]): DomainErro
   return DomainError.validation('VALIDATION_FAILED', 'Check the highlighted fields', fieldErrors)
 }
 
-// ── leave requests ───────────────────────────────────────────────────────────
+
 
 export function listLeaveRequests(
   actor: Actor,
@@ -138,7 +132,7 @@ export function deleteLeave(actor: Actor, requestId: string): Promise<Result<tru
   return new DeleteLeaveUseCase(deps().uow).execute({ actor, requestId })
 }
 
-// ── allocations ──────────────────────────────────────────────────────────────
+
 
 export function listAllocations(
   actor: Actor,
@@ -179,15 +173,15 @@ export async function decideAllocation(
   })
 }
 
-// ── balances ─────────────────────────────────────────────────────────────────
+
 
 export async function getBalance(
   actor: Actor,
   params: Record<string, string>,
 ): Promise<Result<LeaveBalanceView[]>> {
   const parsed = balanceQuerySchema.safeParse({
-    // Defaults to the caller's own employee record, which is what an employee
-    // opening their balance page wants and all they are allowed to see.
+    
+    
     employeeId: params.employeeId || actor.employeeId || '',
     on: params.on || undefined,
   })
@@ -200,20 +194,15 @@ export async function getBalance(
   })
 }
 
-// ── employee picker ──────────────────────────────────────────────────────────
+
 
 export interface EmployeeOption {
   id: string
   name: string
 }
 
-/**
- * The employee dropdown on the request and allocation forms.
- *
- * Sourced through `EmployeeLookupPort`, so Time Off still knows nothing about
- * Dev B's tables. A self-scoped role gets exactly one option — their own record
- * — which is both the only thing they may pick and the only thing they need.
- */
+
+
 export async function listEmployeeOptions(actor: Actor): Promise<Result<EmployeeOption[]>> {
   const allowed = authorize(actor, 'leave_request', 'read')
   if (!allowed.ok) return allowed
@@ -230,7 +219,7 @@ export async function listEmployeeOptions(actor: Actor): Promise<Result<Employee
   return Ok(all.map((employee) => ({ id: employee.id, name: employee.name })))
 }
 
-// ── time off types ───────────────────────────────────────────────────────────
+
 
 export function listTimeOffTypes(
   actor: Actor,
@@ -254,8 +243,8 @@ export async function updateTimeOffType(
   id: string,
   body: unknown,
 ): Promise<Result<TimeOffTypeView>> {
-  // `.partial()` on the same schema: a PATCH validates every field it carries
-  // by exactly the rules a POST would apply, and ignores the ones it does not.
+  
+  
   const parsed = timeOffTypeSchema.partial().safeParse(body)
   if (!parsed.success) return Err(invalid(parsed.error.issues))
 

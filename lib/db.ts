@@ -1,51 +1,18 @@
-/**
- * PostgreSQL connection pool and the three query helpers the whole app uses.
- *
- * No ORM. Repositories write SQL, which means the query a reviewer reads in the
- * repository is the query the database actually runs — no lazy-loading
- * surprises, no generated N+1, and `EXPLAIN` works on text you can copy out of
- * the file.
- *
- * The pool is cached on globalThis because Next re-evaluates modules on every
- * edit in dev; without the cache you leak a pool per hot reload and Postgres
- * starts refusing connections about twenty minutes into a working session.
- */
+
+
+
 import { Pool, types, type PoolClient, type QueryResultRow } from 'pg'
 
 const DATABASE_URL = process.env.DATABASE_URL
 
-/**
- * `numeric`/`decimal` arrive as strings by default because they can exceed
- * JavaScript's safe integer range. Every numeric column in this schema is a
- * money or duration value well inside that range, and getting `"1200.00"`
- * where the domain expects `1200` is a bug that surfaces as `NaN` three layers
- * away. Parsed once, here, rather than at forty call sites.
- */
+
+
 types.setTypeParser(types.builtins.NUMERIC, (value) => Number(value))
-/** int8/bigint — only ever a COUNT(*) in this application. */
+
 types.setTypeParser(types.builtins.INT8, (value) => Number(value))
 
-/**
- * `date` columns are UTC midnight, not local midnight.
- *
- * This is the single most consequential line in the file. By default node-pg
- * turns a `date` into `new Date('2029-02-01')`-at-LOCAL-midnight, so on a
- * machine at UTC+5:30 a contract starting 1 February came back as
- * `2029-01-31T18:30:00.000Z`. Every UTC reader downstream then saw the wrong
- * DAY:
- *
- *   - `Period` and `startOfDay()` use UTC getters, so contract resolution
- *     treated that contract as already in force on 31 January.
- *   - `worked_on` shifted a day, which moves attendance between payroll periods.
- *   - The API serialised the shifted instant, so date inputs rendered the day
- *     before the stored one.
- *
- * A `date` has no time and no zone — it is a calendar day. Anchoring it to UTC
- * midnight is what makes it round-trip through `toISOString().slice(0, 10)`
- * unchanged, which is how every screen and every query in this codebase reads
- * one. Deployments west of UTC were shifted the other way; only a server sitting
- * exactly on UTC ever behaved correctly, which is why nothing caught it.
- */
+
+
 types.setTypeParser(types.builtins.DATE, (value) => new Date(`${value}T00:00:00.000Z`))
 
 declare global {
@@ -60,20 +27,18 @@ export function pool(): Pool {
 
     global.__pgPool = new Pool({
       connectionString: DATABASE_URL,
-      // Hosted Postgres (Neon, Supabase, Render) terminates plaintext
-      // connections; a local docker instance has no certificate to verify.
+      
+      
       ssl: needsSsl(DATABASE_URL) ? { rejectUnauthorized: false } : undefined,
       max: 10,
       idleTimeoutMillis: 30_000,
-      // Fail fast in dev rather than hanging a request for the default 30s.
+      
       connectionTimeoutMillis: 10_000,
     })
 
-    /**
-     * An idle client erroring (the database restarted, the network blipped) is
-     * emitted on the pool. Without a listener, Node treats it as an unhandled
-     * 'error' event and kills the process.
-     */
+    
+
+
     global.__pgPool.on('error', (reason) => {
       console.error('[db] idle client error:', reason.message)
     })
@@ -88,15 +53,8 @@ function needsSsl(url: string): boolean {
   return !/localhost|127\.0\.0\.1/.test(url)
 }
 
-/**
- * Run a parameterised query.
- *
- * Values ALWAYS travel as `$1, $2, ...` placeholders — never interpolated into
- * the SQL string. That is not a style preference; it is the entire defence
- * against SQL injection, and it holds even for values that "obviously" came
- * from our own code, because today's internal value is tomorrow's query
- * parameter.
- */
+
+
 export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params: readonly unknown[] = [],
@@ -105,7 +63,7 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   return result.rows
 }
 
-/** The single-row case. Returns null rather than throwing on an empty result. */
+
 export async function queryOne<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params: readonly unknown[] = [],
@@ -114,14 +72,8 @@ export async function queryOne<T extends QueryResultRow = QueryResultRow>(
   return rows[0] ?? null
 }
 
-/**
- * Run several statements atomically.
- *
- * This is why approving a leave request is now genuinely safe: the allocation deduction
- * and the status change either both land or neither does. Pass the client
- * through to every statement in the unit of work — a query issued against the
- * pool instead of the client is NOT in the transaction.
- */
+
+
 export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await pool().connect()
   try {
@@ -131,8 +83,8 @@ export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Pr
     return result
   } catch (reason) {
     await client.query('ROLLBACK').catch(() => {
-      // The rollback itself can fail if the connection died. The original
-      // error is the interesting one, so it is what gets rethrown.
+      
+      
     })
     throw reason
   } finally {
@@ -140,13 +92,13 @@ export async function transaction<T>(fn: (client: PoolClient) => Promise<T>): Pr
   }
 }
 
-/** Used by /api/health to separate "app is down" from "database is unreachable". */
+
 export async function ping(): Promise<boolean> {
   const row = await queryOne<{ ok: number }>('SELECT 1 AS ok')
   return row?.ok === 1
 }
 
-/** Closes the pool. For scripts only — a long-lived server should never call it. */
+
 export async function closePool(): Promise<void> {
   if (global.__pgPool) {
     await global.__pgPool.end()

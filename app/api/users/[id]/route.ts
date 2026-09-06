@@ -1,10 +1,6 @@
-/**
- * GET   /api/users/[id] — one account
- * PATCH /api/users/[id] — rename, change role, activate/deactivate, reset password
- *
- * Admin only; the check is inside the use case, along with the rules that stop
- * an administrator locking themselves out.
- */
+
+
+
 import { getAccount, updateAccount } from '@/modules/identity'
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'

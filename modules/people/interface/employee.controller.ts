@@ -1,11 +1,6 @@
-/**
- * Thin wiring layer between HTTP route handlers and the use cases.
- *
- * Route handlers stay ~5 lines (parse -> call controller -> respond); this
- * file is where "parse" ends and a use case begins: it connects to Mongo,
- * resolves the repository singleton from the composition root, and executes
- * the use case with the actor + validated input.
- */
+
+
+
 import { container, resolve } from '@/modules/shared/container'
 import { Ok, type Actor, type PageQuery, type Result } from '@/modules/shared'
 import type { Employee } from '../domain/employee'
@@ -49,21 +44,18 @@ export async function listEmployees(actor: Actor, rawQuery: Record<string, strin
       ...(departmentId ? { departmentId } : {}),
       ...(employeeType ? { employeeType } : {}),
       ...(isActive !== undefined ? { isActive } : {}),
-      // Not a column — the repository reads it and decides whether to hide
-      // administrator accounts. `buildWhere` ignores filter keys that are not
-      // in the column allowlist, so it cannot leak into a WHERE clause.
+      
+      
+      
       ...(includeAdmins !== undefined ? { includeAdmins } : {}),
     },
   }
   const result = await new ListEmployeesUseCase(repo).execute({ actor, query: pageQuery })
   if (!result.ok) return result
 
-  /**
-   * Mapped here rather than returned raw, for the reason spelled out over
-   * `getEmployeeDetail`: a use case's return shape is not a wire format. The
-   * list used to hand the domain entity straight to the client, which happened
-   * to line up — until the screen needed a field the entity does not carry.
-   */
+  
+
+
   const placement = await resolvePlacement(result.value.items)
   return Ok({
     ...result.value,
@@ -88,19 +80,8 @@ export async function archiveEmployee(actor: Actor, id: string): Promise<Result<
   return new ArchiveEmployeeUseCase(repo, container().eventBus).execute({ actor, id })
 }
 
-/**
- * The detail screen's payload, flattened onto `EmployeeDetailView`.
- *
- * The use case returns `{ employee, counts }` because that is a convenient
- * shape to build. The screen is typed against a FLAT record with a `counts`
- * field, and nothing bridged the two — so `employee.name` was `undefined` on
- * the client and every input rendered empty while every select fell back to its
- * placeholder. `counts` lined up by coincidence, which is why the smart buttons
- * looked fine and made the bug read as a form problem.
- *
- * Same lesson as the attendance list: a use case's return shape is not a wire
- * format. The mapping belongs here, at the interface boundary.
- */
+
+
 export async function getEmployeeDetail(
   actor: Actor,
   id: string,

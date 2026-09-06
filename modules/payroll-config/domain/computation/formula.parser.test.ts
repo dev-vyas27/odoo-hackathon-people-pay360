@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { evaluateFormula, parseFormula, referencedCodes } from './formula.parser'
 
-/** Evaluate against a fixed set of rule values, the way the engine would. */
+
 function evaluate(expression: string, values: Record<string, number> = {}): number {
   return evaluateFormula(parseFormula(expression), (code) => {
     const value = values[code]
@@ -51,7 +51,7 @@ describe('parseFormula / evaluateFormula', () => {
 
 describe('formula safety', () => {
   it('rejects characters outside the whitelist', () => {
-    // The shapes an injection attempt takes, all refused at the tokenizer.
+    
     expect(() => parseFormula('process.exit(1)')).toThrow(/not allowed in a formula/)
     expect(() => parseFormula('BASIC; DROP')).toThrow(/not allowed in a formula/)
     expect(() => parseFormula('`${x}`')).toThrow(/not allowed in a formula/)
@@ -83,7 +83,7 @@ describe('formula safety', () => {
   })
 
   it('does not expose any host global to the expression', () => {
-    // An identifier is only ever a rule code; there is no global scope to reach.
+    
     expect(() => evaluate('globalThis', {})).toThrow(/unexpected code GLOBALTHIS/)
   })
 })

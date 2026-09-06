@@ -1,15 +1,6 @@
-/**
- * Postgres implementation of ScheduleRepositoryPort.
- *
- * A working schedule is a parent row plus its day pattern in a child table.
- * Mongo stored the days as a nested array; relationally that is
- * `working_schedule_days` with a cascade, which means a write is several
- * statements and MUST be a transaction — a schedule that half-saved its days
- * would compute the wrong weekly hours, and payroll prorates against that.
- *
- * `weekly_hours` is always derived by the pure computeWeeklyHours service and
- * never accepted from a caller (spec A3).
- */
+
+
+
 import { pool, query } from '@/lib/db'
 import { normalizePageQuery, paged, type PageQuery, type Paged } from '@/modules/shared'
 import { BaseSqlRepository } from '@/modules/shared/server'
@@ -35,7 +26,7 @@ export class PostgresScheduleRepository
   protected readonly searchable = ['name']
   protected readonly defaultSort = 'name'
 
-  /** Days are loaded separately; this yields the parent with an empty pattern. */
+  
   protected toDomain(row: ScheduleRow): WorkingSchedule {
     return {
       id: row.id,
@@ -67,12 +58,9 @@ export class PostgresScheduleRepository
     return { ...parent, days: PostgresScheduleRepository.toDays(days) }
   }
 
-  /**
-   * List with day patterns attached, in TWO queries rather than one per row.
-   * The list view shows weekly hours, and a schedules list is small, so
-   * fetching every day row for the page and grouping in memory is cheaper than
-   * N round trips.
-   */
+  
+
+
   async findMany(pageQuery: PageQuery): Promise<Paged<WorkingSchedule>> {
     const page = await super.findMany(normalizePageQuery(pageQuery))
     if (page.items.length === 0) return page
@@ -127,7 +115,7 @@ export class PostgresScheduleRepository
     try {
       await client.query('BEGIN')
 
-      // Days are replaced wholesale when supplied; left alone when not.
+      
       const days = data.days as ScheduleDayPattern[] | undefined
       const weeklyHours = days ? computeWeeklyHours(days) : undefined
 
@@ -164,7 +152,7 @@ export class PostgresScheduleRepository
     }
   }
 
-  /** Delete-then-insert: the day pattern is a set, not a list of editable rows. */
+  
   private async replaceDays(
     client: { query: (sql: string, params?: unknown[]) => Promise<unknown> },
     scheduleId: string,

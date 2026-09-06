@@ -1,12 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { secureCookieEnabled } from './auth'
 
-/**
- * The `Secure` flag decides whether a session cookie may travel over plain
- * HTTP, so the rule deciding it deserves a test of its own — particularly the
- * default, which is what protects a deployment whose operator never set the
- * variable.
- */
+
+
 const originalSecure = process.env.COOKIE_SECURE
 const originalNodeEnv = process.env.NODE_ENV
 

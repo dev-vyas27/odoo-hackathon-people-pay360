@@ -1,6 +1,6 @@
-/**
- * HTTP for salary structures.
- */
+
+
+
 import { z } from 'zod'
 import { pageQuerySchema, type PageQuery } from '@/modules/shared'
 import { errorResponse, parseQuery, respond } from '@/lib/http'
@@ -31,10 +31,10 @@ export async function listSalaryStructures(request: Request): Promise<Response> 
   const { active, ...page } = query.value
   const pageQuery: PageQuery = {
     ...page,
-    // The column is `is_active` (see SALARY_STRUCTURE_COLUMNS); a filter key of
-    // `active` does not survive `toColumnName` and BaseSqlRepository.buildWhere
-    // silently drops it as unrecognised, so `?active=false` was accepted end to
-    // end and never actually filtered anything.
+    
+    
+    
+    
     filters: active !== undefined ? { isActive: active === 'true' } : {},
   }
 
