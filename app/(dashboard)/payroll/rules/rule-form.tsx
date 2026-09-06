@@ -1,14 +1,5 @@
 'use client'
 
-/**
- * Create / edit a salary rule.
- *
- * Uses `ResourceForm` for the flat fields and passes the computation parameters
- * as children: those depend on the chosen computation type, and a config-driven
- * field list cannot express "show `percent` only when this is a percentage".
- * The children still live inside the same react-hook-form context, so they are
- * validated by the same zod schema the API uses — no second source of truth.
- */
 import { useRouter } from 'next/navigation'
 import { useFormContext, useWatch } from 'react-hook-form'
 import toast from 'react-hot-toast'
@@ -85,11 +76,11 @@ export function RuleForm({
   readOnly = false,
 }: {
   rule: SalaryRuleFormValues
-  /** Present when editing; absent when creating. */
+  
   ruleId?: string
-  /** Codes of other rules, offered as the base of a percentage. */
+  
   availableCodes: string[]
-  /** A role that may read salary configuration but not change it. */
+  
   readOnly?: boolean
 }) {
   const router = useRouter()
@@ -106,8 +97,8 @@ export function RuleForm({
       router.push('/payroll/rules')
       router.refresh()
     } catch (reason) {
-      // The API's message is the useful one — it knows about duplicate codes and
-      // broken formulas, which the client cannot check on its own.
+      
+      
       toast.error(reason instanceof ApiError ? reason.message : 'Could not save this rule')
     }
   }
@@ -131,7 +122,6 @@ export function RuleForm({
   )
 }
 
-/** The parameters of whichever computation type is currently selected. */
 function ComputationFields({ availableCodes }: { availableCodes: string[] }) {
   const form = useFormContext<SalaryRuleFormValues>()
   const type = useWatch({ control: form.control, name: 'computationType' })

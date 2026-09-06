@@ -1,16 +1,7 @@
 'use client'
 
-/**
- * The three filters spec A7 asks for: Period, Department, Employee Type.
- *
- * They write to the URL rather than to component state, for the same reasons
- * `FilterBar` does: the back button works, a filtered dashboard is a shareable
- * link, and a refresh does not silently reset what somebody is looking at.
- *
- * The period options are generated — twelve months back from today — rather
- * than hardcoded, so this does not quietly stop offering the current month at
- * the turn of the year.
- */
+
+
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { LuX } from 'react-icons/lu'
 import { EMPLOYEE_TYPES } from '@/modules/shared'
@@ -23,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-/** Radix forbids an empty SelectItem value, so "all" needs a sentinel. */
+
 const ALL = '__all__'
 
 const MONTH_FORMAT = new Intl.DateTimeFormat('en-GB', {
@@ -85,7 +76,7 @@ export function DashboardFilters({
               {month.label}
             </SelectItem>
           ))}
-          {/* A whole year, for the annual view the trend chart implies. */}
+          {}
           {years.map((year) => (
             <SelectItem key={year} value={year}>
               Full year {year}

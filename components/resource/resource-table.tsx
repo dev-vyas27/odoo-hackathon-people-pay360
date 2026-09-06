@@ -1,23 +1,12 @@
 'use client'
 
-/**
- * ResourceTable — one generic List view for every model in the system.
- *
- * The spec needs List views for ~12 aggregates. Hand-writing twelve tables
- * (each with sorting, paging, search, empty and loading states) is roughly a
- * day of work and twelve places for bugs to hide. Instead each module supplies
- * a column definition and this renders it.
- *
- * Adding a new model to the app is then a config object, not a component.
- */
-import { useState } from 'react'
+
+
 import {
   flexRender,
   getCoreRowModel,
-  getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type SortingState,
 } from '@tanstack/react-table'
 import { LuArrowDown, LuArrowUp, LuChevronsUpDown, LuInbox } from 'react-icons/lu'
 import {
@@ -30,13 +19,26 @@ import {
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { useSort } from './filter-bar'
+
+
+
+declare module '@tanstack/react-table' {
+  
+  interface ColumnMeta<TData, TValue> {
+    
+
+
+    sortKey?: string
+  }
+}
 
 export interface ResourceTableProps<T> {
   data: T[]
   columns: ColumnDef<T, unknown>[]
   isLoading?: boolean
   onRowClick?: (row: T) => void
-  /** Shown when there are genuinely no records (not while loading). */
+  
   emptyMessage?: string
   emptyAction?: React.ReactNode
 }
@@ -49,19 +51,19 @@ export function ResourceTable<T>({
   emptyMessage = 'No records yet',
   emptyAction,
 }: ResourceTableProps<T>) {
-  const [sorting, setSorting] = useState<SortingState>([])
+  const { sort, order, toggle } = useSort()
 
-  // The React Compiler lint rule cannot memoize TanStack's returned functions.
-  // That is expected and safe here: the table instance is recreated per render
-  // by design, exactly as TanStack documents.
-  // eslint-disable-next-line react-hooks/incompatible-library
+  
+  
+  
+  
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
-    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    
+    
+    
   })
 
   if (isLoading) {
@@ -100,24 +102,34 @@ export function ResourceTable<T>({
           {table.getHeaderGroups().map((group) => (
             <TableRow key={group.id} className="bg-sunken hover:bg-sunken">
               {group.headers.map((header) => {
-                const sortable = header.column.getCanSort()
-                const dir = header.column.getIsSorted()
+                const sortKey = header.column.columnDef.meta?.sortKey
+                const active = sortKey !== undefined && sortKey === sort
                 return (
                   <TableHead
                     key={header.id}
+                    aria-sort={
+                      sortKey === undefined
+                        ? undefined
+                        : active
+                          ? order === 'asc'
+                            ? 'ascending'
+                            : 'descending'
+                          : 'none'
+                    }
                     className={cn(
-                      sortable && 'cursor-pointer select-none transition-colors hover:text-primary',
+                      sortKey !== undefined &&
+                        'cursor-pointer select-none transition-colors hover:text-primary',
                     )}
-                    onClick={sortable ? header.column.getToggleSortingHandler() : undefined}
+                    onClick={sortKey !== undefined ? () => toggle(sortKey) : undefined}
                   >
                     <span className="inline-flex items-center gap-1.5">
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())}
-                      {sortable ? (
-                        dir === 'asc' ? (
+                      {sortKey !== undefined ? (
+                        active && order === 'asc' ? (
                           <LuArrowUp className="size-3" aria-hidden />
-                        ) : dir === 'desc' ? (
+                        ) : active && order === 'desc' ? (
                           <LuArrowDown className="size-3" aria-hidden />
                         ) : (
                           <LuChevronsUpDown className="size-3 opacity-40" aria-hidden />

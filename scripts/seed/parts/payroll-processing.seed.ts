@@ -1,30 +1,6 @@
-/**
- * Nine months of paid payruns across the whole workforce, plus one draft.
- *
- * The dashboard's Total Net Salary Paid, Average Salary, Salary Cost by
- * Department and Monthly Net Salary Trend all read `payslips`. With an empty
- * table every one of them is zero and the screen cannot be judged, so this
- * seeds the history: a fully paid run for each of the last nine months, and a
- * draft staged for the live compute demo.
- *
- * Nine and not four, because the trend chart plots twelve months. With four it
- * sat flat on zero for two thirds of its width and then leapt, which reads as a
- * company that started trading in June rather than as a trend. Nine fills the
- * chart, and people hired part-way through still join it late — so the line
- * rises for a real reason.
- *
- * ── The wage comes from the contract, not the employee ─────────────────────
- *
- * Every payslip resolves the contract that actually covered its period and uses
- * THAT contract's wage. One employee had a raise three months ago, so their
- * oldest payslip comes out lower than the other three — which is the whole
- * point of storing `contract_id` on a payslip, and is checkable on screen.
- *
- * The amounts are produced by the same arithmetic the rule engine uses, in the
- * same sequence, so recomputing a seeded payslip should not move the numbers.
- * If it does, one of the two is wrong — which makes this a rough conformance
- * check as well as demo data.
- */
+
+
+
 import { seedId } from '../ids'
 import { contractOn } from '../contracts'
 import { ACTIVE_ROSTER } from '../roster'
@@ -33,7 +9,7 @@ import { STRUCTURE_ID } from './payroll-config.seed'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
-/** The rule engine, in miniature. Sequence order matters; see the header. */
+
 function compute(wage: number) {
   const basic = round2(wage)
   const hra = round2(basic * 0.4)
@@ -67,7 +43,7 @@ const MONTHS = [
 
 const iso = (date: Date) => date.toISOString().slice(0, 10)
 
-/** Business days in a month, which is what `worked_days` means on a payslip. */
+
 function businessDays(start: Date, end: Date): number {
   let count = 0
   const cursor = new Date(start)
@@ -94,11 +70,9 @@ export const payrollProcessingSeed: SeedPart = {
     let lineSeq = 1
     let paidTotal = 0
 
-    /**
-     * Paid months ending with the CURRENT one, then a draft for next month. The
-     * dashboard defaults to the current month, so it has to have paid data —
-     * otherwise the demo opens on a screen of zeros.
-     */
+    
+
+
     const PAID_MONTHS = 9
     for (let offset = PAID_MONTHS; offset >= -1; offset -= 1) {
       const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - offset, 1))
@@ -106,8 +80,8 @@ export const payrollProcessingSeed: SeedPart = {
         Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0),
       )
       const isDraft = offset === -1
-      // `seedId` rejects a negative index, so the draft (offset -1) has to
-      // land above the paid runs rather than below them.
+      
+      
       const payrunId = seedId('run', PAID_MONTHS + 1 - offset)
       const workedDays = businessDays(monthStart, monthEnd)
 
@@ -121,18 +95,16 @@ export const payrollProcessingSeed: SeedPart = {
       })
 
       for (const person of ACTIVE_ROSTER) {
-        /**
-         * Only people whose contract covers the period. Someone hired last
-         * month has no payslip for the month before that, which is both correct
-         * and what makes the monthly trend rise rather than sit flat.
-         */
+        
+
+
         const contract = contractOn(person.id, iso(monthEnd))
         if (!contract) continue
 
         payrunEmployees.push([payrunId, person.id])
 
-        // A draft payrun has selected employees but NO payslips — they do not
-        // exist until Compute runs, which is the live demo moment.
+        
+        
         if (isDraft) continue
 
         const computed = compute(contract.wage)
@@ -156,7 +128,7 @@ export const payrollProcessingSeed: SeedPart = {
         })
 
         for (const line of computed.lines) {
-          // Offset well clear of the payslip ids so the two never collide.
+          
           lines.push({ id: seedId('psl', 1_000_000 + lineSeq), payslip_id: payslipId, ...line })
           lineSeq += 1
         }

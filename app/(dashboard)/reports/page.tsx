@@ -1,23 +1,7 @@
 'use client'
 
-/**
- * The Payroll Dashboard — spec B9.
- *
- * Section by section, in the spec's own order:
- *   KPI cards        Total Net Salary Paid, Payslips Generated, Average Salary,
- *                    Approved Time Off, Attendance Health
- *   Charts           Salary Cost by Department, Monthly Net Salary Trend
- *   Operational      missing bank details, duplicate payslips, contract
- *   alerts           attention items
- *   Attendance       Present, Late, Absent, Overtime, missing check-outs,
- *   overview         manual edits, coverage
- *   Department       headcount plus total salary expenditure
- *   breakdown
- *
- * Every figure comes from an aggregation over real rows — spec A7 requires
- * "live metrics derived from actual system records", and there is not a
- * hardcoded number on this page.
- */
+
+
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -48,7 +32,7 @@ const money = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0,
 })
 
-/** ₹4.4L rather than ₹440,400 on a tile, which has to fit in one line. */
+
 function compactMoney(value: number): string {
   if (value >= 10_000_000) return `₹${(value / 10_000_000).toFixed(2)} Cr`
   if (value >= 100_000) return `₹${(value / 100_000).toFixed(2)} L`
@@ -110,29 +94,9 @@ export default function ReportsPage() {
 
       <DashboardFilters departments={data.departmentOptions} />
 
-      {/*
-        Known gap, stated rather than hidden. `PayrollStatsPort` gained an
-        `employeeType` parameter (see modules/shared/contracts/dto.ts); the
-        payroll-processing adapter has not read it yet, so the filter narrows
-        headcount and attendance but not money. A filter that silently does
-        nothing is worse than one that says what it does.
-        DELETE THIS BLOCK once PayrollStatsAdapter.totals/costByDepartment
-        accept and apply the third argument.
-      */}
-      {data.filters.employeeType ? (
-        <p className="-mt-2 mb-6 flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          <LuCircleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          The employee type filter currently narrows headcount and attendance.
-          Payroll totals are not yet filtered by employee type.
-        </p>
-      ) : null}
+      {
 
-      {/*
-        ── KPI cards ────────────────────────────────────────────────────────
-        Six columns, not five: total net paid takes two of them and is the one
-        tile allowed the display size. It is the figure the page exists to
-        answer, and giving the other four equal weight would bury it.
-      */}
+}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <KpiCard
           featured
@@ -177,7 +141,7 @@ export default function ReportsPage() {
         />
       </div>
 
-      {/* ── Charts ────────────────────────────────────────────────────────── */}
+      {}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -210,7 +174,7 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      {/* ── Operational alerts ────────────────────────────────────────────── */}
+      {}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
@@ -258,7 +222,7 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* ── Attendance overview and department breakdown ──────────────────── */}
+      {}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -331,6 +295,73 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="eyebrow">Time off overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+            <Stat label="Approved days" value={timeOff.approvedDays} />
+            <Stat
+              label="Pending requests"
+              value={timeOff.pendingRequests}
+              tone={timeOff.pendingRequests > 0 ? 'warning' : undefined}
+            />
+          </dl>
+
+          <div className="mt-5 border-t border-border pt-4">
+            <p className="mb-3 text-xs text-muted-foreground">
+              Leave balances across the filtered population
+              {data.filters.periodLabel ? ` as of ${data.filters.periodLabel}` : ''}
+            </p>
+            {timeOff.balances.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                No balances to show for the current filters.
+              </p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="pb-2 text-left font-normal">Leave type</th>
+                    <th className="pb-2 text-right font-normal">Allocated</th>
+                    <th className="pb-2 text-right font-normal">Taken</th>
+                    <th className="pb-2 text-right font-normal">Pending</th>
+                    <th className="pb-2 text-right font-normal">Remaining</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {timeOff.balances.map((balance) => {
+                    const suffix = balance.unit === 'hour' ? 'h' : 'd'
+                    return (
+                      <tr key={balance.timeOffTypeId}>
+                        <td className="py-2">{balance.timeOffTypeName}</td>
+                        <td className="tabular py-2 text-right">
+                          {balance.allocated}
+                          {suffix}
+                        </td>
+                        <td className="tabular py-2 text-right">
+                          {balance.taken}
+                          {suffix}
+                        </td>
+                        <td className="tabular py-2 text-right">
+                          {balance.pending}
+                          {suffix}
+                        </td>
+                        <td className="tabular py-2 text-right">
+                          {balance.remaining}
+                          {suffix}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <p className="mt-6 text-xs text-muted-foreground">
         Time off figures come from{' '}

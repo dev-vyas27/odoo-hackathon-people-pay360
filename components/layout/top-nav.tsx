@@ -1,17 +1,7 @@
 'use client'
 
-/**
- * The application's only navigation surface.
- *
- * Links are filtered by role before render (see nav-items.ts) rather than
- * rendered-then-hidden with CSS, so "what can this role do" is answerable by
- * reading the DOM — which is exactly how a judge will check it.
- *
- * The bar is white against the page's cool-grey ground, which is what separates
- * chrome from content without a drop shadow. The active item is a plum pill at
- * `rounded-xl` — 50rem in Design.md, the pill token — so "you are here" is
- * carried by the brand colour rather than by an underline nobody notices.
- */
+
+
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LuMenu } from 'react-icons/lu'
@@ -35,7 +25,7 @@ export function TopNav({ user }: { user: CurrentUser }) {
   const pathname = usePathname()
   const items = navItemsFor(user.role)
 
-  /** `/time-off/requests` must light up the `/time-off` tab, hence startsWith. */
+  
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
 
   const pill = (active: boolean) =>
@@ -83,8 +73,8 @@ export function TopNav({ user }: { user: CurrentUser }) {
           <Wordmark />
         </Link>
 
-        {/* A hairline rather than a gap: it says the wordmark is a fixture and
-            the links are the changing part. */}
+        {
+}
         <span className="mx-2 hidden h-6 w-px bg-border md:block" aria-hidden />
 
         <nav className="hidden items-center gap-1 md:flex">

@@ -1,8 +1,6 @@
-/**
- * GET    /api/attendance/[id]  — fetch one record (row-scoped for employees).
- * PATCH  /api/attendance/[id]  — authorized correction; always flags `manual`.
- * DELETE /api/attendance/[id]  — authorized users only.
- */
+
+
+
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'
 import { Ok } from '@/modules/shared'

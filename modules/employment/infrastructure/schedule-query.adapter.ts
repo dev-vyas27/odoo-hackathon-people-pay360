@@ -1,10 +1,5 @@
-/**
- * Postgres implementation of the shared ScheduleQueryPort.
- *
- * `expectedHours`/`expectedDays` are payroll's proration denominators. The
- * arithmetic stays in the pure weekly-hours service; this adapter only fetches
- * the day pattern and delegates, so there is one implementation under test.
- */
+
+
 import { query, queryOne } from '@/lib/db'
 import type { Period, ScheduleQueryPort, ScheduleSnapshot } from '@/modules/shared'
 import {

@@ -1,11 +1,7 @@
 'use client'
 
-/**
- * Select options and reference-data hooks shared by the HR forms.
- *
- * Every dropdown that points at another table goes through here, so a form
- * never hand-rolls a fetch and every picker sorts and labels the same way.
- */
+
+
 import { useResourceList } from '@/hooks/use-resource'
 import {
   EMPLOYEE_TYPES,
@@ -32,12 +28,8 @@ export const ACTIVE_OPTIONS = [
   { value: 'false', label: 'Archived' },
 ]
 
-/**
- * Pickers ask for a large page rather than paging.
- *
- * A department or schedule list is tens of rows, not thousands, and a combobox
- * that silently omits option 21 is worse than one extra round trip.
- */
+
+
 const PICKER = { limit: 200 } as const
 
 export function useDepartmentOptions() {
@@ -56,11 +48,8 @@ export function useJobPositionOptions() {
   }
 }
 
-/**
- * `items` is returned alongside `options` because callers need the weekly hours
- * to decide which schedules suit an employee type — a `{label, value}` pair
- * cannot answer "is this full time".
- */
+
+
 export function useScheduleOptions() {
   const { page, isLoading } = useResourceList<ScheduleListItem>('schedules', PICKER)
   return {
@@ -70,17 +59,8 @@ export function useScheduleOptions() {
   }
 }
 
-/**
- * Everyone who could report to `excludeId`, including `excludeId` itself.
- *
- * Walks DOWN the reporting line, not just one level. If Rahul reports to Sahil
- * and Priya reports to Rahul, then neither Rahul nor Priya may become Sahil's
- * manager — picking either closes a loop, and a reporting line with a loop
- * makes any walk up it run forever.
- *
- * `seen` doubles as the result and as the cycle guard, so pre-existing bad data
- * cannot hang this.
- */
+
+
 function reportingSubtree(employees: EmployeeListItem[], rootId?: string): Set<string> {
   const seen = new Set<string>()
   if (!rootId) return seen
@@ -99,21 +79,16 @@ function reportingSubtree(employees: EmployeeListItem[], rootId?: string): Set<s
   return seen
 }
 
-/**
- * Managers are just employees — minus anyone who already reports to this one,
- * at any depth. The server refuses a cycle too (see UpdateEmployeeUseCase);
- * this is so the choice never appears in the first place.
- */
+
+
 export function useEmployeeOptions(excludeId?: string) {
   const { page, isLoading } = useResourceList<EmployeeListItem>('employees', PICKER)
   const blocked = reportingSubtree(page.items, excludeId)
   return {
     isLoading,
-    /**
-     * The full records, not just labels. A contract copies the employee's
-     * department, position and schedule, and `{label, value}` cannot answer
-     * "which department is this person in".
-     */
+    
+
+
     items: page.items,
     options: page.items
       .filter((e) => !blocked.has(e.id))

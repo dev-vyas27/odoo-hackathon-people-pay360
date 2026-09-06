@@ -1,15 +1,11 @@
 'use client'
 
-/**
- * The Working Schedule list (spec A3): "list view should show key metrics like
- * name, type, and weekly hours".
- */
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'
 import { LuPlus } from 'react-icons/lu'
 import type { ScheduleListItem } from '@/modules/employment/schemas'
-import { WEEKDAY_LABELS } from '@/modules/employment/schemas'
+import { SCHEDULE_TYPE_LABELS, WEEKDAY_LABELS } from '@/modules/employment/schemas'
 import { useResourceList } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
 import { ResourceTable } from '@/components/resource/resource-table'
@@ -23,6 +19,15 @@ const columns: ColumnDef<ScheduleListItem, unknown>[] = [
     accessorKey: 'name',
     header: 'Name',
     cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+  },
+  {
+    accessorKey: 'type',
+    header: 'Type',
+    cell: ({ row }) => (
+      <Badge variant={row.original.type === 'full_time' ? 'default' : 'outline'}>
+        {SCHEDULE_TYPE_LABELS[row.original.type]}
+      </Badge>
+    ),
   },
   {
     id: 'days',

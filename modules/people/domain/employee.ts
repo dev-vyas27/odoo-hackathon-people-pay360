@@ -1,17 +1,5 @@
-/**
- * Employee — the aggregate root of the `people` module.
- *
- * Holds identity, org placement (department / manager / job position),
- * working schedule reference, employee type, bank account and active status.
- * This is deliberately the ONLY place that decides whether an employee record
- * is well-formed: use cases call `create`/`update`, never build the fields by
- * hand, so an invalid employee can never reach a repository.
- *
- * Cross-aggregate references (departmentId, managerId, jobPositionId,
- * workingScheduleId) are stored as ids only. Resolving whether they point at
- * something real is a use-case concern (it needs a repository); the domain
- * only enforces shape and self-consistency (e.g. "not your own manager").
- */
+
+
 import { DomainError } from '@/modules/shared'
 import { Ok, Err, type Result } from '@/modules/shared'
 import { isEmployeeType, type EmployeeType } from './employee-type'
@@ -103,7 +91,7 @@ export class Employee {
     )
   }
 
-  /** Applies a partial patch and re-validates the resulting record. */
+  
   update(patch: Partial<EmployeeInput>): Result<Employee> {
     const name = (patch.name ?? this.name).trim()
     const email = (patch.email ?? this.email).trim().toLowerCase()
@@ -133,7 +121,7 @@ export class Employee {
     )
   }
 
-  /** Archiving is one-way through this method so the intent stays explicit at call sites. */
+  
   archive(): Employee {
     return new Employee(
       this.id,

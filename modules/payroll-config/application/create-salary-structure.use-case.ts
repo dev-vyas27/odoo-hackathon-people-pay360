@@ -51,7 +51,7 @@ export class CreateSalaryStructureUseCase
   }
 }
 
-/** Shared by create and update: which of these rule ids do not exist. */
+
 export async function findMissingRuleIds(
   rules: SalaryRuleRepositoryPort,
   ruleIds: string[],

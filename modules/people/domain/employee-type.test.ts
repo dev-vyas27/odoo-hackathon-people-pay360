@@ -9,8 +9,8 @@ describe('EmployeeType', () => {
   })
 
   it('rejects values arriving from a query string', () => {
-    // Dashboard filters come in as untrusted strings; the guard is what stops a
-    // typo silently becoming an empty result set that looks like real data.
+    
+    
     expect(isEmployeeType('fulltime')).toBe(false)
     expect(isEmployeeType('FULL_TIME')).toBe(false)
     expect(isEmployeeType('')).toBe(false)

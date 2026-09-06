@@ -4,6 +4,7 @@ import {
   GetSalaryStructureDetailUseCase,
   salaryRuleRepository,
   salaryStructureRepository,
+  structureEmployeeCount,
 } from '@/modules/payroll-config/server'
 import { PageHeader } from '@/components/resource/page-header'
 import { ErrorState, WarningNote } from '../../_components/states'
@@ -24,6 +25,7 @@ export default async function EditSalaryStructurePage({
     const detail = await new GetSalaryStructureDetailUseCase(
       salaryStructureRepository(),
       salaryRuleRepository(),
+      structureEmployeeCount(),
     ).execute({ actor, id })
     if (!detail.ok) throw detail.error
 
@@ -40,7 +42,7 @@ export default async function EditSalaryStructurePage({
   }
 
   const { detail, available } = result.data
-  const { structure, rules, issues } = detail
+  const { structure, rules, issues, employeeCount } = detail
 
   const values: SalaryStructureFormValues = {
     name: structure.name,
@@ -49,15 +51,15 @@ export default async function EditSalaryStructurePage({
     rules: structure.rules.map((r) => ({ ruleId: r.ruleId, sequence: r.sequence })),
   }
 
-  // Rules included here but archived elsewhere still have to be selectable, or
-  // opening the form would silently drop them.
+  
+  
   const options = mergeById(available, rules.map((r) => toAvailableRule(r.rule)))
 
   return (
     <>
       <PageHeader
         title={structure.name}
-        description={`${rules.length} rule${rules.length === 1 ? '' : 's'}${structure.active ? '' : ' · archived'}`}
+        description={`${rules.length} rule${rules.length === 1 ? '' : 's'} · ${employeeCount} employee${employeeCount === 1 ? '' : 's'}${structure.active ? '' : ' · archived'}`}
       />
 
       {issues.length ? (
@@ -78,7 +80,7 @@ export default async function EditSalaryStructurePage({
           structure={values}
           structureId={structure.id}
           available={options}
-          // hr_payroll_user reads salary configuration; only a manager edits it.
+          
           readOnly={!can(actor.role, 'salary_structure', 'update')}
         />
       </div>
@@ -86,13 +88,8 @@ export default async function EditSalaryStructurePage({
   )
 }
 
-/**
- * What this structure produces for a sample wage.
- *
- * Runs the REAL engine, not an illustration: editing a rule and reloading shows
- * the numbers move, which is the whole point of the configuration screens being
- * functional rather than decorative.
- */
+
+
 const SAMPLE_WAGE = 50000
 
 function preview(rules: Array<{ rule: { code: string; name: string; category: string }; sequence: number }>): PreviewLine[] | null {
@@ -109,7 +106,7 @@ function preview(rules: Array<{ rule: { code: string; name: string; category: st
       amount: line.amount.toNumber(),
     }))
   } catch {
-    // A broken structure is already explained by the issues panel above.
+    
     return null
   }
 }

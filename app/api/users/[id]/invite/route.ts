@@ -1,9 +1,6 @@
-/**
- * POST /api/users/[id]/invite — send (or resend) a set-password link.
- *
- * Issuing a new link invalidates any outstanding one, so resending because the
- * first went astray genuinely revokes the first.
- */
+
+
+
 import { inviteAccount } from '@/modules/identity'
 import { requireActor } from '@/lib/auth'
 import { appOrigin } from '@/lib/app-url'

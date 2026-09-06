@@ -1,15 +1,6 @@
-/**
- * The Payroll Dashboard, spec B9.
- *
- * One use case composes five ports and applies the three filters from spec A7
- * (Period, Department, Employee Type). Every section of the response maps to a
- * bullet in the spec, and every number comes from an aggregation over real rows
- * — nothing here is hardcoded, which section A7 requires in as many words:
- * "live metrics derived from actual system records".
- *
- * The five port calls run in parallel. Sequentially this is five round trips to
- * a database in Singapore before anything renders; concurrently it is one.
- */
+
+
+
 import {
   Ok,
   authorize,
@@ -32,7 +23,7 @@ import {
 import { dashboardPorts } from './ports/stats.ports'
 
 export interface DashboardFilters {
-  /** Already resolved from `?period=` by the controller. */
+  
   period: Period
   departmentId?: string
   employeeType?: EmployeeType
@@ -47,33 +38,33 @@ export interface DashboardView {
     employeeType: EmployeeType | null
   }
 
-  /** Spec B9: "KPI cards display key metrics like ..." — these five, named. */
+  
   kpis: {
     totalNetPaid: number
     payslipsGenerated: number
     averageSalary: number
-    /** In days. */
+    
     approvedTimeOff: number
-    /** 0-100, or null when there is no attendance data to judge. */
+    
     attendanceHealth: number | null
   }
 
-  /** Spec B9: "Charts plot Salary Cost by Department and Monthly Net Salary Trends". */
+  
   charts: {
     salaryCostByDepartment: SeriesPoint[]
     monthlyNetTrend: SeriesPoint[]
   }
 
-  /** Spec B9: "Operational alerts surface ... missing required information,
-   *  duplicate payslips, and contract attention items". */
+  
+
   alerts: {
     missingBankDetails: Array<{ employeeId: string; name: string }>
     duplicatePayslips: Array<{ employeeId: string; employeeName: string; count: number }>
     contractAttention: ContractAlert[]
   }
 
-  /** Spec B9: "Attendance Overview can show Present, Late, Absent, Overtime,
-   *  missing check-outs, manual edits, and attendance coverage". */
+  
+
   attendance: {
     present: number
     late: number
@@ -84,14 +75,14 @@ export interface DashboardView {
     coverage: number | null
   }
 
-  /** Spec B9: "... approved days, pending requests, and leave balances". */
+  
   timeOff: {
     approvedDays: number
     pendingRequests: number
     balances: LeaveBalanceView[]
   }
 
-  /** Spec B9: "Department breakdown combines headcount with total salary expenditure". */
+  
   departments: Array<{
     departmentId: string
     departmentName: string
@@ -99,11 +90,9 @@ export interface DashboardView {
     totalCost: number
   }>
 
-  /**
-   * Every department, regardless of the current filter — this populates the
-   * department dropdown. Derived from the same query, so filtering to one
-   * department cannot make the others un-selectable.
-   */
+  
+
+
   departmentOptions: Array<{ id: string; name: string }>
 
   headcount: number
@@ -114,9 +103,9 @@ export interface GetDashboardInput {
   filters: DashboardFilters
 }
 
-/** How far back the trend chart looks. Twelve months is one salary cycle. */
+
 const TREND_MONTHS = 12
-/** A contract inside this many days of expiry needs attention. */
+
 const CONTRACT_ATTENTION_DAYS = 60
 
 export class GetDashboardUseCase implements UseCase<GetDashboardInput, DashboardView> {
@@ -139,18 +128,21 @@ export class GetDashboardUseCase implements UseCase<GetDashboardInput, Dashboard
       costByDepartment,
       monthlyTrend,
       duplicatePayslips,
+      balances,
     ] = await Promise.all([
       ports.employees.headcount({ departmentId, employeeType }),
       ports.employees.headcountByDepartment({ employeeType }),
       ports.employees.missingBankDetails(),
       ports.attendance.summary(period, departmentId, employeeType),
       ports.contracts.attentionItems(period, CONTRACT_ATTENTION_DAYS),
-      ports.leave.approvedInPeriod(period, departmentId ? [departmentId] : undefined),
-      ports.leave.pendingCount(),
+      ports.leave.approvedInPeriod(period, { departmentId, employeeType }),
+      ports.leave.pendingCount({ departmentId, employeeType }),
       ports.payroll.totals(period, departmentId, employeeType),
-      ports.payroll.costByDepartment(period, employeeType),
-      ports.payroll.monthlyTrend(TREND_MONTHS),
-      ports.payroll.duplicatePayslips(period),
+      ports.payroll.costByDepartment(period, departmentId, employeeType),
+      ports.payroll.monthlyTrend(TREND_MONTHS, departmentId, employeeType),
+      ports.payroll.duplicatePayslips(period, departmentId, employeeType),
+      
+      ports.leave.balanceTotals({ departmentId, employeeType }, period.end),
     ])
 
     const departmentNames = new Map(
@@ -170,9 +162,9 @@ export class GetDashboardUseCase implements UseCase<GetDashboardInput, Dashboard
       kpis: {
         totalNetPaid: payrollTotals.totalNet,
         payslipsGenerated: payrollTotals.payslipCount,
-        // Recomputed rather than trusting the port's own average: the two must
-        // agree with the totals shown beside them, and this is the definition
-        // that is unit-tested.
+        
+        
+        
         averageSalary: averageSalary(payrollTotals.totalNet, payrollTotals.payslipCount),
         approvedTimeOff: approvedDays,
         attendanceHealth: attendanceHealth(attendanceSummary),
@@ -191,17 +183,19 @@ export class GetDashboardUseCase implements UseCase<GetDashboardInput, Dashboard
 
       attendance: {
         ...attendanceSummary,
-        // Measured against days elapsed, not the whole month — see the domain fn.
+        
         coverage: attendanceCoverage(attendanceSummary, headcount, period, new Date()),
       },
 
       timeOff: {
         approvedDays,
         pendingRequests,
-        // Company-wide balances would be a row per employee per leave type.
-        // The dashboard shows the aggregate figures above; an individual's
-        // balances live on the Time Off screens, where they belong.
-        balances: [],
+        
+        
+        
+        
+        
+        balances,
       },
 
       departments: headcountByDepartment
@@ -224,7 +218,7 @@ export class GetDashboardUseCase implements UseCase<GetDashboardInput, Dashboard
   }
 }
 
-/** "March 2026" for a calendar month, "2026" for a year, a range otherwise. */
+
 function formatPeriod(period: Period): string {
   const start = period.start
   const end = period.end

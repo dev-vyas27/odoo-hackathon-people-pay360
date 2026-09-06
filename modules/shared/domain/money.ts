@@ -1,10 +1,5 @@
-/**
- * Money — integer minor units (paise/cents). Immutable.
- *
- * Payroll must never use floats: 0.1 + 0.2 !== 0.3 and a rounding drift of one
- * paise across 500 payslips is a reconciliation bug nobody can find at 3am.
- * All arithmetic here is integer arithmetic; rounding happens once, explicitly.
- */
+
+
 import { DomainError } from './domain-error'
 
 export class Money {
@@ -50,7 +45,7 @@ export class Money {
     return new Money(this.minor - other.minor, this.currency)
   }
 
-  /** Multiply by a plain ratio (e.g. worked-days proration). Rounds half-up once. */
+  
   times(factor: number): Money {
     if (!Number.isFinite(factor)) {
       throw DomainError.validation('MONEY_BAD_FACTOR', `Factor is not finite: ${factor}`)
@@ -58,7 +53,7 @@ export class Money {
     return new Money(Math.round(this.minor * factor), this.currency)
   }
 
-  /** percentage(12.5) => 12.5% of this amount. */
+  
   percentage(percent: number): Money {
     return this.times(percent / 100)
   }
@@ -85,7 +80,7 @@ export class Money {
     return this.minor - other.minor
   }
 
-  /** Decimal major units — for display and for persisting a queryable number. */
+  
   toNumber(): number {
     return this.minor / 100
   }

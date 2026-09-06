@@ -1,7 +1,6 @@
-/**
- * Select options derived from the shared unions, so a status added to the
- * domain shows up in the filter without anyone remembering to add it here.
- */
+
+
+
 import { LEAVE_UNITS } from '@/modules/shared'
 import { ALLOCATION_STATUSES } from '@/modules/timeoff/schemas'
 

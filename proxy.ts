@@ -1,20 +1,11 @@
-/**
- * Route guard.
- *
- * Next.js 16 renamed `middleware.ts` to `proxy.ts` and the exported function to
- * `proxy`. The runtime is Node.js and is NOT configurable — which is convenient
- * here, because it means we can verify the JWT properly rather than doing a
- * cookie-presence hand-wave at the edge.
- *
- * This is coarse-grained gatekeeping only: is there a valid session, and is this
- * area of the app allowed for that role. Row-level rules ("your own attendance
- * only") belong in use cases, never here.
- */
+
+
+
 import { NextResponse, type NextRequest } from 'next/server'
 import { AUTH_COOKIE, verifyToken } from '@/lib/auth'
 import { can, type Resource } from '@/modules/shared/contracts/permissions'
 
-/** Top-level sections and the resource each one reads. */
+
 const SECTION_RESOURCE: Array<{ prefix: string; resource: Resource }> = [
   { prefix: '/employees', resource: 'employee' },
   { prefix: '/contracts', resource: 'contract' },
@@ -29,25 +20,19 @@ const SECTION_RESOURCE: Array<{ prefix: string; resource: Resource }> = [
   { prefix: '/admin', resource: 'user' },
 ]
 
-/**
- * `/api/demo/seed` is here because it creates the accounts you would need in
- * order to authenticate, so requiring authentication would make it useless. It
- * guards itself with the `DEMO_SEED_ENABLED` flag and 404s when that is off —
- * see lib/demo-mode.ts.
- */
+
+
 const PUBLIC_PATHS = [
   '/login',
   '/api/auth/login',
   '/api/health',
   '/api/demo/seed',
-  /**
-   * Redeeming an invitation. Unauthenticated by necessity — the person cannot
-   * sign in until they have done it. The 32-byte single-use token in the URL
-   * is the authentication; see set-password.use-case.ts.
-   */
+  
+
+
   '/set-password',
   '/api/auth/set-password',
-  /** Requesting a reset link. Anonymous by definition — they cannot sign in. */
+  
   '/forgot-password',
   '/api/auth/forgot-password',
 ]
@@ -63,7 +48,7 @@ export function proxy(request: NextRequest) {
   const payload = token ? verifyToken(token) : null
 
   if (!payload) {
-    // API callers get JSON; humans get redirected somewhere useful.
+    
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(
         { error: { code: 'UNAUTHENTICATED', message: 'Sign in to continue' } },
@@ -75,7 +60,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(login)
   }
 
-  // Section-level authorization for page navigations.
+  
   const section = SECTION_RESOURCE.find((s) => pathname.startsWith(s.prefix))
   if (section && !can(payload.role, section.resource, 'read')) {
     if (pathname.startsWith('/api/')) {
@@ -91,10 +76,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  /**
-   * Skip static assets and image optimisation; match everything else including
-   * /api so unauthenticated API calls fail fast with JSON.
-   */
+  
+
+
   matcher: [
     '/((?!_next/static|_next/image|favicon\\.ico|fonts/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|otf|woff2?)$).*)',
   ],

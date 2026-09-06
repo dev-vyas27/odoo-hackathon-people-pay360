@@ -1,12 +1,5 @@
-/**
- * UpdateContractUseCase.
- *
- * Same write-time overlap prevention as create, excluding the contract being
- * edited from its own clash check. This is for correcting a mistake on the
- * CURRENT record (e.g. a wage typo), never for reshaping history -- ending a
- * contract and opening a new one is how a real change (promotion, transfer)
- * should be recorded instead.
- */
+
+
 import { Money, DomainError, Err, Ok, authorize, type Actor, type Result, type UseCase } from '@/modules/shared'
 import { contractsOverlap } from '../domain/contract-resolution'
 import type { Contract } from '../domain/contract'

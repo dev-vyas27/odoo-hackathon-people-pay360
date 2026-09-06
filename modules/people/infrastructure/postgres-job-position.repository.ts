@@ -1,9 +1,6 @@
-/**
- * Postgres implementation of JobPositionRepositoryPort.
- *
- * The domain calls it `title`; the column is `name`. The rename is contained
- * here so neither side has to compromise its own vocabulary.
- */
+
+
+
 import { BaseSqlRepository, type SqlValue } from '@/modules/shared/server'
 import type { JobPositionRepositoryPort } from '../application/ports/job-position-repository.port'
 import { JobPosition } from '../domain/job-position'

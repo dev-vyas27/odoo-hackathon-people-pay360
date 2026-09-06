@@ -1,14 +1,7 @@
 'use client'
 
-/**
- * Client-side calls to the payroll API.
- *
- * Every route in this app answers with the same envelope — `{ data }` or
- * `{ error: { code, message, details } }` (see lib/http.ts) — so unwrapping it
- * once here means no screen has to reimplement error handling, and a failed
- * mutation always surfaces the server's own message rather than "Request
- * failed".
- */
+
+
 export interface ApiFieldErrors {
   [field: string]: string
 }
@@ -25,7 +18,7 @@ export class ApiError extends Error {
   }
 }
 
-/** `body` is the value to send; it is serialised here, not by the caller. */
+
 export async function apiRequest<T>(
   url: string,
   init?: Omit<RequestInit, 'body'> & { body?: unknown },

@@ -1,12 +1,6 @@
-/**
- * CorrectAttendanceUseCase — authorized users only.
- *
- * This is the one write path gated by `attendance:update`, which the
- * permissions matrix grants to hr_manager and above but never to `employee`.
- * Any successful correction always flips the record's `manual` flag (see
- * Attendance.correct in the domain layer) so its provenance is visible
- * downstream, on the payslip and in the attendance list alike.
- */
+
+
+
 import { authorize, DomainError, Err, Ok, type Actor, type Result } from '@/modules/shared'
 import type { Attendance } from '../domain/attendance'
 import type { AttendanceRepositoryPort } from './ports/attendance-repository.port'

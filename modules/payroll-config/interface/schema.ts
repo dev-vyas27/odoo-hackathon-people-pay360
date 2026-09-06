@@ -1,15 +1,6 @@
-/**
- * The ONE definition of what a valid salary rule / structure looks like.
- *
- * Imported by both the `ResourceForm` on the screen and the route handler that
- * receives its submission, so the client and the server cannot drift into
- * disagreeing about what is acceptable.
- *
- * The rule form is deliberately FLAT (computationType + the parameters beside
- * it) rather than a nested discriminated union, because that is the shape a
- * config-driven form renders. `toSalaryRuleData` folds it back into the nested
- * domain shape at the boundary, which is the only place that translation lives.
- */
+
+
+
 import { z } from 'zod'
 import { nonEmpty, uuid } from '@/modules/shared'
 import { SALARY_CATEGORIES } from '../domain/salary-category'
@@ -38,10 +29,8 @@ export const salaryRuleBaseSchema = z.object({
   active: z.boolean(),
 })
 
-/**
- * Each computation type needs different parameters. Attaching the check to the
- * object (not the field) lets the error land on the field the user must fix.
- */
+
+
 export const salaryRuleFormSchema = salaryRuleBaseSchema.superRefine((values, ctx) => {
   if (values.computationType === 'fixed' && values.amount === undefined) {
     ctx.addIssue({ code: 'custom', path: ['amount'], message: 'Enter an amount' })
@@ -67,7 +56,7 @@ export const salaryRuleFormSchema = salaryRuleBaseSchema.superRefine((values, ct
 
 export type SalaryRuleFormValues = z.infer<typeof salaryRuleFormSchema>
 
-/** Flat form values -> the nested shape the domain factory expects. */
+
 export function toSalaryRuleData(values: SalaryRuleFormValues): Omit<SalaryRuleInput, 'id'> {
   return {
     name: values.name,
@@ -90,7 +79,7 @@ function toComputationConfig(values: SalaryRuleFormValues): ComputationConfig {
   }
 }
 
-/** Domain shape -> flat form values, for the edit screen. */
+
 export function toSalaryRuleFormValues(rule: {
   name: string
   code: string

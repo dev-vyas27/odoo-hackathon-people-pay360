@@ -1,10 +1,6 @@
-/**
- * An employee with no bank account cannot actually be paid.
- *
- * A warning rather than an error: the run may still be validated and the detail
- * filled in before money moves. It is the single most common real-world payroll
- * blocker, which is why the spec calls it out by name.
- */
+
+
+
 import type {
   IPayrollWarningCheck,
   PayrollWarning,

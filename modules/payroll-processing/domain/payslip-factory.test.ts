@@ -54,7 +54,7 @@ describe('createPayslip', () => {
   it('prorates by worked units against the expected units of the schedule', () => {
     const payslip = build({ workedDays: 11, workedUnits: 11, expectedUnits: 22 })
 
-    // Half the expected units worked: BASIC halves, and everything derived from it follows.
+    
     expect(totalsOf(payslip).basic.toNumber()).toBe(25000)
     expect(totalsOf(payslip).allowances.toNumber()).toBe(10000)
     expect(totalsOf(payslip).net.toNumber()).toBe(32000)
@@ -71,8 +71,8 @@ describe('createPayslip', () => {
   })
 
   it('pays two different amounts for two different contracts of the same employee', () => {
-    // The scenario the spec keeps returning to: the same structure, the same
-    // employee, two periods resolving to two contracts.
+    
+    
     const onOldContract = build({ contract: { id: 'contract-2024', wage: 30000 } })
     const onNewContract = build({ contract: { id: 'contract-2026', wage: 50000 } })
 

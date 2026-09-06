@@ -3,7 +3,7 @@ import { Money } from './money'
 
 describe('Money', () => {
   it('stores minor units so float error cannot accumulate', () => {
-    // The classic failure: 0.1 + 0.2 === 0.30000000000000004
+    
     const total = Money.of(0.1).plus(Money.of(0.2))
     expect(total.toNumber()).toBe(0.3)
   })
@@ -18,7 +18,7 @@ describe('Money', () => {
   })
 
   it('prorates by worked-days ratio, rounding once', () => {
-    // 22 of 30 days on a 50,000 basic
+    
     expect(Money.of(50000).times(22 / 30).toNumber()).toBe(36666.67)
   })
 

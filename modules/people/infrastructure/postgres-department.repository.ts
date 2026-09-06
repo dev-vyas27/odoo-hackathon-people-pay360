@@ -1,24 +1,13 @@
-/**
- * Postgres implementation of DepartmentRepositoryPort.
- *
- * Two deliberate mappings, both forced by the schema (which the platform
- * developer owns and we conform to):
- *
- *  * `code` is NOT NULL UNIQUE in the table but is not part of our domain, so
- *    it is derived from the name. Derivation lives here rather than in the
- *    domain because it is a storage requirement, not a business rule.
- *  * `parentDepartmentId` exists in the domain but has no column. It reads back
- *    as null. Flagged to the schema owner: either the column arrives or the
- *    field should leave the domain — silently dropping a value is the one
- *    outcome nobody should be happy with.
- */
+
+
+
 import { queryOne } from '@/lib/db'
 import { BaseSqlRepository, type SqlValue } from '@/modules/shared/server'
 import type { DepartmentRepositoryPort } from '../application/ports/department-repository.port'
 import { Department } from '../domain/department'
 import { DEPARTMENTS_TABLE, DEPARTMENT_COLUMNS, type DepartmentRow } from './people.tables'
 
-/** "People & Culture" -> "PEOPLE_CULTURE". Stable, readable, and unique enough. */
+
 function codeFromName(name: string): string {
   return name
     .trim()
@@ -42,7 +31,7 @@ export class PostgresDepartmentRepository
       id: row.id,
       name: row.name,
       managerId: row.manager_id,
-      parentDepartmentId: null, // no column; see the note above
+      parentDepartmentId: null, 
     })
   }
 

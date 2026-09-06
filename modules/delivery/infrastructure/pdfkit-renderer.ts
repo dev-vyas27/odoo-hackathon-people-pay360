@@ -1,20 +1,6 @@
-/**
- * The ONLY file in the codebase that imports pdfkit.
- *
- * It takes a finished `PayslipDocument` and draws it. It makes no decisions
- * about what a payslip says — no lookups, no totals, no formatting rules beyond
- * turning a number into ink. That separation is what lets the layout be tested
- * without producing a PDF, and what would make swapping pdfkit for anything
- * else a one-file change.
- *
- * ── On the rupee sign ──────────────────────────────────────────────────────
- * Amounts print as "Rs." rather than "₹". Neither pdfkit's built-in Helvetica
- * (WinAnsi, so no U+20B9 at all) nor the brand face LT Wave contains a rupee
- * glyph, and a missing glyph renders as a hollow box on every line of a
- * financial document. "Rs." is what Indian payslips have used for decades and
- * it is unambiguous. Embedding a Unicode face with U+20B9 is the only way to
- * get the symbol, and that is a font-licensing decision, not a layout one.
- */
+
+
+
 import fs from 'node:fs'
 import path from 'node:path'
 import PDFDocument from 'pdfkit'
@@ -28,10 +14,7 @@ import type {
   RenderedDocument,
 } from '../application/ports/document-renderer.port'
 
-// ── Design tokens ───────────────────────────────────────────────────────────
-// A light document: white stock, one accent, and tinted panels doing the work
-// that borders would otherwise have to. Everything here is a printable colour —
-// no full-bleed dark fills that would drain a cartridge.
+
 
 const COLOR = {
   accent: '#4F46E5',
@@ -55,7 +38,7 @@ const FOOTER_TOP = PAGE.height - 78
 
 const FONT = { regular: 'Body', medium: 'Heading' } as const
 
-/** Never let a table row straddle the footer. */
+
 const BOTTOM_LIMIT = FOOTER_TOP - 16
 
 const RUPEES = new Intl.NumberFormat('en-IN', {
@@ -71,15 +54,8 @@ function signedMoney(line: DocumentLine): string {
   return line.negative ? `- ${money(line.amount)}` : money(line.amount)
 }
 
-/**
- * The brand face, if it is on disk.
- *
- * Read once per process rather than per payslip: a bulk send of two hundred
- * payslips should not read the same two font files four hundred times. A
- * missing file is not an error — pdfkit's Helvetica is a perfectly readable
- * fallback, and a payslip that renders in the wrong typeface still beats a
- * payslip that 500s.
- */
+
+
 let brandFonts: { regular: Buffer; medium: Buffer } | null | undefined
 
 function loadBrandFonts(): { regular: Buffer; medium: Buffer } | null {
@@ -105,8 +81,8 @@ export class PdfKitPayslipRenderer implements DocumentRendererPort {
   async render(document: PayslipDocument): Promise<RenderedDocument> {
     const doc = new PDFDocument({
       size: 'A4',
-      // Margins are handled explicitly below; pdfkit's own margin box would
-      // fight the full-bleed header band.
+      
+      
       margin: 0,
       bufferPages: true,
       info: {
@@ -147,7 +123,7 @@ export class PdfKitPayslipRenderer implements DocumentRendererPort {
   }
 }
 
-// ── Header ──────────────────────────────────────────────────────────────────
+
 
 function drawHeader(doc: Doc, document: PayslipDocument): number {
   const bandHeight = 132
@@ -155,7 +131,7 @@ function drawHeader(doc: Doc, document: PayslipDocument): number {
   doc.rect(0, 0, PAGE.width, bandHeight).fill(COLOR.accentSoft)
   doc.rect(0, 0, PAGE.width, 5).fill(COLOR.accent)
 
-  // Left: who is paying.
+  
   doc
     .font(FONT.medium)
     .fontSize(17)
@@ -172,7 +148,7 @@ function drawHeader(doc: Doc, document: PayslipDocument): number {
     doc.text(document.company.email, M, addressY, { width: CONTENT * 0.55 })
   }
 
-  // Right: what the document is.
+  
   const rightWidth = CONTENT * 0.4
   const rightX = PAGE.width - M - rightWidth
 
@@ -197,7 +173,7 @@ function drawHeader(doc: Doc, document: PayslipDocument): number {
   return bandHeight + 22
 }
 
-/** A rounded chip, right-aligned to `rightEdge`. */
+
 function drawStatusPill(doc: Doc, label: string, rightEdge: number, y: number): void {
   const text = label.toUpperCase()
   doc.font(FONT.medium).fontSize(7.5)
@@ -210,7 +186,7 @@ function drawStatusPill(doc: Doc, label: string, rightEdge: number, y: number): 
     .text(text, x, y + 5.2, { width, align: 'center', characterSpacing: 0.8 })
 }
 
-// ── Employee / pay run panels ───────────────────────────────────────────────
+
 
 function drawPanels(doc: Doc, document: PayslipDocument, top: number): number {
   const gap = 14
@@ -268,7 +244,7 @@ function drawPanel(
   }
 }
 
-// ── The line table ──────────────────────────────────────────────────────────
+
 
 const COL = {
   code: M + 14,
@@ -295,13 +271,8 @@ function drawTableHead(doc: Doc, y: number): number {
   return y + 22
 }
 
-/**
- * A group heading inside the table — "Earnings", then "Deductions".
- *
- * Splitting the lines this way is the difference between a payslip and a dump
- * of the rule engine's output: an employee reads what they earned and what was
- * taken off, not a flat list in sequence order.
- */
+
+
 function drawGroupRow(doc: Doc, label: string, y: number): number {
   doc.rect(M, y, CONTENT, 19).fill(COLOR.white)
   doc
@@ -376,14 +347,14 @@ function drawLineTable(doc: Doc, document: PayslipDocument, top: number): number
     for (const line of group.lines) {
       const before = y
       y = ensureSpace(doc, y, 21)
-      // A new page needs its own header row, or the columns lose their labels.
+      
       if (y !== before) y = drawTableHead(doc, y)
       y = drawLineRow(doc, line, y, striped)
       striped = !striped
     }
   }
 
-  // The outer frame is drawn last so the row fills cannot paint over it.
+  
   doc
     .rect(M, top, CONTENT, y - top)
     .lineWidth(0.75)
@@ -392,7 +363,7 @@ function drawLineTable(doc: Doc, document: PayslipDocument, top: number): number
   return y + 20
 }
 
-/** Break to a new page when `needed` points would cross the footer. */
+
 function ensureSpace(doc: Doc, y: number, needed: number): number {
   if (y + needed <= BOTTOM_LIMIT) return y
   doc.addPage()
@@ -400,7 +371,7 @@ function ensureSpace(doc: Doc, y: number, needed: number): number {
   return M + 12
 }
 
-// ── Totals ──────────────────────────────────────────────────────────────────
+
 
 function drawTotals(doc: Doc, document: PayslipDocument, top: number): number {
   const rows: Array<{ label: string; value: number; negative?: boolean }> = [
@@ -441,7 +412,7 @@ function drawTotals(doc: Doc, document: PayslipDocument, top: number): number {
 
   y += boxHeight + 10
 
-  // Net pay: the one number the employee actually opened this file for.
+  
   const netHeight = 46
   doc.roundedRect(boxX, y, boxWidth, netHeight, 6).fillAndStroke(COLOR.accentSoft, COLOR.accent)
 
@@ -464,7 +435,7 @@ function drawTotals(doc: Doc, document: PayslipDocument, top: number): number {
   return y + netHeight + 18
 }
 
-// ── Amount in words ─────────────────────────────────────────────────────────
+
 
 function drawWords(doc: Doc, document: PayslipDocument, top: number): void {
   const y = ensureSpace(doc, top, 46)
@@ -482,7 +453,7 @@ function drawWords(doc: Doc, document: PayslipDocument, top: number): void {
     .text(document.netInWords, M, y + 13, { width: CONTENT })
 }
 
-// ── Footer, on every page ───────────────────────────────────────────────────
+
 
 function drawFooters(doc: Doc, document: PayslipDocument): void {
   const range = doc.bufferedPageRange()

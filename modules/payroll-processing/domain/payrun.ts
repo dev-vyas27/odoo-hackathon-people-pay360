@@ -1,12 +1,6 @@
-/**
- * Payrun — AGGREGATE ROOT: one batch of payslips for one structure and period.
- *
- * The aggregate owns its own lifecycle. Every transition goes through
- * `assertTransition`, so an illegal one throws here rather than being prevented
- * (or not) by whichever controller happens to be calling. Transitions return a
- * NEW payrun rather than mutating in place, matching how `Money` and `Period`
- * behave in the shared kernel.
- */
+
+
+
 import { DomainError, type Period } from '@/modules/shared'
 import { assertTransition, isFinalised, type PayrunStatus } from './payrun-state'
 
@@ -14,14 +8,13 @@ export interface Payrun {
   readonly id: string
   readonly name: string
   readonly structureId: string
-  /** Joined from `salary_structures` on read; the table stores only the id. */
+  
   readonly structureName: string
   readonly period: Period
   readonly status: PayrunStatus
-  /**
-   * Exactly the employees chosen in the wizard — never "everyone active".
-   * Persisted in the `payrun_employees` join table.
-   */
+  
+
+
   readonly employeeIds: readonly string[]
   readonly createdAt: Date
 }
@@ -60,19 +53,8 @@ export function createPayrun(input: PayrunInput): Payrun {
   return reconstitutePayrun(input)
 }
 
-/**
- * Rebuild a payrun from storage. Trusted — the rules above ran when it was
- * created.
- *
- * This exists because the repository used to call `createPayrun` on every read,
- * which re-applied CREATE-time validation to rows that already exist. A single
- * payrun whose last employee had been removed then threw PAYRUN_NO_EMPLOYEES on
- * load and took the entire payrun LIST down with it — one unusual row making
- * every other row unreadable. A rule about what may be created is not a rule
- * about what may be read back.
- *
- * Same split as `Attendance.checkIn()` vs `Attendance.reconstitute()`.
- */
+
+
 export function reconstitutePayrun(input: PayrunInput): Payrun {
   const employeeIds = [...new Set(input.employeeIds)]
 
@@ -80,8 +62,8 @@ export function reconstitutePayrun(input: PayrunInput): Payrun {
     id: input.id,
     name: input.name.trim(),
     structureId: input.structureId,
-    // Joined from salary_structures on read; empty only on a freshly built
-    // aggregate that has not been persisted yet.
+    
+    
     structureName: input.structureName ?? '',
     period: input.period,
     status: input.status ?? 'draft',
@@ -105,7 +87,7 @@ export function markPaid(payrun: Payrun): Payrun {
   return { ...payrun, status: 'paid' }
 }
 
-/** Guard for anything that would rewrite a finalised run's figures. */
+
 export function assertEditable(payrun: Payrun): void {
   if (isFinalised(payrun.status)) {
     throw DomainError.rule(

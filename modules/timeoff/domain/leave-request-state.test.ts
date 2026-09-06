@@ -1,7 +1,3 @@
-/**
- * The lifecycle. These tests exist because "illegal transitions throw" is a
- * claim, and a claim without a test is a hope.
- */
 import { describe, expect, it } from 'vitest'
 import { DomainError, Period } from '@/modules/shared'
 import { LeaveRequest } from './leave-request'
@@ -48,6 +44,17 @@ describe('leave request lifecycle', () => {
     expect(request.status).toBe('refused')
   })
 
+  it('reaches approved with no human decider, for a type that auto-approves', () => {
+    const request = draft()
+    request.submit()
+
+    request.approve(null, 'alloc-1')
+
+    expect(request.status).toBe('approved')
+    expect(request.allocationId).toBe('alloc-1')
+    expect(request.toProps().decidedByEmployeeId).toBeNull()
+  })
+
   it('will not resurrect a refused request', () => {
     const request = draft()
     request.submit()
@@ -57,10 +64,11 @@ describe('leave request lifecycle', () => {
     expect(() => request.submit()).toThrowError(/refused/i)
   })
 
-  it('marks only draft requests editable', () => {
+  it('marks a request editable until it has been decided', () => {
     expect(stateOf('draft').isEditable).toBe(true)
-    expect(stateOf('to_approve').isEditable).toBe(false)
+    expect(stateOf('to_approve').isEditable).toBe(true)
     expect(stateOf('approved').isEditable).toBe(false)
+    expect(stateOf('refused').isEditable).toBe(false)
   })
 
   it('knows that only the approved state has consumed balance', () => {
@@ -71,7 +79,7 @@ describe('leave request lifecycle', () => {
 })
 
 describe('duration defaulting', () => {
-  it('counts inclusive calendar days for day-unit leave', () => {
+  it('counts inclusive calendar days when the employee has no schedule', () => {
     expect(LeaveRequest.defaultDuration(period, 'day')).toBe(5)
     expect(LeaveRequest.defaultDuration(Period.of(day('2026-03-02'), day('2026-03-02')), 'day')).toBe(1)
   })
@@ -82,5 +90,23 @@ describe('duration defaulting', () => {
 
   it('insists on an explicit duration for hour-unit leave', () => {
     expect(() => LeaveRequest.defaultDuration(period, 'hour')).toThrowError(/explicit number of hours/)
+  })
+
+  it('bills the working-day count rather than the calendar span', () => {
+    const fortnight = Period.of(day('2026-03-02'), day('2026-03-13'))
+
+    expect(fortnight.days).toBe(12)
+    expect(LeaveRequest.defaultDuration(fortnight, 'day', undefined, 10)).toBe(10)
+  })
+
+  it('still lets an explicit half day win over the working-day count', () => {
+    expect(LeaveRequest.defaultDuration(period, 'day', 0.5, 5)).toBe(0.5)
+  })
+
+  it('refuses leave that falls entirely on non-working days', () => {
+    const weekend = Period.of(day('2026-03-07'), day('2026-03-08'))
+    expect(() => LeaveRequest.defaultDuration(weekend, 'day', undefined, 0)).toThrowError(
+      /no working days/i,
+    )
   })
 })

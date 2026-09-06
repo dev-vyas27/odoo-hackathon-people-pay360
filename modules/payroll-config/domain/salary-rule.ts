@@ -1,12 +1,6 @@
-/**
- * SalaryRule — one line of a payslip, and how its amount is derived.
- *
- * A rule is reusable across structures: "PF at 12% of BASIC" is written once and
- * included wherever it applies. The `code` is the rule's address — other rules
- * reference it in percentages and formulas — so it is uppercase, unique and
- * validated rather than free text. `salary_rules.code` carries the matching
- * UNIQUE constraint.
- */
+
+
+
 import { DomainError } from '@/modules/shared'
 import type { SalaryCategory } from './salary-category'
 import { isSalaryCategory } from './salary-category'
@@ -14,7 +8,7 @@ import type { ComputationConfig } from './computation/computation.strategy'
 import { isReservedCode, RESERVED_CODES } from './computation/computation.strategy'
 import { parseFormula, referencedCodes } from './computation/formula.parser'
 
-/** Uppercase, starts with a letter: BASIC, HRA, PF, SPECIAL_ALLOWANCE. */
+
 export const RULE_CODE_PATTERN = /^[A-Z][A-Z0-9_]*$/
 
 export interface SalaryRule {
@@ -22,7 +16,7 @@ export interface SalaryRule {
   readonly name: string
   readonly code: string
   readonly category: SalaryCategory
-  /** Default execution order; a structure may override it per structure. */
+  
   readonly sequence: number
   readonly computation: ComputationConfig
   readonly active: boolean
@@ -38,13 +32,8 @@ export interface SalaryRuleInput {
   active?: boolean
 }
 
-/**
- * The single place a SalaryRule becomes valid.
- *
- * Both the API and the repository build rules through here, so a rule that
- * exists is a rule whose invariants hold — no "mostly validated" objects
- * floating around the application layer.
- */
+
+
 export function createSalaryRule(input: SalaryRuleInput): SalaryRule {
   const name = input.name.trim()
   if (!name) {
@@ -97,14 +86,8 @@ export function createSalaryRule(input: SalaryRuleInput): SalaryRule {
   }
 }
 
-/**
- * Structural validation of the computation config.
- *
- * Catches at save time what would otherwise surface halfway through a payrun:
- * a malformed formula, a percentage of nothing, a rule referencing itself.
- * Mirrors the `salary_rules_parameters_present` CHECK, so the database never
- * has to be the one to say no.
- */
+
+
 export function validateComputation(code: string, computation: ComputationConfig): void {
   switch (computation.type) {
     case 'fixed': {
@@ -124,7 +107,7 @@ export function validateComputation(code: string, computation: ComputationConfig
           percent: computation.percent,
         })
       }
-      // Matches salary_rules_percentage_range.
+      
       if (computation.percent < 0 || computation.percent > 100) {
         throw DomainError.validation(
           'RULE_PERCENT_RANGE',
@@ -151,7 +134,7 @@ export function validateComputation(code: string, computation: ComputationConfig
     }
 
     case 'formula': {
-      // Throws a precise, user-facing DomainError when the syntax is wrong.
+      
       const ast = parseFormula(computation.expression)
       if (referencedCodes(ast).includes(code)) {
         throw DomainError.validation(
@@ -165,12 +148,8 @@ export function validateComputation(code: string, computation: ComputationConfig
   }
 }
 
-/**
- * Every rule code this rule depends on. Drives sequence validation.
- *
- * Reserved codes are excluded: they are engine inputs available from the start,
- * not rules that have to run first.
- */
+
+
 export function dependenciesOf(rule: SalaryRule): string[] {
   switch (rule.computation.type) {
     case 'fixed':

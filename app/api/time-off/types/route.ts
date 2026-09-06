@@ -1,7 +1,6 @@
-/**
- * GET  /api/time-off/types — configured leave policies (spec A4)
- * POST /api/time-off/types
- */
+
+
+
 import { createTimeOffType, listTimeOffTypes } from '@/modules/timeoff'
 import { requireActor } from '@/lib/auth'
 import { handle, parsePageQuery, respond } from '@/lib/http'

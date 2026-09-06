@@ -1,15 +1,6 @@
-/**
- * Validate a payrun — the point of no return.
- *
- * Warnings are re-run here rather than trusted from the compute step: minutes
- * may have passed, a contract may have been edited, another run may have been
- * created. Blocking problems (a duplicate payslip, a missing contract) refuse
- * the transition; advisory ones are surfaced but do not stop a human who has
- * looked at them.
- *
- * Publishes `payrun.validated` so Delivery and Analytics can react without this
- * module knowing they exist.
- */
+
+
+
 import {
   authorize,
   DomainError,

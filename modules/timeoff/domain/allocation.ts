@@ -1,14 +1,6 @@
-/**
- * Allocation — AGGREGATE ROOT. An employee's entitlement to one leave type,
- * valid for one window of time.
- *
- * `taken` lives here rather than being recomputed from the request list on every
- * read, because the balance is the thing the business cares about and it must
- * be adjustable atomically when a request is approved. Consuming and restoring
- * are methods on the aggregate, so the invariant "taken never exceeds allocated
- * and never goes negative" is enforced in one place and cannot be bypassed by a
- * caller writing the field directly.
- */
+
+
+
 import { DomainError, Period, type LeaveUnit } from '@/modules/shared'
 
 export const ALLOCATION_STATUSES = ['draft', 'to_approve', 'approved', 'refused'] as const
@@ -19,9 +11,9 @@ export interface AllocationProps {
   employeeId: string
   timeOffTypeId: string
   unit: LeaveUnit
-  /** Entitlement granted, in `unit`s. */
+  
   allocated: number
-  /** Already consumed by approved requests, in `unit`s. */
+  
   taken: number
   validity: Period
   status: AllocationStatus
@@ -84,17 +76,14 @@ export class Allocation {
     return round2(this.props.allocated - this.props.taken)
   }
 
-  /** Only an approved allocation is spendable. A draft grant is a proposal. */
+  
   get isUsable(): boolean {
     return this.props.status === 'approved'
   }
 
-  /**
-   * The allocation must cover the WHOLE requested period, not merely overlap it.
-   * A 5-day leave straddling the year boundary is not half-funded by last
-   * year's balance — it is a request that has to be split, and pretending
-   * otherwise silently overpays.
-   */
+  
+
+
   covers(period: Period): boolean {
     return this.props.validity.contains(period.start) && this.props.validity.contains(period.end)
   }
@@ -123,13 +112,13 @@ export class Allocation {
     this.props = { ...this.props, taken: round2(this.props.taken + amount) }
   }
 
-  /** Refusing a previously approved request gives the balance back. */
+  
   restore(amount: number): void {
     if (amount <= 0) {
       throw DomainError.validation('ALLOCATION_BAD_AMOUNT', 'Amount to restore must be positive')
     }
-    // Clamped rather than throwing: a restore that would go negative means the
-    // data was already inconsistent, and refusing the refusal helps nobody.
+    
+    
     this.props = { ...this.props, taken: round2(Math.max(0, this.props.taken - amount)) }
   }
 
@@ -172,10 +161,8 @@ export class Allocation {
   }
 }
 
-/**
- * Half-days and quarter-hours are legitimate, so this is not integer maths —
- * but floating point drift is, so every mutation rounds to two decimals.
- */
+
+
 function round2(n: number): number {
   return Math.round(n * 100) / 100
 }

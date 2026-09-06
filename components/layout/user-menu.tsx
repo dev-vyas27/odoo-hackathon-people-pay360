@@ -1,16 +1,7 @@
 'use client'
 
-/**
- * Current user, role, and the way out.
- *
- * Sign-out is a POST: a GET logout can be fired by any third-party <img> tag.
- *
- * Afterwards it pushes to /login and calls `refresh()`. The push leaves the
- * dashboard layout, which unmounts `Providers` and therefore destroys the
- * QueryClient holding the previous user's data; the refresh re-renders the
- * server components without the cookie. Both halves are needed — a push alone
- * would reuse the cached RSC payload that still says you are signed in.
- */
+
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

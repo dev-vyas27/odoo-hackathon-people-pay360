@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Employee } from './employee'
+import type { EmployeeType } from './employee-type'
 
 const validInput = {
   name: 'Ada Lovelace',
@@ -32,8 +33,7 @@ describe('Employee.create', () => {
   })
 
   it('rejects an unknown employee type', () => {
-    // @ts-expect-error deliberately invalid at the boundary
-    const result = Employee.create({ ...validInput, employeeType: 'freelancer' })
+    const result = Employee.create({ ...validInput, employeeType: 'freelancer' as EmployeeType })
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.error.code).toBe('EMPLOYEE_TYPE_INVALID')

@@ -36,7 +36,7 @@ describe('ListAttendanceUseCase', () => {
     await seed(repo)
 
     const useCase = new ListAttendanceUseCase(repo)
-    // Even trying to ask for someone else's employeeId is overridden.
+    
     const result = await useCase.execute({
       actor: employeeActor('emp-1'),
       filter: { employeeId: 'emp-2' },

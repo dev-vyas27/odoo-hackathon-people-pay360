@@ -1,7 +1,6 @@
-/**
- * PATCH  /api/time-off/types/[id]
- * DELETE /api/time-off/types/[id] — refused when the type has history.
- */
+
+
+
 import { deleteTimeOffType, updateTimeOffType } from '@/modules/timeoff'
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'

@@ -1,12 +1,6 @@
-/**
- * Time Off Type configuration — spec A4: "Time Off Types define leave policies
- * including units (days/hours), allocation requirements, approval workflows,
- * and payroll integration."
- *
- * Those four policy levers are the four flags on the type: `unit`,
- * `requiresAllocation`, the approval workflow every request goes through, and
- * `isPaid`, which is what payroll reads when prorating. Configuration, not code.
- */
+
+
+
 import {
   DomainError,
   Err,
@@ -28,6 +22,8 @@ export interface TimeOffTypeInput {
   code: string
   unit: LeaveUnit
   requiresAllocation: boolean
+  
+  autoApprove: boolean
   isPaid: boolean
   isActive: boolean
 }
@@ -59,8 +55,8 @@ export class CreateTimeOffTypeUseCase
     if (!allowed.ok) return allowed
 
     try {
-      // Uniqueness of `code` is a UNIQUE index, not a read-then-write check —
-      // the repository translates the constraint violation into a clean 409.
+      
+      
       const created = await this.uow.repos.types.create(input.values)
       return Ok(created.toView())
     } catch (reason) {
@@ -89,11 +85,9 @@ export class UpdateTimeOffTypeUseCase
         return Err(DomainError.notFound('TIME_OFF_TYPE_NOT_FOUND', 'That leave type does not exist'))
       }
 
-      /**
-       * The unit cannot change once allocations exist against it. Flipping a
-       * type from days to hours would silently reinterpret every stored balance
-       * — 12 days would become 12 hours and nothing would look wrong.
-       */
+      
+
+
       if (input.values.unit && input.values.unit !== existing.unit) {
         const [inUse] = await Promise.all([
           this.uow.repos.allocations.findMany({
@@ -130,13 +124,9 @@ export class DeleteTimeOffTypeUseCase implements UseCase<{ actor: Actor; id: str
     const allowed = authorize(input.actor, 'time_off_type', 'delete')
     if (!allowed.ok) return allowed
 
-    /**
-     * The foreign keys from allocations and requests are ON DELETE RESTRICT, so
-     * a type with history cannot be removed. Rather than surfacing a raw
-     * constraint error, say the useful thing: deactivate it instead. History is
-     * the point — a deleted leave type would orphan every payslip that prorated
-     * against it.
-     */
+    
+
+
     const [allocations, requests] = await Promise.all([
       this.uow.repos.allocations.findMany({ limit: 1, filters: { timeOffTypeId: input.id } }),
       this.uow.repos.requests.findMany({ limit: 1, filters: { timeOffTypeId: input.id } }),

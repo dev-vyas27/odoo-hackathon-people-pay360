@@ -1,24 +1,9 @@
 'use client'
 
-/**
- * The Request Form.
- *
- * Spec B4: "Request Form details the request and supports a simple approval or
- * refusal workflow." So: the details, and two buttons.
- *
- * Which buttons appear is decided by the SERVER (`canApprove` / `canRefuse` on
- * the detail payload), not by re-deriving the rules here. The screen and the
- * API therefore cannot disagree about what is allowed — including the rule that
- * you may not decide on your own request, which no permission table can express.
- *
- * The balance panel shows what approving will cost before it is spent. That is
- * the "transparently linked" half of spec A4: the deduction is not a side effect
- * you discover afterwards.
- */
 import { use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LuArrowLeft, LuCheck, LuSend, LuTrash2, LuX } from 'react-icons/lu'
+import { LuArrowLeft, LuCheck, LuPencil, LuSend, LuTrash2, LuX } from 'react-icons/lu'
 import type { LeaveRequestDetail } from '@/modules/timeoff/schemas'
 import { useDeleteResource, useResourceAction, useResourceItem } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
@@ -32,7 +17,6 @@ import { formatDate, formatDateRange, formatDuration } from '../../_components/f
 const RESOURCE = 'time-off/requests'
 
 export default function LeaveRequestPage({ params }: { params: Promise<{ id: string }> }) {
-  // Next 16: params is a promise. `use()` unwraps it in a client component.
   const { id } = use(params)
   const router = useRouter()
 
@@ -96,7 +80,12 @@ export default function LeaveRequestPage({ params }: { params: Promise<{ id: str
               {request.decidedAt ? (
                 <>
                   <dt className="text-muted-foreground">Decided</dt>
-                  <dd className="tabular">{formatDate(request.decidedAt)}</dd>
+                  <dd className="tabular">
+                    {formatDate(request.decidedAt)}
+                    {request.autoApprove && request.status === 'approved' ? (
+                      <span className="ml-1 text-muted-foreground">— auto-approved</span>
+                    ) : null}
+                  </dd>
                 </>
               ) : null}
 
@@ -158,8 +147,6 @@ export default function LeaveRequestPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      {/* The approval workflow. Every button here corresponds to a transition the
-          state machine will accept — see leave-request-state.ts. */}
       <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
         {request.canSubmit ? (
           <Button onClick={() => submit.mutate({ id })} disabled={busy}>
@@ -208,9 +195,18 @@ export default function LeaveRequestPage({ params }: { params: Promise<{ id: str
         ) : null}
 
         {request.canEdit ? (
+          <Button variant="outline" asChild disabled={busy} className="ml-auto">
+            <Link href={`/time-off/requests/${id}/edit`}>
+              <LuPencil aria-hidden />
+              Edit
+            </Link>
+          </Button>
+        ) : null}
+
+        {request.canEdit ? (
           <ConfirmDialog
             title="Withdraw this request?"
-            description="Only drafts can be withdrawn. This cannot be undone."
+            description="It is removed entirely and nobody is asked to decide on it. This cannot be undone."
             confirmLabel="Withdraw"
             destructive
             onConfirm={async () => {
@@ -218,7 +214,7 @@ export default function LeaveRequestPage({ params }: { params: Promise<{ id: str
               router.push('/time-off/requests')
             }}
             trigger={
-              <Button variant="ghost" disabled={busy} className="ml-auto">
+              <Button variant="ghost" disabled={busy}>
                 <LuTrash2 aria-hidden />
                 Withdraw
               </Button>

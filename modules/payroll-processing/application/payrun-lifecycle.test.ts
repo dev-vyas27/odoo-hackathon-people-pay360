@@ -1,14 +1,6 @@
-/**
- * The payrun lifecycle, end to end, with no database.
- *
- * Every collaborator is a port, so the whole orchestration — resolving the
- * period-applicable contract, prorating by attendance, running the engine,
- * persisting payslips, moving through the state machine and blocking on
- * warnings — is exercised here with in-memory fakes.
- *
- * This is the test that would otherwise have to wait for Dev B's adapters and a
- * running Postgres, which is exactly why it is worth having.
- */
+
+
+
 import { describe, expect, it, beforeEach } from 'vitest'
 import { InMemoryEventBus, Period, type Actor, type DomainEvent, type Paged } from '@/modules/shared'
 import type { ResolvedSalaryStructure, SalaryStructureQueryPort } from '@/modules/payroll-config'
@@ -36,7 +28,7 @@ const ACTOR: Actor = {
 
 const MARCH = Period.month(2025, 3)
 
-// --- Fakes ------------------------------------------------------------------
+
 
 class FakePayrunRepository implements PayrunRepositoryPort {
   readonly rows = new Map<string, Payrun>()
@@ -111,7 +103,7 @@ function fakeEmployees(employees: EmployeeSummary[]): EmployeeLookupPort {
   }
 }
 
-/** Resolves the contract whose validity actually overlaps the period. */
+
 function fakeContracts(contracts: ContractSnapshot[]): ContractQueryPort {
   return {
     findApplicableContract: async (employeeId, period) => {
@@ -133,6 +125,7 @@ function fakeSchedules(expectedDays: number): ScheduleQueryPort {
   return {
     findById: async () => null,
     expectedHours: async () => expectedDays * 8,
+    expectedDays: async () => expectedDays,
   }
 }
 
@@ -151,7 +144,7 @@ function fakeAttendance(workedDays: Record<string, number>): AttendanceStatsPort
   }
 }
 
-// --- Scenario ---------------------------------------------------------------
+
 
 describe('payrun lifecycle', () => {
   const structure = standardStructure()
@@ -244,18 +237,18 @@ describe('payrun lifecycle', () => {
     expect(result.value.payslips).toHaveLength(2)
 
     const [ashaSlip, balaSlip] = result.value.payslips
-    // Asha worked the full 22 of 22 days on a 50,000 wage.
+    
     expect(totalsOf(ashaSlip).basic.toNumber()).toBe(50000)
     expect(totalsOf(ashaSlip).net.toNumber()).toBe(64000)
-    // Bala worked 11 of 22 days on a 30,000 wage, so everything halves.
+    
     expect(totalsOf(balaSlip).basic.toNumber()).toBe(15000)
     expect(balaSlip.workedDays).toBe(11)
     expect(balaSlip.workedDays).toBe(11)
   })
 
   it('uses the contract that applies to the PERIOD, not the latest one', async () => {
-    // Asha holds an expired 2025 contract and a current one. March 2025 must be
-    // paid on the old contract even though a newer one exists.
+    
+    
     const withHistory = [
       contract({
         id: 'c-asha-old',
@@ -310,7 +303,7 @@ describe('payrun lifecycle', () => {
       payslips,
       fakeStructures(structure),
       fakeEmployees([asha, bala]),
-      // Bala has no contract at all.
+      
       fakeContracts([contracts[0]]),
       fakeSchedules(22),
       fakeAttendance({ 'emp-1': 22 }),
@@ -361,7 +354,7 @@ describe('payrun lifecycle', () => {
     expect(validated.ok).toBe(true)
     if (!validated.ok) return
     expect(validated.value.payrun.status).toBe('validated')
-    // Payslips follow their payrun.
+    
     expect(payslips.rows.every((p) => p.status === 'validated')).toBe(true)
 
     const paid = await new MarkPayrunPaidUseCase(payruns, payslips, events).execute({
@@ -472,7 +465,7 @@ describe('eligibility listing (wizard step 2)', () => {
       ['emp-2', false],
     ])
     expect(result.value[1].reason).toBe('no_contract')
-    // The question is read-only: nothing was persisted by asking it.
+    
     expect(payruns.rows.size).toBe(0)
   })
 

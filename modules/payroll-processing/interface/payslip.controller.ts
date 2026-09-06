@@ -1,6 +1,6 @@
-/**
- * HTTP for a single payslip.
- */
+
+
+
 import { Ok } from '@/modules/shared'
 import { errorResponse, respond } from '@/lib/http'
 import { GetPayslipDetailUseCase } from '../application/get-payslip-detail.use-case'

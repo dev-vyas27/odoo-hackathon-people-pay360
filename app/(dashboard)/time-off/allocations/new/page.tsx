@@ -1,12 +1,7 @@
 'use client'
 
-/**
- * Grant an allocation.
- *
- * It lands in `to_approve`, not `approved` — spec A4 requires approval before
- * availability. The note under the submit button says so, because a balance
- * that silently does nothing is the kind of thing people file a bug about.
- */
+
+
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
@@ -35,11 +30,9 @@ export default function NewAllocationPage() {
     limit: 100,
   })
 
-  /**
-   * Only types that USE allocations can be allocated against. Offering "Unpaid
-   * Leave" here would create a balance nothing ever reads — the use case
-   * rejects it, but not offering it is better than explaining it.
-   */
+  
+
+
   const allocatable = types.items.filter((type) => type.requiresAllocation)
 
   const create = useCreateResource<{ id: string }, AllocationValues>('time-off/allocations', {

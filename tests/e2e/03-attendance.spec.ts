@@ -1,6 +1,6 @@
 import { test, expect, makeEmployee, makeSchedule } from './_helpers/fixtures'
 
-/** A fixed past day keeps these deterministic regardless of when the suite runs. */
+
 const DAY = '2025-03-10'
 
 test.describe('Attendance — check in / check out', () => {
@@ -23,7 +23,7 @@ test.describe('Attendance — check in / check out', () => {
 
     const read = await api.get(`/api/attendance/${id}`)
     expect(read.status).toBe(200)
-    // 09:00-18:00 minus a 60 minute break = 8 hours
+    
     expect(JSON.stringify(read.data)).toContain('8')
   })
 
@@ -76,7 +76,7 @@ test.describe('Attendance — check in / check out', () => {
     expect(out.status, JSON.stringify(out.raw)).toBe(200)
     const read = await api.get(`/api/attendance/${id}`)
     const body = JSON.stringify(read.data)
-    // Dates are full of hyphens, so look for an actual negative NUMBER value.
+    
     expect(body, 'a midnight-crossing shift must not produce negative hours').not.toMatch(/:\s*-\d/)
   })
 
@@ -194,7 +194,7 @@ test.describe('Attendance — listing', () => {
     const schedule = await makeSchedule(api)
     const employee = await makeEmployee(api, { workingScheduleId: schedule.id })
 
-    // 2025-03-10 is a Monday; the schedule starts at 09:00, so 11:00 is late.
+    
     const created = await api.post('/api/attendance', {
       employeeId: employee.id,
       checkIn: `${DAY}T11:00:00.000Z`,

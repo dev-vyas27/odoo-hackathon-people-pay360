@@ -221,7 +221,7 @@ test.describe('Time Off — requests and the state machine', () => {
   test('refuses a request with no allocation to draw from', async ({ api }) => {
     const employee = await makeEmployee(api)
     const type = await makeType(api)
-    // Deliberately no allocation created.
+    
     const r = await api.post('/api/time-off/requests', {
       employeeId: employee.id,
       timeOffTypeId: type.id,

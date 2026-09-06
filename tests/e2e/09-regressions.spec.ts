@@ -1,9 +1,7 @@
 import { test, expect, makeEmployee, uniq, uniqCode, QA_EMAIL, QA_PASSWORD } from './_helpers/fixtures'
 
-/**
- * One test per bug this QA pass found and fixed. If any of these goes red
- * again, the regression is exact and the report entry explains the history.
- */
+
+
 
 test.describe('Regression — F1 session cookie over plain HTTP', () => {
   test('the cookie is not marked Secure when the request is not HTTPS', async ({ anon }) => {
@@ -19,13 +17,9 @@ test.describe('Regression — F1 session cookie over plain HTTP', () => {
     expect(setCookie, 'the session must still be httpOnly').toMatch(/HttpOnly/i)
   })
 
-  /**
-   * The first attempt at F1 read `x-forwarded-proto` to decide the flag. That
-   * is spoofable: proxies that APPEND to a client-supplied value leave the
-   * caller's own entry leftmost, so a request carrying `x-forwarded-proto:
-   * http` would downgrade that session's cookie off TLS. The flag is now
-   * configuration only, and these two tests exist to keep it that way.
-   */
+  
+
+
   test('a spoofed x-forwarded-proto cannot turn the flag ON', async ({ anon }) => {
     const res = await anon.ctx.post('/api/auth/login', {
       data: { email: QA_EMAIL, password: QA_PASSWORD },
@@ -39,16 +33,16 @@ test.describe('Regression — F1 session cookie over plain HTTP', () => {
   })
 
   test('a spoofed x-forwarded-proto cannot turn the flag OFF either', async ({ anon }) => {
-    // The downgrade direction, which is the one that actually costs a victim
-    // their session. `http,https` is what an appending proxy produces.
+    
+    
     const res = await anon.ctx.post('/api/auth/login', {
       data: { email: QA_EMAIL, password: QA_PASSWORD },
       headers: { 'x-forwarded-proto': 'http,https', origin: 'https://evil.example' },
     })
     expect(res.status()).toBe(200)
     const setCookie = res.headers()['set-cookie'] ?? ''
-    // COOKIE_SECURE=false for this harness, so the flag is off either way —
-    // what matters is that the headers changed nothing about the response.
+    
+    
     expect(setCookie).toMatch(/HttpOnly/i)
     expect(setCookie).toMatch(/SameSite=lax/i)
   })
@@ -153,11 +147,9 @@ test.describe('Regression — F5 attendance must return its DTO, not the aggrega
     expect(item.workedHours).toBe(8)
   })
 
-  /**
-   * The list was fixed first and the other three endpoints were not, so the
-   * detail screen kept dying the same way — `status.replace()` on undefined.
-   * Every attendance endpoint now returns the same view; this walks all four.
-   */
+  
+
+
   test('EVERY attendance endpoint returns the same shape', async ({ api }) => {
     const employee = await makeEmployee(api)
 
@@ -169,7 +161,7 @@ test.describe('Regression — F5 attendance must return its DTO, not the aggrega
       workedHoursType: data?.workedHours === null ? 'null' : typeof data?.workedHours,
     })
 
-    // 1. check-in
+    
     const created = await api.post('/api/attendance', {
       employeeId: employee.id,
       checkIn: '2025-04-09T09:00:00.000Z',
@@ -183,7 +175,7 @@ test.describe('Regression — F5 attendance must return its DTO, not the aggrega
       workedHoursType: 'null',
     })
 
-    // 2. check-out
+    
     const out = await api.post(`/api/attendance/${created.data.id}/check-out`, {
       checkOut: '2025-04-09T17:00:00.000Z',
     })
@@ -196,7 +188,7 @@ test.describe('Regression — F5 attendance must return its DTO, not the aggrega
       workedHoursType: 'number',
     })
 
-    // 3. detail — the one that was crashing the screen
+    
     const detail = await api.get(`/api/attendance/${created.data.id}`)
     expect(detail.status).toBe(200)
     expect(shapeOf(detail.data), 'GET /api/attendance/[id]').toEqual({
@@ -207,7 +199,7 @@ test.describe('Regression — F5 attendance must return its DTO, not the aggrega
       workedHoursType: 'number',
     })
 
-    // 4. correction
+    
     const corrected = await api.patch(`/api/attendance/${created.data.id}`, {
       breakMinutes: 30,
     })
@@ -301,16 +293,9 @@ test.describe('Regression — F7 a night shift must be recordable', () => {
 })
 
 test.describe('Regression — F10 "Load demo data" must actually load', () => {
-  /**
-   * The button on /login posts an empty body here. It broke when the identity
-   * seed started building rows of two different shapes in one batch — `upsert`
-   * emits a single multi-row INSERT, so a row missing a column threw
-   * `Row 4 of "employees" has different columns from row 0` and the whole seed
-   * rolled back.
-   *
-   * Asserting the 200 is not enough: the point of the button is to hand a judge
-   * five working logins, so the test signs in as every credential it returns.
-   */
+  
+
+
   test('seeds every part and returns credentials that all sign in', async ({ anon }) => {
     const seed = await anon.post('/api/demo/seed', {})
     expect(seed.status, JSON.stringify(seed.raw).slice(0, 400)).toBe(200)
@@ -354,7 +339,7 @@ test.describe('Account invitations', () => {
     expect(account.status, JSON.stringify(account.raw)).toBe(201)
     expect(account.data.hasLogin, 'nobody but the holder chooses the password').toBe(false)
 
-    // Before redeeming, that address cannot sign in with anything.
+    
     const early = await anon.post('/api/auth/login', { email: employee.email, password })
     expect(early.status, 'an un-redeemed account must not authenticate').toBe(401)
 
@@ -363,7 +348,7 @@ test.describe('Account invitations', () => {
     const token = new URL(invite.data.link).searchParams.get('token')
     expect(token).toBeTruthy()
 
-    // The link reports whose it is before it is spent.
+    
     const status = await anon.get(`/api/auth/set-password?token=${token}`)
     expect(status.status).toBe(200)
 
@@ -405,7 +390,7 @@ test.describe('Account invitations', () => {
     expect(second.status, 'a spent token must not work twice').toBeGreaterThanOrEqual(400)
     expect(second.status).toBeLessThan(500)
 
-    // The first password still works — the second attempt changed nothing.
+    
     const login = await anon.post('/api/auth/login', {
       email: employee.email,
       password: 'QaFirst!2026aa',

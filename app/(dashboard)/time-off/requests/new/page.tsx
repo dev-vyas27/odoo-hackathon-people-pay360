@@ -1,44 +1,13 @@
 'use client'
 
-/**
- * Raise a leave request.
- *
- * The form is `ResourceForm` driven by `leaveRequestSchema` — the SAME schema
- * the route handler validates with. The employee and type dropdowns are loaded
- * from the API rather than hardcoded, so a leave type configured on the Types
- * tab is immediately selectable here.
- */
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import {
-  leaveRequestSchema,
-  type EmployeeOption,
-  type LeaveRequestValues,
-  type TimeOffTypeView,
-} from '@/modules/timeoff/schemas'
-import { useCreateResource, useResourceList } from '@/hooks/use-resource'
-import { apiFetch } from '@/lib/api-client'
-import { useQuery } from '@tanstack/react-query'
+import type { LeaveRequestValues } from '@/modules/timeoff/schemas'
+import { useCreateResource } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
-import { ResourceForm } from '@/components/resource/resource-form'
-import { useCurrentUser, useScopedToSelf } from '@/components/auth/current-user'
-import { Button } from '@/components/ui/button'
+import { CancelToRequests, LeaveRequestForm } from '../../_components/leave-request-form'
 
 export default function NewLeaveRequestPage() {
   const router = useRouter()
-  const me = useCurrentUser()
-  const selfOnly = useScopedToSelf()
-
-  const { data: employees = [] } = useQuery<EmployeeOption[]>({
-    queryKey: ['time-off', 'employee-options'],
-    queryFn: () => apiFetch<EmployeeOption[]>('/api/time-off/employee-options'),
-  })
-
-  // Only active types can be requested against, so only active types are shown.
-  const { page: types } = useResourceList<TimeOffTypeView>('time-off/types', {
-    isActive: 'true',
-    limit: 100,
-  })
 
   const create = useCreateResource<{ id: string }, LeaveRequestValues>('time-off/requests', {
     successMessage: 'Request submitted for approval',
@@ -51,57 +20,11 @@ export default function NewLeaveRequestPage() {
         description="Leave types that require an allocation are checked against the balance before the request is accepted."
       />
 
-      <ResourceForm<LeaveRequestValues>
-        schema={leaveRequestSchema}
+      <LeaveRequestForm
+        mode="create"
         submitLabel="Submit request"
-        defaultValues={{
-          employeeId: selfOnly ? me.employeeId : '',
-          timeOffTypeId: '',
-          reason: '',
-        }}
-        fields={[
-          {
-            name: 'employeeId',
-            label: 'Employee',
-            type: 'select',
-            /**
-             * Locked to the signed-in person for a self-scoped role, off the
-             * ROLE rather than off `employees.length === 1` as this used to be:
-             * a company with a single employee would otherwise lock the picker
-             * for HR too, and a scoped endpoint that wrongly returned two names
-             * would quietly unlock it.
-             */
-            options: selfOnly
-              ? [{ value: me.employeeId, label: me.name }]
-              : employees.map((e) => ({ value: e.id, label: e.name })),
-            disabled: selfOnly,
-            description: selfOnly ? 'You can only raise your own requests.' : undefined,
-          },
-          {
-            name: 'timeOffTypeId',
-            label: 'Leave type',
-            type: 'select',
-            options: types.items.map((t) => ({
-              value: t.id,
-              label: `${t.name} (${t.code})`,
-            })),
-          },
-          { name: 'start', label: 'From', type: 'date' },
-          { name: 'end', label: 'To', type: 'date' },
-          {
-            name: 'duration',
-            label: 'Duration',
-            type: 'number',
-            description:
-              'Leave blank for whole days. Enter a value for half days, or for hour-based leave types.',
-          },
-          { name: 'reason', label: 'Reason', type: 'textarea', span: 2 },
-        ]}
-        cancel={
-          <Button variant="ghost" asChild>
-            <Link href="/time-off/requests">Cancel</Link>
-          </Button>
-        }
+        defaultValues={{}}
+        cancel={<CancelToRequests />}
         onSubmit={async (values) => {
           const created = await create.mutateAsync(values)
           router.push(`/time-off/requests/${created.id}`)

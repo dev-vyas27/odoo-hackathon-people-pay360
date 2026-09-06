@@ -1,10 +1,6 @@
-/**
- * Identity's controller: parse, delegate, return a Result.
- *
- * It does NOT touch cookies or Response — that is the route handler's job. This
- * keeps the controller callable from anywhere (the seed script, a test) and
- * keeps every route file down to the promised five lines.
- */
+
+
+
 import {
   DomainError,
   Err,
@@ -49,19 +45,15 @@ import {
   updateAccountSchema,
 } from './auth.schema'
 
-/**
- * Wiring, cached per process by `resolve`. Swapping in a fake repository for a
- * test is a matter of seeding the container, not of editing this file.
- */
+
+
 const deps = () => ({
   accounts: resolve('identity.accounts', () => new PostgresAccountRepository()),
   hasher: resolve('identity.hasher', () => new BcryptHasher()),
   tokens: resolve('identity.setup-tokens', () => new PostgresSetupTokenRepository()),
-  /**
-   * Resolved per call, not cached: `delivery` registers the real mailer at
-   * bootstrap, and the console fallback here keeps identity working (and
-   * testable) if it ever has not.
-   */
+  
+
+
   mailer: portOr<MailerPort>(PORT_KEYS.mailer, {
     async send(message) {
       console.warn('[identity] no mailer registered; email dropped:', message.subject)
@@ -70,12 +62,12 @@ const deps = () => ({
   }),
 })
 
-/** The account plus whatever happened to its invitation. */
+
 export interface CreatedAccount extends AccountView {
   invite: InviteResult | null
 }
 
-/** Turn a zod failure into the same DomainError shape every other failure uses. */
+
 function invalid(issues: { path: PropertyKey[]; message: string }[]): DomainError {
   const fieldErrors: Record<string, string> = {}
   for (const issue of issues) {
@@ -93,7 +85,7 @@ export async function login(body: unknown): Promise<Result<CurrentUser>> {
   return new LoginUseCase(accounts, hasher).execute(parsed.data)
 }
 
-/** `me` needs no use case: the actor IS the answer, straight from the token. */
+
 export function me(actor: Actor | null): Result<CurrentUser> {
   if (!actor) return Err(DomainError.unauthorized('UNAUTHENTICATED', 'Sign in to continue'))
   return Ok({
@@ -104,14 +96,8 @@ export function me(actor: Actor | null): Result<CurrentUser> {
   })
 }
 
-/**
- * Create the account, then optionally email the set-password link.
- *
- * The invitation is a SEPARATE step on purpose: if the mail server is down the
- * account still exists, and the response says the email did not go out and
- * hands back the link so the admin can pass it on another way. Rolling the
- * creation back because SMTP hiccuped would be worse for everyone.
- */
+
+
 export async function createAccount(
   actor: Actor,
   body: unknown,
@@ -144,12 +130,12 @@ export async function createAccount(
 
   return Ok({
     ...created.value,
-    // A failed invitation is reported, not thrown — the account is real either way.
+    
     invite: invited.ok ? invited.value : null,
   })
 }
 
-/** Resend, or send for the first time if creation skipped it. */
+
 export async function inviteAccount(
   actor: Actor,
   accountId: string,
@@ -159,7 +145,7 @@ export async function inviteAccount(
   return new InviteAccountUseCase(accounts, tokens, mailer).execute({ actor, accountId, origin })
 }
 
-/** Public: redeem a link. The token is the authentication. */
+
 export async function setPassword(body: unknown): Promise<Result<{ email: string }>> {
   const parsed = setPasswordSchema.safeParse(body)
   if (!parsed.success) return Err(invalid(parsed.error.issues))
@@ -171,7 +157,7 @@ export async function setPassword(body: unknown): Promise<Result<{ email: string
   })
 }
 
-/** Public: is this link still good, and whose is it. */
+
 export async function checkSetupLink(token: string): Promise<Result<SetupLinkStatus>> {
   const { accounts, tokens } = deps()
   return new CheckSetupLinkUseCase(accounts, tokens).execute({ token })
@@ -185,7 +171,7 @@ export async function listAccounts(
   return new ListAccountsUseCase(accounts).execute({ actor, query })
 }
 
-// ── administration ───────────────────────────────────────────────────────────
+
 
 export function getAccount(actor: Actor, accountId: string): Promise<Result<AccountView>> {
   const { accounts } = deps()
@@ -207,7 +193,7 @@ export async function updateAccount(
     name: parsed.data.name,
     role: parsed.data.role,
     isActive: parsed.data.isActive,
-    // '' means "leave the password alone", not "set it to empty".
+    
     password: parsed.data.password || undefined,
   })
 }
@@ -217,14 +203,8 @@ export function revokeLogin(actor: Actor, accountId: string): Promise<Result<Acc
   return new RevokeLoginUseCase(accounts).execute({ actor, accountId })
 }
 
-/**
- * Public: request a reset link.
- *
- * The return type carries nothing, and a malformed email is the ONLY thing that
- * can fail. "That address is not valid" is a statement about the string; "no
- * account has that address" would be a statement about our data, and this
- * endpoint does not make those — see RequestPasswordResetUseCase.
- */
+
+
 export async function requestPasswordReset(
   body: unknown,
   origin: string,

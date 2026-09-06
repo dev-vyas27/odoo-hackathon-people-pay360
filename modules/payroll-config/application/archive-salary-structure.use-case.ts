@@ -15,10 +15,8 @@ export interface ArchiveSalaryStructureInput {
   id: string
 }
 
-/**
- * Structures are archived, not deleted — finalised payruns name the structure
- * they were computed with, and that history has to stay readable.
- */
+
+
 export class ArchiveSalaryStructureUseCase
   implements UseCase<ArchiveSalaryStructureInput, SalaryStructure>
 {

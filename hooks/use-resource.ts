@@ -1,18 +1,7 @@
 'use client'
 
-/**
- * use-resource — TanStack Query bound to the project's REST convention.
- *
- * Every module exposes `/api/<resource>` with the same envelope, so the data
- * layer for a new screen is one line:
- *
- *   const { data, isLoading } = useResourceList<EmployeeView>('employees', filters)
- *
- * Cache invalidation is the part people get wrong by hand. Every mutation here
- * invalidates the whole `['resource', name]` subtree, so creating a leave
- * request refreshes the list, the detail and the balance widget without any
- * screen having to remember to.
- */
+
+
 import {
   useMutation,
   useQuery,
@@ -23,7 +12,7 @@ import {
 import toast from 'react-hot-toast'
 import { ApiError, apiFetch, toQueryString } from '@/lib/api-client'
 
-/** Matches `Paged<T>` from the shared kernel — the shape every list returns. */
+
 export interface PagedResult<T> {
   items: T[]
   total: number
@@ -43,7 +32,7 @@ export const resourceKeys = {
 
 const EMPTY_PAGE: PagedResult<never> = { items: [], total: 0, page: 1, limit: 20, pages: 1 }
 
-/** GET /api/<resource>?<params> */
+
 export function useResourceList<T>(
   resource: string,
   params?: ResourceParams,
@@ -52,7 +41,7 @@ export function useResourceList<T>(
   const query = useQuery<PagedResult<T>, ApiError>({
     queryKey: resourceKeys.list(resource, params),
     queryFn: () => apiFetch<PagedResult<T>>(`/api/${resource}${toQueryString(params)}`),
-    // Paging feels broken without this: the table blanks between pages otherwise.
+    
     placeholderData: (previous) => previous,
     ...options,
   })
@@ -60,7 +49,7 @@ export function useResourceList<T>(
   return { ...query, page: query.data ?? (EMPTY_PAGE as PagedResult<T>) }
 }
 
-/** GET /api/<resource>/<id>. Disabled until an id exists, so "new" forms work. */
+
 export function useResourceItem<T>(
   resource: string,
   id: string | null | undefined,
@@ -74,13 +63,8 @@ export function useResourceItem<T>(
   })
 }
 
-/**
- * Shared mutation plumbing: invalidate, toast, surface the server's message.
- *
- * `onError` shows the API's own wording ("Insufficient balance: 3 days
- * remaining") rather than a generic failure, which is most of the perceived
- * quality of the app for zero extra effort per screen.
- */
+
+
 function useResourceMutation<TInput, TResult>(
   resource: string,
   mutationFn: (input: TInput) => Promise<TResult>,
@@ -92,8 +76,8 @@ function useResourceMutation<TInput, TResult>(
   return useMutation<TResult, ApiError, TInput>({
     mutationFn,
     ...options,
-    // Rest-forwarded so the callback arity stays whatever TanStack currently
-    // passes; the wrapper has no business knowing.
+    
+    
     onSuccess: (...args) => {
       void client.invalidateQueries({ queryKey: resourceKeys.all(resource) })
       if (successMessage) toast.success(successMessage)
@@ -106,7 +90,7 @@ function useResourceMutation<TInput, TResult>(
   })
 }
 
-/** POST /api/<resource> */
+
 export function useCreateResource<T, TInput = unknown>(
   resource: string,
   options?: { successMessage?: string } & Partial<UseMutationOptions<T, ApiError, TInput>>,
@@ -120,7 +104,7 @@ export function useCreateResource<T, TInput = unknown>(
   )
 }
 
-/** PATCH /api/<resource>/<id> */
+
 export function useUpdateResource<T, TInput = unknown>(
   resource: string,
   options?: { successMessage?: string } & Partial<
@@ -137,7 +121,7 @@ export function useUpdateResource<T, TInput = unknown>(
   )
 }
 
-/** DELETE /api/<resource>/<id> */
+
 export function useDeleteResource(
   resource: string,
   options?: { successMessage?: string } & Partial<UseMutationOptions<void, ApiError, string>>,
@@ -151,14 +135,8 @@ export function useDeleteResource(
   )
 }
 
-/**
- * POST /api/<resource>/<id>/<action> — the verbs that are not CRUD.
- *
- * Approve, refuse, compute, validate, mark-paid and send all follow this shape.
- * Modelling them as sub-resources rather than `PATCH { status }` keeps the
- * business rule ("approving deducts the allocation") in one use case instead of
- * being inferred from a status field the client happened to set.
- */
+
+
 export function useResourceAction<T = unknown, TBody = unknown>(
   resource: string,
   action: string,

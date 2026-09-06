@@ -1,12 +1,6 @@
-/**
- * Grant an allocation, and decide on one.
- *
- * Spec A4: "Allocations manage employee balances, **requiring approval before
- * availability**". So a new allocation starts in `to_approve` and is not
- * spendable — `Allocation.isUsable` is false until someone approves it, and
- * `eligibleAllocations` filters on exactly that. Creating an entitlement and
- * granting it are two acts by two people.
- */
+
+
+
 import {
   DomainError,
   Err,
@@ -29,7 +23,7 @@ export interface AllocateInput {
   validFrom: Date
   validTo: Date
   note?: string | null
-  /** Skips the approval step. Only an approver may ask for it. */
+  
   approveImmediately?: boolean
 }
 
@@ -53,11 +47,9 @@ export class AllocateUseCase implements UseCase<AllocateInput, AllocationView> {
       if (!type.isActive) {
         return Err(DomainError.rule('TIME_OFF_TYPE_INACTIVE', `${type.name} is no longer available`))
       }
-      /**
-       * A type that needs no allocation has no balance to hold. Allocating
-       * against unpaid leave would create a number nothing ever reads, which is
-       * worse than an error because it looks like it works.
-       */
+      
+
+
       if (!type.requiresAllocation) {
         return Err(
           DomainError.rule(
@@ -72,7 +64,7 @@ export class AllocateUseCase implements UseCase<AllocateInput, AllocationView> {
         return Err(DomainError.notFound('EMPLOYEE_NOT_FOUND', 'That employee does not exist'))
       }
 
-      // Only someone who could approve it may create it pre-approved.
+      
       const immediate =
         input.approveImmediately === true && authorize(input.actor, 'allocation', 'approve').ok
 
@@ -80,8 +72,8 @@ export class AllocateUseCase implements UseCase<AllocateInput, AllocationView> {
         id: 'new',
         employeeId: input.employeeId,
         timeOffTypeId: type.id,
-        // The unit always comes from the type, never from the request body:
-        // an allocation in hours against a day-based type is meaningless.
+        
+        
         unit: type.unit,
         allocated: input.allocated,
         taken: 0,
@@ -116,13 +108,8 @@ export interface DecideAllocationInput {
   decision: 'approve' | 'refuse'
 }
 
-/**
- * The approval step that makes an allocation spendable — or refuses it.
- *
- * `Allocation.refuse()` throws when anything has already been taken against it,
- * because withdrawing a balance somebody has already spent would leave approved
- * leave funded by nothing.
- */
+
+
 export class DecideAllocationUseCase implements UseCase<DecideAllocationInput, AllocationView> {
   constructor(private readonly uow: UnitOfWorkPort) {}
 

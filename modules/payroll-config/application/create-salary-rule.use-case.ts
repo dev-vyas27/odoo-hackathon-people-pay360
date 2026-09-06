@@ -23,7 +23,7 @@ export class CreateSalaryRuleUseCase implements UseCase<CreateSalaryRuleInput, S
     const allowed = authorize(actor, 'salary_rule', 'create')
     if (!allowed.ok) return allowed
 
-    // Validate first: the placeholder id is replaced by the one storage assigns.
+    
     const candidate = attempt(() => createSalaryRule({ ...data, id: 'pending' }))
     if (!candidate.ok) return candidate
 
@@ -38,7 +38,7 @@ export class CreateSalaryRuleUseCase implements UseCase<CreateSalaryRuleInput, S
       )
     }
 
-    // The repository maps the fields it persists and assigns the real id.
+    
     return Ok(await this.rules.create(candidate.value))
   }
 }

@@ -1,26 +1,5 @@
 'use client'
 
-/**
- * Who is signed in, available to client components.
- *
- * Seeded by the dashboard layout, which already read the cookie — so there is
- * no extra request and no flash of a button the user cannot use. A client page
- * that fetched `/api/auth/me` would render the wrong UI first and correct it a
- * moment later, which for an action button means offering something and then
- * snatching it away.
- *
- * ── This is a courtesy, never the control ──────────────────────────────────
- *
- * Every use case re-checks the same permission server-side, so hiding a button
- * changes nothing about what a hand-crafted request can do. The point is that a
- * user is not shown an action that will fail: an `employee` clicking
- * "New employee" got a 403 and no explanation, which reads as a broken app
- * rather than as a permission boundary.
- *
- * `can()` comes from `modules/shared/contracts/permissions` — the SAME table
- * the server authorises against. That is the whole reason the matrix is data
- * rather than a pile of if-statements: the screen and the API cannot drift.
- */
 import { createContext, useContext } from 'react'
 import { can, scopeToSelf, type Action, type CurrentUser, type Resource } from '@/modules/shared'
 
@@ -36,13 +15,6 @@ export function CurrentUserProvider({
   return <CurrentUserContext.Provider value={user}>{children}</CurrentUserContext.Provider>
 }
 
-/**
- * Throws outside the provider rather than returning null.
- *
- * A component that silently got `null` would render as though nobody were
- * signed in — which, for a permission check, means hiding everything and
- * looking like a bug. Failing loudly puts the mistake where it happened.
- */
 export function useCurrentUser(): CurrentUser {
   const user = useContext(CurrentUserContext)
   if (!user) {
@@ -51,24 +23,10 @@ export function useCurrentUser(): CurrentUser {
   return user
 }
 
-/** `useCan('employee', 'create')` — the same question the use case asks. */
 export function useCan(resource: Resource, action: Action): boolean {
   return can(useCurrentUser().role, resource, action)
 }
 
-/**
- * True when this role may only ever act on their OWN rows.
- *
- * The companion to `useCan`: permission answers *whether*, this answers *whose*.
- * `authorizeOwned` already refuses a record filed against somebody else, so a
- * form that offers an employee picker to a self-scoped role is offering names
- * that can only produce a 403 — the picker should name them and nothing else.
- *
- * Derived from the role, never inferred from how many options a fetch happened
- * to return: a company with exactly one employee must not accidentally lock the
- * picker for HR, and a scoped list that wrongly returned two names must not
- * accidentally unlock it.
- */
 export function useScopedToSelf(): boolean {
   return scopeToSelf(useCurrentUser().role)
 }

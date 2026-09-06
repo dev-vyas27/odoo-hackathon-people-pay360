@@ -1,12 +1,7 @@
 'use client'
 
-/**
- * Create / edit a salary structure.
- *
- * `ResourceForm` handles the scalar fields; the included-rules editor rides
- * along as children, sharing the same form context and the same zod schema the
- * API validates against.
- */
+
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
@@ -46,7 +41,7 @@ export function StructureForm({
   structure: SalaryStructureFormValues
   structureId?: string
   available: AvailableRule[]
-  /** A role that may read salary configuration but not change it. */
+  
   readOnly?: boolean
 }) {
   const router = useRouter()

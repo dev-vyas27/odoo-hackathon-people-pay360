@@ -1,12 +1,7 @@
 'use client'
 
-/**
- * One form for creating and editing a leave type.
- *
- * Shared rather than duplicated, because the two differ only in what happens on
- * submit — and a create form that drifts from its edit form is how a field ends
- * up settable but not changeable.
- */
+
+
 import { timeOffTypeSchema, type TimeOffTypeValues } from '@/modules/timeoff/schemas'
 import { ResourceForm } from '@/components/resource/resource-form'
 import { UNIT_OPTIONS } from './options'
@@ -16,9 +11,9 @@ export function TimeOffTypeForm({
   submitLabel,
   onSubmit,
   cancel,
-  /** The unit is locked once allocations exist — see UpdateTimeOffTypeUseCase. */
+  
   unitLocked = false,
-  /** A role that may read leave policy but not change it. */
+  
   readOnly = false,
 }: {
   defaultValues: TimeOffTypeValues
@@ -60,6 +55,13 @@ export function TimeOffTypeForm({
           type: 'checkbox',
           description:
             'On: requests draw down a balance and are refused when it is short. Off: unlimited, like unpaid leave.',
+        },
+        {
+          name: 'autoApprove',
+          label: 'Auto-approve',
+          type: 'checkbox',
+          description:
+            'On: a submitted request of this type is approved immediately — no manager has to act — and still draws down the allocation if one is required. Off (default): every request waits for a manual decision.',
         },
         {
           name: 'isPaid',

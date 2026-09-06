@@ -1,12 +1,3 @@
-/**
- * The authorization matrix, as data.
- *
- * Roles and their grants come straight from section 3 of the spec. Encoding it
- * as a table (rather than `if (role === 'hr_manager' || ...)` sprinkled through
- * controllers) means: one place to audit, one place to change, and the UI can
- * import the exact same table to decide which buttons to render.
- */
-
 export const ROLES = [
   'employee',
   'hr_manager',
@@ -43,23 +34,19 @@ export type Permission = `${Resource}:${Action}`
 export const perm = (resource: Resource, action: Action): Permission =>
   `${resource}:${action}` as Permission
 
-/** Every action on the listed resources. */
 const crud = (...resources: Resource[]): Permission[] =>
   resources.flatMap((r) => (['create', 'read', 'update', 'delete'] as Action[]).map((a) => perm(r, a)))
 
 const readOnly = (...resources: Resource[]): Permission[] => resources.map((r) => perm(r, 'read'))
 
-/**
- * Role grants. Higher roles inherit by spreading the role beneath them, which
- * mirrors the spec's own wording ("All HR Manager permissions plus...").
- */
 const EMPLOYEE: Permission[] = [
-  // Own records only — row-level scoping is enforced separately, see scopeToSelf below.
   perm('employee', 'read'),
   perm('attendance', 'read'),
   perm('attendance', 'create'),
   perm('leave_request', 'read'),
   perm('leave_request', 'create'),
+  perm('leave_request', 'update'),
+  perm('leave_request', 'delete'),
   perm('allocation', 'read'),
   perm('time_off_type', 'read'),
 ]
@@ -106,19 +93,10 @@ export function can(role: Role, resource: Resource, action: Action): boolean {
   return ROLE_PERMISSIONS[role].has(perm(resource, action))
 }
 
-/**
- * True when this role may only see its OWN rows.
- *
- * The plain `employee` role has `employee:read` like everyone else — the
- * difference is not WHICH permission but WHICH ROWS. Repositories consult this
- * to add an ownership filter. Keeping it here stops each module inventing its
- * own idea of "self".
- */
 export function scopeToSelf(role: Role): boolean {
   return role === 'employee'
 }
 
-/** Human labels for the role dropdown in user administration. */
 export const ROLE_LABELS: Record<Role, string> = {
   employee: 'Employee',
   hr_manager: 'HR Manager',

@@ -1,11 +1,7 @@
 'use client'
 
-/**
- * Payroll sub-navigation.
- *
- * Payruns first: it is the screen people actually come here for. Configuration
- * follows, because a structure is edited far less often than a run is processed.
- */
+
+
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LuCalculator, LuLayers, LuReceipt } from 'react-icons/lu'

@@ -1,16 +1,3 @@
-/**
- * LeaveRequest — AGGREGATE ROOT.
- *
- * The aggregate owns its lifecycle but delegates the transition rules to
- * `leave-request-state.ts`; it owns duration and overlap logic itself because
- * those depend on its own data.
- *
- * Note what is NOT here: the balance deduction. Approving a request and
- * deducting the allocation must succeed or fail together, and an aggregate
- * cannot see another aggregate — so that pairing lives in `approve-leave.use-case`
- * where both are in hand. Putting it here would either duplicate state or
- * quietly let the two drift apart.
- */
 import { DomainError, Period, type LeaveStatus, type LeaveUnit } from '@/modules/shared'
 import { stateOf, type LeaveRequestState } from './leave-request-state'
 
@@ -20,12 +7,13 @@ export interface LeaveRequestProps {
   timeOffTypeId: string
   period: Period
   unit: LeaveUnit
-  /** In `unit`s. For day leave this defaults to the period length. */
+  
   duration: number
   reason?: string | null
   status: LeaveStatus
-  /** The allocation the approval drew from — needed to restore on refusal. */
+  
   allocationId?: string | null
+  
   decidedByEmployeeId?: string | null
   decidedAt?: Date | null
 }
@@ -57,14 +45,23 @@ export class LeaveRequest {
     return new LeaveRequest(props)
   }
 
-  /**
-   * Day-unit requests default to the inclusive calendar length of the period,
-   * so a Monday-to-Friday request is 5 and a single day is 1 rather than 0.
-   * An explicit duration still wins — that is how half days are expressed.
-   */
-  static defaultDuration(period: Period, unit: LeaveUnit, explicit?: number): number {
+  static defaultDuration(
+    period: Period,
+    unit: LeaveUnit,
+    explicit?: number,
+    workingDays?: number,
+  ): number {
     if (explicit !== undefined && explicit > 0) return explicit
-    if (unit === 'day') return period.days
+    if (unit === 'day') {
+      if (workingDays === undefined) return period.days
+      if (workingDays <= 0) {
+        throw DomainError.validation(
+          'LEAVE_NO_WORKING_DAYS',
+          'That period contains no working days for this employee',
+        )
+      }
+      return workingDays
+    }
     throw DomainError.validation(
       'LEAVE_DURATION_REQUIRED',
       'Hour-based leave needs an explicit number of hours',
@@ -107,7 +104,6 @@ export class LeaveRequest {
     return this.state.consumesBalance
   }
 
-  /** Two requests from the same employee may not cover the same calendar day. */
   overlaps(other: { period: Period; id: string }): boolean {
     return other.id !== this.props.id && this.props.period.overlaps(other.period)
   }
@@ -116,7 +112,40 @@ export class LeaveRequest {
     this.props = { ...this.props, status: this.state.submit().name }
   }
 
-  approve(decidedByEmployeeId: string, allocationId: string | null): void {
+  amend(patch: {
+    timeOffTypeId?: string
+    period?: Period
+    unit?: LeaveUnit
+    duration?: number
+    reason?: string | null
+  }): void {
+    if (!this.isEditable) {
+      throw DomainError.rule(
+        'LEAVE_NOT_EDITABLE',
+        `A ${this.props.status.replace(/_/g, ' ')} request can no longer be changed`,
+        { status: this.props.status },
+      )
+    }
+
+    const duration = patch.duration ?? this.props.duration
+    if (duration <= 0) {
+      throw DomainError.validation(
+        'LEAVE_DURATION_INVALID',
+        'A leave request must be longer than zero',
+      )
+    }
+
+    this.props = {
+      ...this.props,
+      timeOffTypeId: patch.timeOffTypeId ?? this.props.timeOffTypeId,
+      period: patch.period ?? this.props.period,
+      unit: patch.unit ?? this.props.unit,
+      duration,
+      reason: patch.reason === undefined ? this.props.reason : patch.reason,
+    }
+  }
+
+  approve(decidedByEmployeeId: string | null, allocationId: string | null): void {
     this.props = {
       ...this.props,
       status: this.state.approve().name,
@@ -135,7 +164,6 @@ export class LeaveRequest {
     }
   }
 
-  /** Clears the allocation link once the balance has actually been restored. */
   releaseAllocation(): void {
     this.props = { ...this.props, allocationId: null }
   }

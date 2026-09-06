@@ -1,18 +1,6 @@
-/**
- * Postgres adapter for PayslipRepositoryPort.
- *
- * Two things worth knowing:
- *
- * 1. Reads join `employees`, `payruns` and `salary_structures` for the names
- *    every screen shows, and pull the line items in the SAME statement as an
- *    aggregated JSON array. A payrun of 200 payslips is one round trip, not 201.
- *
- * 2. Writes are a transaction. Recompute deletes the run's payslips and inserts
- *    the new set; `payslip_lines` has ON DELETE CASCADE, so the old lines go
- *    with them. A half-written recompute would leave a payslip whose lines do
- *    not add up to its own totals, which is the one thing a payslip must never
- *    be able to do.
- */
+
+
+
 import { Money, Period, type PayslipStatus } from '@/modules/shared'
 import { query, queryOne, transaction } from '@/lib/db'
 import type { ComputedLine } from '@/modules/payroll-config'
@@ -26,13 +14,8 @@ import {
   type PayslipReadRow,
 } from './payroll.tables'
 
-/**
- * The one projection every read shares.
- *
- * `json_agg(... ORDER BY sequence)` inside a correlated subquery keeps the
- * lines in execution order without a second query or a client-side sort — the
- * order IS the computation, so it belongs in the query that fetches it.
- */
+
+
 const SELECT_PAYSLIP = `
   SELECT ps.id, ps.payrun_id, ps.employee_id, ps.contract_id,
          ps.period_start, ps.period_end, ps.worked_days,
@@ -66,8 +49,8 @@ function toDomain(row: PayslipReadRow): Payslip {
     payrunId: row.payrun_id,
     payrunName: row.payrun_name,
     employeeId: row.employee_id,
-    // LEFT JOIN: an employee row deleted out from under a historical payslip
-    // must not make the payslip unreadable.
+    
+    
     employeeName: row.employee_name ?? 'Unknown employee',
     employeeEmail: row.employee_email ?? null,
     departmentId: row.department_id ?? null,
@@ -81,7 +64,7 @@ function toDomain(row: PayslipReadRow): Payslip {
   }
 }
 
-/** JSON numbers arrive as `number`; a very large numeric arrives as a string. */
+
 function toLine(line: PayslipLineJson): ComputedLine {
   return {
     code: line.code,
@@ -108,7 +91,7 @@ export class PostgresPayslipRepository implements PayslipRepositoryPort {
 
   async replaceForPayrun(payrunId: string, payslips: Payslip[]): Promise<Payslip[]> {
     await transaction(async (client) => {
-      // payslip_lines cascades, so this clears the previous computation whole.
+      
       await client.query(`DELETE FROM "${PAYSLIPS_TABLE}" WHERE payrun_id = $1`, [payrunId])
 
       for (const payslip of payslips) {
@@ -127,8 +110,8 @@ export class PostgresPayslipRepository implements PayslipRepositoryPort {
             payslip.period.start,
             payslip.period.end,
             payslip.workedDays,
-            // Denormalised totals, derived from the very lines written below so
-            // the two can never disagree.
+            
+            
             totalForCategory(lines, 'basic').toNumber(),
             totalForCategory(lines, 'gross').toNumber(),
             totalForCategory(lines, 'deduction').toNumber(),
@@ -139,18 +122,9 @@ export class PostgresPayslipRepository implements PayslipRepositoryPort {
 
         if (!lines.length) continue
 
-        /**
-         * One multi-row INSERT per payslip rather than one per line.
-         *
-         * The tuples list `$1` (the payslip id) in every row rather than
-         * selecting from a `(VALUES ...) AS v(...)` derived table. That is not
-         * a style choice: inside a standalone VALUES subquery Postgres has no
-         * target column to infer parameter types from, so every `$n` binds as
-         * `text` and the insert dies with
-         * `column "sequence" is of type integer but expression is of type text`.
-         * Writing the VALUES directly under the INSERT gives each parameter the
-         * target column's type.
-         */
+        
+
+
         const values: unknown[] = []
         const tuples = lines.map((line, index) => {
           const base = index * 5
@@ -166,7 +140,7 @@ export class PostgresPayslipRepository implements PayslipRepositoryPort {
       }
     })
 
-    // Read back through the shared projection so callers get the joined names.
+    
     return this.findByPayrun(payrunId)
   }
 
@@ -177,7 +151,7 @@ export class PostgresPayslipRepository implements PayslipRepositoryPort {
   ): Promise<Payslip[]> {
     if (!employeeIds.length) return []
 
-    // Two ranges overlap when each starts before the other ends.
+    
     const rows = await query<PayslipReadRow>(
       `${SELECT_PAYSLIP}
         WHERE ps.employee_id = ANY($1)

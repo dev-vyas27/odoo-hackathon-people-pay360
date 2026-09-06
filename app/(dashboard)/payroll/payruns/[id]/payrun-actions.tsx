@@ -1,22 +1,7 @@
 'use client'
 
-/**
- * Compute · Validate · Mark Paid · Send Payslips.
- *
- * Each button answers TWO questions, and both have to be yes:
- *
- *   1. May this pay run move there? — `canTransition`, the same table the
- *      aggregate enforces, so the UI and the domain agree about what is
- *      possible.
- *   2. May THIS ROLE do it? — `can()`, the same table the use case authorises
- *      with.
- *
- * The second was missing, and the gap was not theoretical: `hr_payroll_user`
- * holds payrun create/read/update but NOT `payrun:approve`, so Validate and
- * Mark paid were offered to exactly the role that cannot use them and answered
- * with a 403. The server refuses regardless of what a client sends; this is
- * about not offering an action that will fail.
- */
+
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
@@ -53,10 +38,10 @@ export function PayrunActions({
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
 
-  // Computing edits the run; validating and paying it are approvals.
+  
   const canCompute = useCan('payrun', 'update')
   const canApprove = useCan('payrun', 'approve')
-  // Sending mails every employee in the run — the same grant the use case wants.
+  
   const canSend = useCan('payslip', 'update')
 
   async function run(action: string, onDone: (result: unknown) => void) {
@@ -72,14 +57,9 @@ export function PayrunActions({
     }
   }
 
-  /**
-   * Bulk delivery reports PER EMPLOYEE, so the toast does too.
-   *
-   * "Payslips sent" over a run where two people have no email address is a lie
-   * of omission — those two are the only ones anybody needed to hear about. The
-   * server returns a delivery per payslip; this surfaces the failures by name
-   * and keeps the message on screen long enough to read them.
-   */
+  
+
+
   async function sendPayslips() {
     setBusy('send')
     try {

@@ -1,18 +1,6 @@
-/**
- * Send someone a link to set their own password.
- *
- * Nobody but the account holder should ever know their password — not the
- * administrator who created them, and not whoever reads the server log. So the
- * admin creates the account without one, and this emails a single-use link.
- *
- * The token is 32 random bytes. Only its SHA-256 reaches the database, for the
- * same reason `password_hash` exists: reading the table must not let you sign
- * in as anybody.
- *
- * A failed send is NOT a failed invitation. The token is already issued, so the
- * result reports `emailed: false` and the admin can copy the link from the
- * response rather than being told to try again against a token that now exists.
- */
+
+
+
 import { createHash, randomBytes } from 'node:crypto'
 import {
   DomainError,
@@ -27,33 +15,28 @@ import {
 import type { AccountRepositoryPort } from './ports/account-repository.port'
 import type { SetupTokenRepositoryPort } from './ports/setup-token-repository.port'
 
-/**
- * How long a link lives.
- *
- * Long enough to survive a weekend and a spam folder, short enough that an
- * invitation forgotten in a mailbox stops being a way in. Resending is one
- * click, so erring short costs nothing.
- */
+
+
 const INVITE_TTL_HOURS = 72
 
 export interface InviteAccountInput {
   actor: Actor
   accountId: string
-  /** 'invite' for a new account, 'reset' when they already had a login. */
+  
   purpose?: 'invite' | 'reset'
-  /** Absolute origin, e.g. https://hr.company.com — used to build the link. */
+  
   origin: string
 }
 
 export interface InviteResult {
   email: string
   emailed: boolean
-  /** The full link. Returned so an admin can hand it over when mail is down. */
+  
   link: string
   expiresAt: string
 }
 
-/** The DB stores this; the email carries the plaintext. */
+
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
@@ -82,7 +65,7 @@ export class InviteAccountUseCase implements UseCase<InviteAccountInput, InviteR
       )
     }
 
-    // 32 bytes, url-safe. base64url keeps the link short and copy-pasteable.
+    
     const token = randomBytes(32).toString('base64url')
     const expiresAt = new Date(Date.now() + INVITE_TTL_HOURS * 60 * 60 * 1000)
 

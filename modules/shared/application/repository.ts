@@ -1,11 +1,6 @@
-/**
- * Repository and UseCase contracts.
- *
- * Application code depends on IRepository, never on the SQL driver. Swapping storage
- * (or faking it in a unit test) touches one file in infrastructure/ and nothing
- * else — that is the Dependency Inversion Principle doing actual work rather
- * than being quoted in a README.
- */
+
+
+
 import type { Result } from '../domain/result'
 
 export interface PageQuery {
@@ -37,13 +32,8 @@ export interface IRepository<T, ID = string> extends IReadRepository<T, ID> {
   delete(id: ID): Promise<boolean>
 }
 
-/**
- * One class, one operation (Single Responsibility).
- *
- * A use case is the only place a business transaction is orchestrated, and it
- * is trivially unit-testable because every collaborator arrives through the
- * constructor.
- */
+
+
 export interface UseCase<Input, Output> {
   execute(input: Input): Promise<Result<Output>>
 }

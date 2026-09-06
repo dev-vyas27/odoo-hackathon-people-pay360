@@ -1,21 +1,11 @@
 'use client'
 
-/**
- * The Allocation List.
- *
- * Spec A4: "Allocations manage employee balances, requiring approval before
- * availability, and tracking detailed metrics like taken, remaining, and
- * validity periods." All four are columns here — and `remaining` comes from the
- * aggregate, so the number on screen is the number the approval check uses.
- *
- * Approve / refuse live on the row rather than on a detail page: an allocation
- * has no workflow beyond that one decision, and a form to hold two buttons
- * would be ceremony.
- */
+
+
 import type { ColumnDef } from '@tanstack/react-table'
 import Link from 'next/link'
 import { LuCheck, LuPlus, LuX } from 'react-icons/lu'
-import type { AllocationListItem } from '@/modules/timeoff/schemas'
+import type { AllocationListItem, TimeOffTypeView } from '@/modules/timeoff/schemas'
 import { ALLOCATION_STATUS_OPTIONS } from '../_components/options'
 import { useResourceAction, useResourceList } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
@@ -31,10 +21,15 @@ import { formatDateRange, formatDuration } from '../_components/format'
 const RESOURCE = 'time-off/allocations'
 
 export default function AllocationsPage() {
-  // An employee may SEE their allocations but not grant one.
+  
   const canCreate = useCan('allocation', 'create')
   const params = useFilterParams(['status', 'timeOffTypeId'])
   const { page, isLoading } = useResourceList<AllocationListItem>(RESOURCE, params)
+
+  
+  
+  const types = useResourceList<TimeOffTypeView>('time-off/types', { limit: 100 })
+  const typeOptions = types.page.items.map((t) => ({ value: t.id, label: t.name }))
 
   const approve = useResourceAction(RESOURCE, 'approve', {
     successMessage: 'Allocation approved and now available',
@@ -77,7 +72,9 @@ export default function AllocationsPage() {
     {
       id: 'validity',
       header: 'Validity',
-      enableSorting: false,
+      
+      
+      meta: { sortKey: 'validFrom' },
       cell: ({ row }) => (
         <span className="tabular text-muted-foreground">
           {formatDateRange(row.original.validFrom, row.original.validTo)}
@@ -94,7 +91,7 @@ export default function AllocationsPage() {
       header: '',
       enableSorting: false,
       cell: ({ row }) => {
-        // Only a pending allocation has a decision left to make.
+        
         if (row.original.status !== 'to_approve' && row.original.status !== 'draft') return null
         return (
           <div className="flex items-center justify-end gap-1">
@@ -156,7 +153,10 @@ export default function AllocationsPage() {
 
       <FilterBar
         searchPlaceholder="Search allocations..."
-        filters={[{ name: 'status', label: 'Status', options: ALLOCATION_STATUS_OPTIONS }]}
+        filters={[
+          { name: 'status', label: 'Status', options: ALLOCATION_STATUS_OPTIONS },
+          { name: 'timeOffTypeId', label: 'Type', options: typeOptions },
+        ]}
       />
 
       <ResourceTable

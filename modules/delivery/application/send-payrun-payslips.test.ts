@@ -148,8 +148,8 @@ describe('sending a pay run’s payslips', () => {
   })
 
   it('refuses a run whose payslips are not final', async () => {
-    // Emailing a computed-but-unvalidated figure puts a number in somebody's
-    // inbox that the next recompute may contradict, and mail cannot be recalled.
+    
+    
     const { useCase, sent } = harness({ payslips: [payslip({ status: 'computed' })] })
     const result = await useCase.execute({ actor: payrollActor, payrunId: 'run-1' })
 
@@ -194,7 +194,7 @@ describe('sending a pay run’s payslips', () => {
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    // All three attempted, all three reported — not aborted at the first.
+    
     expect(result.value.deliveries).toHaveLength(3)
     expect(result.value.failed).toBe(3)
     expect(result.value.deliveries.every((d) => d.reason === 'mailbox full')).toBe(true)

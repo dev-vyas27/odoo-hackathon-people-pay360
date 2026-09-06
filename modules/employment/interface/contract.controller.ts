@@ -1,10 +1,6 @@
-/**
- * Contract controller — the thin seam route handlers call into.
- *
- * Each function wires the real Mongo repository to the relevant use case and
- * runs it. Route handlers stay ~5 lines: parse the request, call one of
- * these, `respond(result)`.
- */
+
+
+
 import type { Actor, PageQuery, Paged, Result } from '@/modules/shared'
 import type { Contract } from '../domain/contract'
 import { PostgresContractRepository } from '../infrastructure/postgres-contract.repository'

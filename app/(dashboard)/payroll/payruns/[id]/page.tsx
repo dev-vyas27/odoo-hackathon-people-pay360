@@ -72,8 +72,8 @@ export default async function PayrunPage({ params }: { params: Promise<{ id: str
         </Field>
       </section>
 
-      {/* Warnings sit ABOVE the payslips: the spec requires them to be seen
-          before anyone finalises, not discovered afterwards. */}
+      {
+}
       <PayrunWarnings warnings={warnings} />
 
       {readOnly ? (

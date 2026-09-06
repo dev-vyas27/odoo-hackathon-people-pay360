@@ -9,13 +9,6 @@ export interface PreviewLine {
   amount: number
 }
 
-/**
- * A worked example of what this structure computes.
- *
- * Codes are shown beside every line because that is how the rules address each
- * other — seeing BASIC, then HRA at 40% of it, then NET subtracting PF, makes
- * the engine legible at a glance.
- */
 export function StructurePreview({
   lines,
   wage = 50000,

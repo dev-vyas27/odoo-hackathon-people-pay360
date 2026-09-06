@@ -1,10 +1,5 @@
-/**
- * In-process event bus. One instance per server process (see container.ts).
- *
- * Handlers are awaited sequentially and a throwing handler is logged but never
- * allowed to fail the publisher: approving a leave request must not roll back
- * because a downstream listener has a bug.
- */
+
+
 import type { DomainEvent, DomainEventType, EventOf } from '../domain/domain-event'
 
 export type EventHandler<T extends DomainEventType> = (event: EventOf<T>) => Promise<void> | void
@@ -14,7 +9,6 @@ export interface IEventBus {
   subscribe<T extends DomainEventType>(type: T, handler: EventHandler<T>): () => void
 }
 
-/** Storage type: handlers are heterogeneous, so the map holds the erased form. */
 type AnyHandler = (event: DomainEvent) => Promise<void> | void
 
 export class InMemoryEventBus implements IEventBus {
@@ -36,7 +30,7 @@ export class InMemoryEventBus implements IEventBus {
       try {
         await handler(event)
       } catch (reason) {
-        // A failing subscriber must not break the publisher's transaction.
+        
         console.error(`[event-bus] handler for "${event.type}" threw:`, reason)
       }
     }

@@ -1,12 +1,5 @@
 'use client'
 
-/**
- * The Employee list — the operational hub of the whole app (spec A1, B1).
- *
- * Two views over one query: Kanban and List, both opening the same form. The
- * toggle lives in the URL so a view choice survives a refresh and can be linked
- * to, which matters when someone pastes a filtered list into the team chat.
- */
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -33,7 +26,7 @@ export default function EmployeesPage() {
   const searchParams = useSearchParams()
   const view = searchParams.get('view') === 'kanban' ? 'kanban' : 'list'
 
-  // A plain `employee` may read the list (scoped to themselves) but not add to it.
+  
   const canCreate = useCan('employee', 'create')
 
   const params = useFilterParams(['employeeType', 'isActive'])

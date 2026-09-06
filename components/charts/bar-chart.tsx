@@ -1,28 +1,19 @@
 'use client'
 
-/**
- * A horizontal bar chart, in about 60 lines of SVG.
- *
- * No charting library. Two reasons: recharts and friends are ~90KB of client
- * JavaScript for two charts, and every one of them wants its own colour system
- * that then disagrees with `globals.css`. Bars are rectangles.
- *
- * Horizontal rather than vertical because the labels are department names —
- * vertical bars would need rotated text, which is harder to read and harder to
- * get right at every viewport width.
- */
+
+
 import type { SeriesPoint } from '@/modules/shared'
 import { cn } from '@/lib/utils'
 
 export interface BarChartProps {
   data: SeriesPoint[]
-  /** Formats the value for the label at the end of each bar. */
+  
   format?: (value: number) => string
   emptyMessage?: string
   className?: string
 }
 
-/** The five chart hues from globals.css. Do not introduce new ones. */
+
 const SERIES_COLORS = [
   'var(--color-chart-1)',
   'var(--color-chart-2)',
@@ -45,8 +36,8 @@ export function BarChart({
     )
   }
 
-  // Scale to the largest bar, never to zero — a single-value chart would
-  // otherwise divide by zero and render nothing.
+  
+  
   const max = Math.max(...data.map((point) => point.value), 1)
 
   return (

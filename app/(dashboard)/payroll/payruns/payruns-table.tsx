@@ -1,12 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import type { ColumnDef } from '@tanstack/react-table'
 import { PAYRUN_STATUSES, PAYRUN_STATUS_LABELS, type PayrunView } from '@/modules/payroll-processing'
+import { useResourceList } from '@/hooks/use-resource'
 import { ResourceTable } from '@/components/resource/resource-table'
 import { StatusBadge } from '@/components/resource/status-badge'
-import { FilterBar } from '@/components/resource/filter-bar'
+import { FilterBar, useFilterParams } from '@/components/resource/filter-bar'
+import { Pagination } from '@/components/resource/pagination'
 import { Button } from '@/components/ui/button'
 import { formatPeriod } from '../_lib/format'
 
@@ -29,6 +31,9 @@ const columns: ColumnDef<PayrunView, unknown>[] = [
   {
     accessorKey: 'periodStart',
     header: 'Period',
+    
+    
+    meta: { sortKey: 'period_start' },
     cell: ({ row }) => (
       <span className="tabular">
         {formatPeriod(row.original.periodStart, row.original.periodEnd)}
@@ -47,22 +52,10 @@ const columns: ColumnDef<PayrunView, unknown>[] = [
   },
 ]
 
-export function PayrunsTable({ payruns }: { payruns: PayrunView[] }) {
+export function PayrunsTable() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-
-  const search = (searchParams.get('search') ?? '').toLowerCase()
-  const status = searchParams.get('status')
-
-  const filteredPayruns = payruns.filter((item) => {
-    if (status && item.status !== status) return false
-    if (search) {
-      const matchName = item.name.toLowerCase().includes(search)
-      const matchStructure = item.structureName.toLowerCase().includes(search)
-      if (!matchName && !matchStructure) return false
-    }
-    return true
-  })
+  const params = useFilterParams(['status'])
+  const { page, isLoading } = useResourceList<PayrunView>('payruns', params)
 
   return (
     <div>
@@ -72,19 +65,19 @@ export function PayrunsTable({ payruns }: { payruns: PayrunView[] }) {
       />
 
       <ResourceTable
-        data={filteredPayruns}
+        data={page.items}
         columns={columns}
+        isLoading={isLoading}
         onRowClick={(row) => router.push(`/payroll/payruns/${row.id}`)}
-        emptyMessage={payruns.length === 0 ? 'No pay runs yet.' : 'No pay runs match these filters'}
+        emptyMessage="No pay runs match these filters"
         emptyAction={
-          payruns.length === 0 ? (
-            <Button asChild variant="outline">
-              <Link href="/payroll/payruns/new">Create the first pay run</Link>
-            </Button>
-          ) : undefined
+          <Button asChild variant="outline">
+            <Link href="/payroll/payruns/new">Create the first pay run</Link>
+          </Button>
         }
       />
+
+      <Pagination page={page.page} pages={page.pages} total={page.total} limit={page.limit} />
     </div>
   )
 }
-

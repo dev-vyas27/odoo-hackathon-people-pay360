@@ -1,6 +1,6 @@
-/**
- * HTTP for salary structures.
- */
+
+
+
 import { z } from 'zod'
 import { pageQuerySchema, type PageQuery } from '@/modules/shared'
 import { errorResponse, parseQuery, respond } from '@/lib/http'
@@ -9,7 +9,11 @@ import { UpdateSalaryStructureUseCase } from '../application/update-salary-struc
 import { ListSalaryStructuresUseCase } from '../application/list-salary-structures.use-case'
 import { GetSalaryStructureDetailUseCase } from '../application/get-salary-structure-detail.use-case'
 import { ArchiveSalaryStructureUseCase } from '../application/archive-salary-structure.use-case'
-import { salaryRuleRepository, salaryStructureRepository } from '../composition'
+import {
+  salaryRuleRepository,
+  salaryStructureRepository,
+  structureEmployeeCount,
+} from '../composition'
 import { salaryStructureFormSchema, toSalaryStructureData } from './schema'
 import { parseJson, parseWith, requireSession } from './http'
 
@@ -27,10 +31,17 @@ export async function listSalaryStructures(request: Request): Promise<Response> 
   const { active, ...page } = query.value
   const pageQuery: PageQuery = {
     ...page,
-    filters: active ? { active: active === 'true' } : {},
+    
+    
+    
+    
+    filters: active !== undefined ? { isActive: active === 'true' } : {},
   }
 
-  const result = await new ListSalaryStructuresUseCase(salaryStructureRepository()).execute({
+  const result = await new ListSalaryStructuresUseCase(
+    salaryStructureRepository(),
+    structureEmployeeCount(),
+  ).execute({
     actor: session.value,
     query: pageQuery,
   })
@@ -58,6 +69,7 @@ export async function getSalaryStructure(id: string): Promise<Response> {
   const result = await new GetSalaryStructureDetailUseCase(
     salaryStructureRepository(),
     salaryRuleRepository(),
+    structureEmployeeCount(),
   ).execute({ actor: session.value, id })
   return respond(result)
 }

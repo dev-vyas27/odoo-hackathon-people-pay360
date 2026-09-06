@@ -1,10 +1,6 @@
-/**
- * HTTP for salary rules.
- *
- * Each function is: authenticate, parse with the shared zod schema, run one use
- * case, respond. Business rules live in the use cases — if logic starts
- * appearing here, it is in the wrong file.
- */
+
+
+
 import { z } from 'zod'
 import { pageQuerySchema, type PageQuery } from '@/modules/shared'
 import { errorResponse, parseQuery, respond } from '@/lib/http'
@@ -35,7 +31,9 @@ export async function listSalaryRules(request: Request): Promise<Response> {
     ...page,
     filters: {
       ...(category ? { category } : {}),
-      ...(active ? { active: active === 'true' } : {}),
+      
+      
+      ...(active !== undefined ? { isActive: active === 'true' } : {}),
     },
   }
 

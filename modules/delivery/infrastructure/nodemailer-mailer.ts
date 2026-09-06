@@ -1,15 +1,6 @@
-/**
- * The ONLY file in the codebase that imports nodemailer.
- *
- * Everything else asks for `MailerPort`. That is what lets a test assert on the
- * message without an SMTP server, and what makes swapping SES or Postmark in
- * later a one-file change.
- *
- * When `SMTP_HOST` is unset it logs to the console instead of sending. That is
- * not a stub — it is the intended behaviour for a demo, where the point is to
- * show the link, not to deliver it. It is also what stops a rehearsal quietly
- * emailing 25 real addresses.
- */
+
+
+
 import nodemailer, { type Transporter } from 'nodemailer'
 import type { EmailMessage, EmailResult, MailerPort } from '@/modules/shared'
 
@@ -26,7 +17,7 @@ function transport(): Transporter {
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT ?? 587),
-      // 465 is implicit TLS; everything else upgrades with STARTTLS.
+      
       secure: Number(process.env.SMTP_PORT ?? 587) === 465,
       auth: process.env.SMTP_USER
         ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
@@ -36,12 +27,8 @@ function transport(): Transporter {
   return transporter
 }
 
-/**
- * Writes the message to the server log. Used whenever SMTP is not configured.
- *
- * The body is printed in full on purpose: during a demo the set-password link
- * is IN the body, and copying it out of the terminal is the whole point.
- */
+
+
 const consoleMailer: MailerPort = {
   async send(message: EmailMessage): Promise<EmailResult> {
     console.log(
@@ -77,8 +64,8 @@ const smtpMailer: MailerPort = {
         subject: message.subject,
         text: message.text,
         html: message.html,
-        // Buffer, not Uint8Array: nodemailer streams the former directly and
-        // stringifies the latter into a corrupt attachment.
+        
+        
         attachments: message.attachments?.map((file) => ({
           filename: file.filename,
           content: Buffer.from(file.content),
@@ -87,12 +74,9 @@ const smtpMailer: MailerPort = {
       })
       return { to: message.to, sent: true }
     } catch (reason) {
-      /**
-       * Never throw. A bounced address must not fail the operation that
-       * triggered the email — an admin creating an account should get the
-       * account, plus a note that the invitation did not go out, not a 500 and
-       * no idea whether the account exists.
-       */
+      
+
+
       const error = reason instanceof Error ? reason.message : 'Unknown mail error'
       console.error(`[mailer] failed to send to ${message.to}: ${error}`)
       return { to: message.to, sent: false, error }

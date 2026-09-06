@@ -21,7 +21,7 @@ test.describe('Employment — working schedules', () => {
     })
     expect(r.status, JSON.stringify(r.raw)).toBe(201)
     expect(r.data.name).toBe(name)
-    // 5 days x (9h - 1h break) = 40
+    
     expect(r.data.weeklyHours).toBe(40)
   })
 

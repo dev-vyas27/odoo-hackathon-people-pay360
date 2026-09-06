@@ -1,11 +1,8 @@
-/**
- * Postgres implementation of ContractRepositoryPort.
- *
- * `wage` crosses the boundary here: Money in the domain, numeric in the table.
- * Nothing above this file sees a raw number, and nothing below sees Money.
- */
+
+
+
 import { query } from '@/lib/db'
-import { Money } from '@/modules/shared'
+import { Money, type PageQuery } from '@/modules/shared'
 import { BaseSqlRepository, type SqlValue } from '@/modules/shared/server'
 import type { ContractRepositoryPort } from '../application/ports/contract-repository.port'
 import type { Contract } from '../domain/contract'
@@ -19,6 +16,25 @@ export class PostgresContractRepository
   protected readonly columns = CONTRACT_COLUMNS
   protected readonly defaultSort = 'starts_on'
 
+  
+
+
+  protected buildWhere(
+    q: PageQuery,
+    startIndex = 1,
+  ): { clause: string; values: SqlValue[]; nextIndex: number } {
+    const built = super.buildWhere(q, startIndex)
+    if (!q.search) return built
+
+    const index = built.nextIndex
+    const exists = `EXISTS (SELECT 1 FROM "employees" e WHERE e.id = "${CONTRACTS_TABLE}"."employee_id" AND e.name ILIKE $${index})`
+    return {
+      clause: built.clause ? `${built.clause} AND ${exists}` : `WHERE ${exists}`,
+      values: [...built.values, `%${q.search}%`],
+      nextIndex: index + 1,
+    }
+  }
+
   protected toDomain(row: ContractRow): Contract {
     return {
       id: row.id,
@@ -26,9 +42,9 @@ export class PostgresContractRepository
       wage: Money.of(Number(row.wage)),
       salaryStructureId: row.salary_structure_id,
       workingScheduleId: row.working_schedule_id,
-      // Neither column exists on `contracts`; the ContractQueryPort adapter
-      // supplies them by joining through the employee. A repository returning
-      // the aggregate leaves them null rather than inventing a value.
+      
+      
+      
       departmentId: null,
       jobPositionName: null,
       start: row.starts_on,
@@ -57,7 +73,7 @@ export class PostgresContractRepository
     return this.updateRow(id, this.toRow(data))
   }
 
-  /** Newest first — this drives the Contracts smart button on the employee form. */
+  
   async findByEmployee(employeeId: string): Promise<Contract[]> {
     const rows = await query<ContractRow>(
       `SELECT ${this.selection} FROM "${CONTRACTS_TABLE}"

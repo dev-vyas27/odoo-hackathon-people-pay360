@@ -2,19 +2,26 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { CreateScheduleBody } from '@/modules/employment/schemas'
+import {
+  computeWeeklyHours,
+  isFullTimeSchedule,
+  type CreateScheduleBody,
+} from '@/modules/employment/schemas'
 import { useCreateResource } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
 import { Button } from '@/components/ui/button'
 import { ScheduleForm } from '../_components/schedule-form'
 
-/** Monday to Friday, 9 to 5 with an hour for lunch — the common case, pre-filled. */
 const STANDARD_WEEK: CreateScheduleBody['days'] = [1, 2, 3, 4, 5].map((day) => ({
   day: day as CreateScheduleBody['days'][number]['day'],
   start: '09:00',
   end: '17:00',
   breakMinutes: 60,
 }))
+
+const STANDARD_WEEK_TYPE = isFullTimeSchedule(computeWeeklyHours(STANDARD_WEEK))
+  ? 'full_time'
+  : 'part_time'
 
 export default function NewSchedulePage() {
   const router = useRouter()
@@ -31,7 +38,7 @@ export default function NewSchedulePage() {
 
       <ScheduleForm
         submitLabel="Create schedule"
-        defaultValues={{ name: '', days: STANDARD_WEEK }}
+        defaultValues={{ name: '', type: STANDARD_WEEK_TYPE, days: STANDARD_WEEK }}
         cancel={
           <Button variant="ghost" asChild>
             <Link href="/schedules">Cancel</Link>

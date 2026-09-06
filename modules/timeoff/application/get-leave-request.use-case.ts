@@ -1,17 +1,6 @@
-/**
- * One request, with everything the Request Form needs to render itself.
- *
- * Spec B4: "Request Form details the request and supports a simple approval or
- * refusal workflow."
- *
- * `canApprove` / `canRefuse` are computed HERE rather than in the component,
- * for the same reason the nav is filtered server-side: the screen and the API
- * must not be able to disagree about what is allowed. The buttons the form
- * renders are exactly the transitions the use cases will accept.
- *
- * The balance snapshot travels with the request so an approver can see what
- * they are spending before they spend it, without a second round trip.
- */
+
+
+
 import {
   DomainError,
   Err,
@@ -33,8 +22,10 @@ export interface LeaveRequestDetail extends LeaveRequestView {
   employeeName: string
   timeOffTypeName: string
   requiresAllocation: boolean
+  
+  autoApprove: boolean
   isPaid: boolean
-  /** The employee's balance for this leave type, as of today. */
+  
   balance: LeaveBalanceView | null
   canSubmit: boolean
   canApprove: boolean
@@ -63,7 +54,7 @@ export class GetLeaveRequestUseCase
       return Err(DomainError.notFound('LEAVE_NOT_FOUND', 'That leave request does not exist'))
     }
 
-    // Row-level: an employee may open their own request and nobody else's.
+    
     const allowed = authorizeOwned(input.actor, 'leave_request', 'read', request.employeeId)
     if (!allowed.ok) return allowed
 
@@ -82,11 +73,9 @@ export class GetLeaveRequestUseCase
       ? buildBalances([type], employeeAllocations, employeeRequests, startOfDay(new Date()))
       : []
 
-    /**
-     * An approver may not decide on their own request — the same rule the
-     * approve/refuse use cases enforce. Reflecting it here means the button is
-     * simply not rendered, rather than rendered and then rejected.
-     */
+    
+
+
     const isOwnRequest =
       input.actor.employeeId !== null && input.actor.employeeId === request.employeeId
     const mayDecide = actorCan(input.actor, 'leave_request', 'approve') && !isOwnRequest
@@ -96,12 +85,13 @@ export class GetLeaveRequestUseCase
       employeeName: employee?.name ?? 'Unknown employee',
       timeOffTypeName: type.name,
       requiresAllocation: type.requiresAllocation,
+      autoApprove: type.autoApprove,
       isPaid: type.isPaid,
       balance: balance ?? null,
       canSubmit: request.status === 'draft',
       canApprove: mayDecide && request.status === 'to_approve',
-      // Refusing an approved request is how an approval is undone, so it stays
-      // available after approval — see leave-request-state.ts.
+      
+      
       canRefuse: mayDecide && (request.status === 'to_approve' || request.status === 'approved'),
       canEdit: request.isEditable,
     })

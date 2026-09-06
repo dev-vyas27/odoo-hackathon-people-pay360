@@ -1,13 +1,6 @@
-/**
- * CheckInUseCase — an employee (or an HR user on their behalf) starts an
- * attendance record for the day.
- *
- * Authorization: check-in is the employee's own self-service action, so it is
- * authorized as `attendance:create` (row-scoped to the employee's own id),
- * the same permission the spec grants an `employee` role. Correcting a
- * record afterwards is a different action (`update`) and is deliberately not
- * reachable from here — see correct-attendance.use-case.ts.
- */
+
+
+
 import {
   authorizeOwned,
   DomainError,
@@ -28,7 +21,7 @@ export interface CheckInInput {
   employeeId: string
   checkIn?: Date
   breakMinutes?: number
-  /** Where they are working this shift. Asked at the moment of clocking in. */
+  
   workMode?: WorkMode | null
 }
 
@@ -50,22 +43,16 @@ export class CheckInUseCase {
     const checkIn = input.checkIn ?? new Date()
     const today = new Date(`${istDay(checkIn)}T00:00:00.000Z`)
 
-    /**
-     * Close anything left open on an earlier day BEFORE looking for a clash.
-     *
-     * Without this, one forgotten check-out locks the employee out of the
-     * feature permanently: every subsequent check-in is refused as
-     * ALREADY_CHECKED_IN against a shift from a week ago, and the only way out
-     * is an HR correction.
-     */
+    
+
+
     await this.repo.closeStaleOpenShifts(today)
 
     const existing = await this.repo.findForEmployeeOnDay(input.employeeId, today)
 
-    /**
-     * Already clocked in today and still open — nothing to do, and saying so is
-     * better than silently starting the clock again.
-     */
+    
+
+
     if (existing && existing.attendance.isOpen) {
       return Err(
         DomainError.conflict(
@@ -75,11 +62,9 @@ export class CheckInUseCase {
       )
     }
 
-    /**
-     * Been in today and checked out — this is a return from lunch, not a new
-     * day. The aggregate reopens the same record and turns the time away into
-     * break minutes. See `Attendance.resume`.
-     */
+    
+
+
     const next = existing
       ? existing.attendance.resume(checkIn, input.workMode ?? null)
       : Attendance.checkIn({

@@ -1,29 +1,6 @@
-/**
- * Email every payslip in a pay run.
- *
- * For each payslip: render the PDF, archive it to object storage, and send it
- * to the employee as an attachment. Three things that could each fail
- * separately, so the result reports per employee rather than collapsing to one
- * boolean — "sent 23 of 25, these two have no email address" is actionable;
- * "failed" is not.
- *
- * ── Why it does not stop at the first failure ───────────────────────────────
- * A bounced address, a missing email or a storage hiccup must not withhold the
- * other twenty-four payslips. Every payslip is attempted; the failures are
- * listed.
- *
- * ── Why it refuses a draft pay run ──────────────────────────────────────────
- * A computed-but-unvalidated payslip can still change. Emailing one puts a
- * figure in somebody's inbox that the next recompute may contradict, and an
- * email cannot be recalled. Validation is the point at which the numbers become
- * final, so that is the gate.
- *
- * ── Why the archive is not fatal ────────────────────────────────────────────
- * Storage is optional by design (see DocumentStoragePort). With no bucket
- * configured the payslip is still generated and still emailed — it simply is
- * not archived. A missing bucket must never be why an employee does not get
- * paid their payslip.
- */
+
+
+
 import {
   authorize,
   DomainError,
@@ -45,7 +22,7 @@ import type { PayslipQueryPort } from './ports/payslip-query.port'
 import type { DocumentRendererPort } from './ports/document-renderer.port'
 import type { DocumentStoragePort } from './ports/document-storage.port'
 
-/** Statuses whose figures are final. Anything earlier can still change. */
+
 const SENDABLE = new Set(['validated', 'paid'])
 
 export interface SendPayrunPayslipsInput {
@@ -56,19 +33,19 @@ export interface SendPayrunPayslipsInput {
 export interface PayslipDelivery {
   payslipId: string
   employeeName: string
-  /** Null when the employee has no address on file. */
+  
   email: string | null
   sent: boolean
-  /** True when the PDF also reached object storage. */
+  
   archived: boolean
-  /** Why it did not go out. Absent on success. */
+  
   reason?: string
 }
 
 export interface SendPayrunPayslipsOutput {
   sent: number
   failed: number
-  /** One entry per payslip, in the order they were processed. */
+  
   deliveries: PayslipDelivery[]
 }
 
@@ -88,8 +65,8 @@ export class SendPayrunPayslipsUseCase
     actor,
     payrunId,
   }: SendPayrunPayslipsInput): Promise<Result<SendPayrunPayslipsOutput>> {
-    // Stronger than `payslip:read`: this sends mail to every employee in the
-    // run, which is not something a reader should be able to trigger.
+    
+    
     const allowed = authorize(actor, 'payslip', 'update')
     if (!allowed.ok) return allowed
 
@@ -126,10 +103,9 @@ export class SendPayrunPayslipsUseCase
     })
   }
 
-  /**
-   * One payslip, end to end. Never throws: a failure here is one row in the
-   * report, not the end of the run.
-   */
+  
+
+
   private async deliver(payslip: PayslipView): Promise<PayslipDelivery> {
     const base: PayslipDelivery = {
       payslipId: payslip.id,
@@ -154,11 +130,9 @@ export class SendPayrunPayslipsUseCase
       })
       const { bytes, contentType } = await this.renderer.render(document)
 
-      /**
-       * Archived BEFORE sending, and deliberately not awaited into the failure
-       * path: the copy in the bucket is the system of record, but a bucket that
-       * is off or unreachable must not stop the email.
-       */
+      
+
+
       let archived = false
       if (this.storage.configured) {
         const stored = await this.storage.put(document.storageKey, bytes, contentType)
@@ -191,11 +165,8 @@ export class SendPayrunPayslipsUseCase
   }
 }
 
-/**
- * Plain text only. An HTML payslip email is a phishing lookalike waiting to
- * happen, and the actual document is attached — the body only has to say what
- * arrived and for which period.
- */
+
+
 function bodyFor(document: PayslipDocument, payslip: PayslipView): string {
   return [
     `Hello ${payslip.employeeName},`,

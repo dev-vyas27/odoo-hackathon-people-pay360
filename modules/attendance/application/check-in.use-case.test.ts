@@ -82,7 +82,7 @@ describe('CheckInUseCase', () => {
       checkIn: new Date('2026-03-10T09:45:00Z'),
     })
 
-    // Not yet checked out, so still "missing_checkout" takes precedence over lateness.
+    
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.value.status).toBe('missing_checkout')
   })

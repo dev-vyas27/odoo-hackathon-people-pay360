@@ -1,19 +1,8 @@
-/**
- * PayslipDocument — the payslip as a LAYOUT DESCRIPTION, with no idea that PDFs
- * exist.
- *
- * This is the seam that makes the renderer swappable and the layout testable.
- * Everything a printed payslip shows — who it is for, which lines ran, what the
- * totals came to, the amount in words, the file it should be saved as — is
- * decided here, in a pure function over plain data. `pdfkit-renderer.ts` then
- * does nothing but draw it, and `npm test` can assert the CONTENT of a payslip
- * without generating a single byte of PDF.
- *
- * Money arrives as major units already rounded (see `PayslipQueryPort`), so the
- * figures on the page can never disagree with the figures on the screen.
- */
 
-/** Only the fields this module actually renders — a deliberately small surface. */
+
+
+
+
 export interface PayslipDocumentInput {
   payslip: {
     id: string
@@ -39,7 +28,7 @@ export interface PayslipDocumentInput {
       amount: number
     }>
   }
-  /** From Dev B's employee lookup. Null when the port is not wired up yet. */
+  
   employee?: {
     name: string
     email: string
@@ -69,7 +58,7 @@ export interface DocumentLine {
   name: string
   category: string
   amount: number
-  /** Deductions print in red with a minus sign; everything else prints plain. */
+  
   negative: boolean
 }
 
@@ -82,7 +71,7 @@ export interface DocumentTotals {
 }
 
 export interface PayslipDocument {
-  /** Shown in the PDF header and used as the document title. */
+  
   title: string
   subtitle: string
   company: CompanyIdentity
@@ -92,31 +81,26 @@ export interface PayslipDocument {
   statusLabel: string
   earnings: DocumentLine[]
   deductions: DocumentLine[]
-  /** Summary rows, in the order the eye should read them. */
+  
   totals: DocumentTotals
   netInWords: string
   footerNote: string
   generatedLabel: string
-  /** What the browser saves it as. */
+  
   fileName: string
-  /** Where the object lands in the bucket. Deterministic — no lookup needed. */
+  
   storageKey: string
 }
 
 import { amountInWords } from './money-words'
 
-/**
- * The bucket key for a payslip PDF.
- *
- * Deterministic on purpose: nothing has to be recorded in the database to find
- * a stored payslip again, and regenerating one simply overwrites it rather than
- * accumulating a new object per download.
- */
+
+
 export function storageKeyFor(payrunId: string, payslipId: string): string {
   return `payslips/${payrunId}/${payslipId}.pdf`
 }
 
-/** `Payslip-Rahul-Verma-2026-08.pdf` — readable in a downloads folder. */
+
 export function fileNameFor(employeeName: string, periodEnd: Date): string {
   const safeName = employeeName
     .normalize('NFKD')
@@ -152,13 +136,8 @@ export function formatDay(date: Date): string {
   return DAY.format(date)
 }
 
-/**
- * Mask all but the last four digits.
- *
- * A payslip is forwarded by email and printed on shared printers; the full
- * account number has no business being on it, and the last four are enough for
- * an employee to recognise their own account.
- */
+
+
 export function maskAccount(account: string | null): string {
   if (!account) return 'Not on file'
   const trimmed = account.trim()
@@ -174,14 +153,8 @@ function titleCase(value: string): string {
     .join(' ')
 }
 
-/**
- * Split the computed lines into the two halves a payslip reader expects.
- *
- * GROSS and NET are SUBTOTAL rules, not earnings — printing them among the
- * earnings would make the column add up to roughly twice the gross and look
- * like a bug to anyone checking the arithmetic by hand. They appear in the
- * totals block instead, which is where a reader looks for them.
- */
+
+
 function splitLines(lines: PayslipDocumentInput['payslip']['lines']): {
   earnings: DocumentLine[]
   deductions: DocumentLine[]
@@ -201,7 +174,7 @@ function splitLines(lines: PayslipDocumentInput['payslip']['lines']): {
 
     if (line.category === 'deduction') deductions.push(entry)
     else if (line.category === 'basic' || line.category === 'allowance') earnings.push(entry)
-    // gross / net are subtotals — carried by `totals`, not by either column.
+    
   }
 
   return { earnings, deductions }
@@ -225,8 +198,8 @@ export function buildPayslipDocument(input: PayslipDocumentInput): PayslipDocume
       { label: 'Employee', value: payslip.employeeName },
       {
         label: 'Employee ID',
-        // The uuid's first block is enough to identify a row without printing
-        // a 36-character string across the page.
+        
+        
         value: payslip.employeeId.split('-')[0].toUpperCase(),
       },
       { label: 'Department', value: employee?.departmentName ?? '—' },

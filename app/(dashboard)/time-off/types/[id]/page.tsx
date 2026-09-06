@@ -1,12 +1,7 @@
 'use client'
 
-/**
- * Edit a leave type.
- *
- * Deleting is offered but usually refused: a type with allocations or requests
- * against it is history, and the use case says so in words rather than letting
- * a foreign key error surface as a 500. Deactivating is the real answer.
- */
+
+
 import { use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -21,25 +16,20 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { TimeOffTypeForm } from '../../_components/time-off-type-form'
 
 export default function EditTimeOffTypePage({ params }: { params: Promise<{ id: string }> }) {
-  // Next 16: params is a promise. `use()` unwraps it in a client component.
+  
   const { id } = use(params)
   const router = useRouter()
 
-  /**
-   * Read from the list rather than a detail endpoint. There is no
-   * `GET /types/[id]`: the list is a handful of rows, TanStack has usually
-   * already cached it from the previous screen, and inventing an endpoint to
-   * serve one row of it would be API surface nobody else needs.
-   */
+  
+
+
   const { page, isLoading } = useResourceList<TimeOffTypeView>('time-off/types', { limit: 100 })
   const type = page.items.find((item) => item.id === id)
 
   const update = useUpdateResource<TimeOffTypeView, TimeOffTypeValues>('time-off/types')
-  /**
-   * `/time-off` is guarded on `leave_request:read`, which an employee holds —
-   * so they reach this page. They hold `time_off_type:read` and nothing more,
-   * and must not be offered Delete on company leave policy.
-   */
+  
+
+
   const canDelete = useCan('time_off_type', 'delete')
   const canEdit = useCan('time_off_type', 'update')
 
@@ -81,6 +71,7 @@ export default function EditTimeOffTypePage({ params }: { params: Promise<{ id: 
           code: type.code,
           unit: type.unit,
           requiresAllocation: type.requiresAllocation,
+          autoApprove: type.autoApprove,
           isPaid: type.isPaid,
           isActive: type.isActive,
         }}

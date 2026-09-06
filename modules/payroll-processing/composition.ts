@@ -1,20 +1,6 @@
-/**
- * This module's composition root.
- *
- * Note what this file makes visible: payroll depends on four things it does not
- * own — employees, contracts, schedules and attendance — and imports none of
- * them. Each arrives through `portOr(PORT_KEYS.x, nullObject)`, so:
- *
- *  - payroll typechecks and runs before Dev B has written a line;
- *  - an un-provided port degrades to an empty answer instead of a crash;
- *  - when Dev B calls `providePort`, payroll picks up real data with no edit
- *    here and none at any call site.
- *
- * The null objects below are the honest half of that bargain. They return
- * "nothing found", never fabricated numbers — a payrun computed against them
- * produces zero payslips and a loud missing-contract warning, which is the
- * correct behaviour for "that data does not exist yet".
- */
+
+
+
 import {
   container,
   portOr,
@@ -50,7 +36,7 @@ export function structureQuery(): SalaryStructureQueryPort {
   return createSalaryStructureQuery()
 }
 
-// ── Ports owned by other modules ────────────────────────────────────────────
+
 
 const NO_EMPLOYEES: EmployeeLookupPort = {
   async findById() {
@@ -65,7 +51,7 @@ const NO_EMPLOYEES: EmployeeLookupPort = {
 }
 
 const NO_CONTRACTS: ContractQueryPort = {
-  /** Null is a legitimate answer: payroll turns it into a warning, not a crash. */
+  
   async findApplicableContract() {
     return null
   },
@@ -78,8 +64,11 @@ const NO_SCHEDULES: ScheduleQueryPort = {
   async findById() {
     return null
   },
-  /** Zero expected hours means "nothing to prorate against" — pay in full. */
+  
   async expectedHours() {
+    return 0
+  },
+  async expectedDays() {
     return 0
   },
 }
@@ -123,7 +112,7 @@ export function eventBus(): IEventBus {
   return container().eventBus
 }
 
-// ── Ports this module publishes ─────────────────────────────────────────────
+
 
 export function createPayslipQuery(): PayslipQueryPort {
   return resolve(
@@ -136,13 +125,8 @@ export function createPayrollStats(): PayrollStatsPort {
   return resolve('payroll-processing.payroll-stats', () => new PayrollStatsAdapter())
 }
 
-/**
- * Publish this module's ports to the container.
- *
- * Idempotent, and lazy: registering does not open a connection. Dev A's Delivery
- * and Analytics modules then resolve `PORT_KEYS.payslipQuery` /
- * `PORT_KEYS.payrollStats` without importing anything of ours.
- */
+
+
 export function registerPayrollPorts(): void {
   providePort(PORT_KEYS.payslipQuery, createPayslipQuery)
   providePort(PORT_KEYS.payrollStats, createPayrollStats)

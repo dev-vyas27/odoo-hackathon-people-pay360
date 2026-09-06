@@ -16,6 +16,7 @@ import {
 } from '../domain/salary-structure'
 import type { SalaryRuleRepositoryPort } from './ports/salary-rule-repository.port'
 import type { SalaryStructureRepositoryPort } from './ports/salary-structure-repository.port'
+import type { StructureEmployeeCountPort } from './ports/structure-employee-count.port'
 import { attempt } from './attempt'
 
 export interface GetSalaryStructureDetailInput {
@@ -26,12 +27,19 @@ export interface GetSalaryStructureDetailInput {
 export interface SalaryStructureDetail {
   structure: SalaryStructure
   rules: Array<{ rule: SalaryRule; sequence: number }>
-  /**
-   * Ordering problems found by static analysis — a rule referencing something
-   * that runs later, or a code that is not in the structure at all. Surfaced in
-   * the form so they are fixed there rather than mid-payrun.
-   */
+  
+
+
   issues: StructureIssue[]
+  
+  employeeCount: number
+}
+
+
+const NO_EMPLOYEE_COUNTS: StructureEmployeeCountPort = {
+  async countByStructure() {
+    return new Map()
+  },
 }
 
 export class GetSalaryStructureDetailUseCase
@@ -40,6 +48,7 @@ export class GetSalaryStructureDetailUseCase
   constructor(
     private readonly structures: SalaryStructureRepositoryPort,
     private readonly rules: SalaryRuleRepositoryPort,
+    private readonly employeeCounts: StructureEmployeeCountPort = NO_EMPLOYEE_COUNTS,
   ) {}
 
   async execute({
@@ -62,10 +71,13 @@ export class GetSalaryStructureDetailUseCase
     const resolved = attempt(() => resolveStructure(structure, byId))
     if (!resolved.ok) return resolved
 
+    const counts = await this.employeeCounts.countByStructure([id])
+
     return Ok({
       structure,
       rules: [...resolved.value.rules],
       issues: inspectStructure(resolved.value),
+      employeeCount: counts.get(id) ?? 0,
     })
   }
 }

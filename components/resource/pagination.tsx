@@ -1,11 +1,7 @@
 'use client'
 
-/**
- * Pagination — writes `?page=` so it composes with FilterBar.
- *
- * Renders nothing when there is only one page. A pager under a three-row table
- * is visual noise that makes an app feel like a scaffold.
- */
+
+
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu'
 import { Button } from '@/components/ui/button'

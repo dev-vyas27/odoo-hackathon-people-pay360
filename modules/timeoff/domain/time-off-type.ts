@@ -1,24 +1,17 @@
-/**
- * TimeOffType — the configuration that decides how a leave behaves.
- *
- * Three flags carry the whole policy:
- *   unit                day or hour, and it must match the allocation's unit
- *   requiresAllocation  false for something like unpaid leave, which has no
- *                       balance to draw down and therefore cannot overdraw
- *   isPaid              consumed by payroll when prorating
- *
- * Modelling these as data rather than as `if (type.name === 'Sick')` means
- * adding a leave type at 2am is a database row, not a deployment.
- */
+
+
+
 import { DomainError, type LeaveUnit } from '@/modules/shared'
 
 export interface TimeOffTypeProps {
   id: string
   name: string
-  /** Short display code, e.g. PL / SL / UL. Unique. */
+  
   code: string
   unit: LeaveUnit
   requiresAllocation: boolean
+  
+  autoApprove: boolean
   isPaid: boolean
   isActive: boolean
 }
@@ -50,6 +43,9 @@ export class TimeOffType {
   get requiresAllocation(): boolean {
     return this.props.requiresAllocation
   }
+  get autoApprove(): boolean {
+    return this.props.autoApprove
+  }
   get isPaid(): boolean {
     return this.props.isPaid
   }
@@ -57,11 +53,9 @@ export class TimeOffType {
     return this.props.isActive
   }
 
-  /**
-   * An allocation measured in hours cannot fund a leave type measured in days.
-   * Catching it here rather than at read time is what stops "3" meaning three
-   * days on one screen and three hours on another.
-   */
+  
+
+
   assertUnitMatches(unit: LeaveUnit): void {
     if (unit !== this.props.unit) {
       throw DomainError.rule(

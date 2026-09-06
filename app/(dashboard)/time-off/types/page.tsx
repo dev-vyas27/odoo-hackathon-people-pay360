@@ -1,16 +1,7 @@
 'use client'
 
-/**
- * Time Off Types — the leave policy table.
- *
- * Spec A4: "Time Off Types define leave policies including units (days/hours),
- * allocation requirements, approval workflows, and payroll integration."
- *
- * Three of those four are columns: unit, whether it needs an allocation, and
- * whether it is paid (which is what payroll reads when prorating). The fourth,
- * the approval workflow, is identical for every type — it is the request state
- * machine — so it is not a per-type field.
- */
+
+
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -57,6 +48,16 @@ const columns: ColumnDef<TimeOffTypeView, unknown>[] = [
       ),
   },
   {
+    accessorKey: 'autoApprove',
+    header: 'Approval',
+    cell: ({ row }) =>
+      row.original.autoApprove ? (
+        <span className="text-sm">Auto-approve</span>
+      ) : (
+        <span className="text-sm text-muted-foreground">Manual</span>
+      ),
+  },
+  {
     accessorKey: 'isPaid',
     header: 'Payroll',
     cell: ({ row }) =>
@@ -78,7 +79,7 @@ export default function TimeOffTypesPage() {
   const params = useFilterParams(['isActive'])
   const { page, isLoading } = useResourceList<TimeOffTypeView>('time-off/types', params)
 
-  // Leave policy is HR configuration; an employee only reads it.
+  
   const canCreate = useCan('time_off_type', 'create')
 
   return (

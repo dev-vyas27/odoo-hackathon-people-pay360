@@ -1,11 +1,6 @@
-/**
- * The authenticated shell.
- *
- * `proxy.ts` already blocks anonymous requests, but this layout re-reads the
- * cookie rather than trusting that: defence in depth costs one await, and it is
- * what gives every page below a guaranteed non-null user without prop drilling
- * or a client-side loading flash.
- */
+
+
+
 import { redirect } from 'next/navigation'
 import { getActor } from '@/lib/auth'
 import { Providers } from '@/app/providers'
@@ -25,8 +20,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <Providers>
-      {/* The layout already read the cookie, so client pages get the role with
-          no extra request and no flash of an action the user cannot take. */}
+      {
+}
       <CurrentUserProvider user={user}>
         <div className="flex min-h-full flex-col">
           <TopNav user={user} />

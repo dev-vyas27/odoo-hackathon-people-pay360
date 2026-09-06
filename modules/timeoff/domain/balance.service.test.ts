@@ -1,19 +1,18 @@
-/**
- * The four rules that must not break, per docs/plans/DEV-A-platform.md:
- *   1. balance consumption
- *   2. over-draw rejection
- *   3. refuse-after-approve restores the balance
- *   4. the allocation validity window excludes out-of-range requests
- *
- * No database, no mocks of frameworks — just the aggregates. That is the payoff
- * of keeping domain/ framework-free.
- */
+
+
+
 import { describe, expect, it } from 'vitest'
 import { DomainError, Period } from '@/modules/shared'
 import { Allocation } from './allocation'
 import { LeaveRequest } from './leave-request'
 import { TimeOffType } from './time-off-type'
-import { assertNoOverlap, buildBalances, eligibleAllocations, selectAllocation } from './balance.service'
+import {
+  assertNoOverlap,
+  buildBalanceTotals,
+  buildBalances,
+  eligibleAllocations,
+  selectAllocation,
+} from './balance.service'
 
 const EMP = 'employee-1'
 const PAID = 'type-paid'
@@ -27,6 +26,7 @@ function paidType() {
     code: 'PL',
     unit: 'day',
     requiresAllocation: true,
+    autoApprove: false,
     isPaid: true,
     isActive: true,
   })
@@ -56,8 +56,8 @@ function request(overrides: Partial<Parameters<typeof LeaveRequest.from>[0]> = {
     duration: period.days,
     status: 'to_approve',
     ...overrides,
-    // After the spread so a caller who passes `period` gets the duration
-    // default derived from it rather than from the fixture's dates.
+    
+    
     period,
   })
 }
@@ -149,7 +149,7 @@ describe('selectAllocation', () => {
     })
     const req = request({ period: Period.of(day('2026-03-02'), day('2026-03-04')) })
 
-    // Deliberately passed later-first, so a stable sort is not what makes this pass.
+    
     expect(selectAllocation([later, expiring], req).id).toBe('expires-first')
   })
 
@@ -198,6 +198,59 @@ describe('buildBalances', () => {
 
     expect(balance.allocated).toBe(0)
     expect(balance.remaining).toBe(0)
+  })
+})
+
+describe('buildBalanceTotals', () => {
+  it('merges pre-aggregated allocation and pending totals into the balance view', () => {
+    const [balance] = buildBalanceTotals(
+      [paidType()],
+      [{ timeOffTypeId: PAID, allocated: 120, taken: 45 }],
+      [{ timeOffTypeId: PAID, pending: 10 }],
+    )
+
+    
+    
+    expect(balance).toMatchObject({
+      timeOffTypeId: PAID,
+      allocated: 120,
+      taken: 45,
+      pending: 10,
+      remaining: 65,
+    })
+  })
+
+  it('reports zero rather than throwing for a type nobody has an allocation against', () => {
+    const [balance] = buildBalanceTotals([paidType()], [], [])
+
+    expect(balance).toMatchObject({ allocated: 0, taken: 0, pending: 0, remaining: 0 })
+  })
+
+  it('keeps each leave type isolated from the others', () => {
+    const other = TimeOffType.from({
+      id: 'type-sick',
+      name: 'Sick Leave',
+      code: 'SL',
+      unit: 'day',
+      requiresAllocation: true,
+      autoApprove: true,
+      isPaid: true,
+      isActive: true,
+    })
+
+    const balances = buildBalanceTotals(
+      [paidType(), other],
+      [
+        { timeOffTypeId: PAID, allocated: 12, taken: 4 },
+        { timeOffTypeId: 'type-sick', allocated: 6, taken: 6 },
+      ],
+      [{ timeOffTypeId: PAID, pending: 2 }],
+    )
+
+    expect(balances).toEqual([
+      { timeOffTypeId: PAID, timeOffTypeName: 'Paid Time Off', unit: 'day', allocated: 12, taken: 4, pending: 2, remaining: 6 },
+      { timeOffTypeId: 'type-sick', timeOffTypeName: 'Sick Leave', unit: 'day', allocated: 6, taken: 6, pending: 0, remaining: 0 },
+    ])
   })
 })
 

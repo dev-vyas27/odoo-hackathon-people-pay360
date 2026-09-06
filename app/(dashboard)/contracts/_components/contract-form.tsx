@@ -1,30 +1,11 @@
 'use client'
 
-/**
- * One form for creating and editing a contract.
- *
- * The date range is the important part: overlapping contracts for the same
- * employee are rejected by the use case AND by an exclusion constraint in the
- * database, so a clash surfaces as a clear 409 rather than corrupt history.
- * Leaving the end date empty means open-ended.
- *
- * ── Department and job position are NOT fields here ─────────────────────────
- *
- * They used to be, and they were editable inputs whose values went nowhere:
- * `contracts` has no such columns, so the API took them, returned 201 and threw
- * them away. Both are derived — `contract-query.adapter.ts` joins them through
- * the employee, which is what payroll reads. So they are shown as read-only
- * context below, sourced from the selected employee, and nothing pretends they
- * can be typed.
- *
- * The working schedule IS a real contract column and is a field, but a locked
- * one: payroll prorates a payslip against `contract.workingScheduleId`, so a
- * hand-edited schedule that disagrees with the employee's pays the wrong amount
- * and nothing downstream would notice.
- */
 import { useWatch, useFormContext } from 'react-hook-form'
 import { createContractSchema, type CreateContractBody } from '@/modules/employment/schemas'
+import type { SalaryStructureListItem } from '@/modules/payroll-config'
 import { ResourceForm } from '@/components/resource/resource-form'
+import { useCan } from '@/components/auth/current-user'
+import { useResourceList } from '@/hooks/use-resource'
 import {
   useDepartmentOptions,
   useEmployeeOptions,
@@ -32,10 +13,25 @@ import {
   useScheduleOptions,
 } from '../../_components/options'
 
-/**
- * Rendered inside ResourceForm, so it can watch the live employee selection and
- * show what this contract will inherit the moment one is chosen.
- */
+function useSalaryStructureOptions(enabled: boolean) {
+  
+  
+  
+  
+  
+  
+  
+  const { page, isLoading } = useResourceList<SalaryStructureListItem>(
+    'payroll/structures',
+    { limit: 200 },
+    { enabled },
+  )
+  return {
+    isLoading: enabled && isLoading,
+    options: page.items.map((s) => ({ value: s.id, label: s.name })),
+  }
+}
+
 function InheritedFromEmployee({
   employees,
   departments,
@@ -83,7 +79,7 @@ export function ContractForm({
   submitLabel,
   onSubmit,
   cancel,
-  /** Editing: an existing contract does not change hands. */
+  
   employeeLocked = false,
 }: {
   defaultValues: CreateContractBody
@@ -96,6 +92,11 @@ export function ContractForm({
   const departments = useDepartmentOptions()
   const positions = useJobPositionOptions()
   const schedules = useScheduleOptions()
+  
+  
+  
+  const canReadStructures = useCan('salary_structure', 'read')
+  const salaryStructures = useSalaryStructureOptions(canReadStructures)
 
   return (
     <ResourceForm<CreateContractBody>
@@ -104,15 +105,8 @@ export function ContractForm({
       defaultValues={defaultValues}
       cancel={cancel}
       onSubmit={onSubmit}
-      /**
-       * Copy the employee's schedule onto the contract as soon as one is chosen.
-       *
-       * Only while CREATING. On an existing contract the schedule is a
-       * historical fact: the employee may have moved onto different hours since,
-       * and rewriting the contract to match today would restate what somebody
-       * was actually paid against — the same reason payroll resolves a contract
-       * by period rather than taking the latest.
-       */
+      
+
       derive={
         employeeLocked
           ? undefined
@@ -142,6 +136,17 @@ export function ContractForm({
           description: 'Gross monthly wage, prorated by worked days.',
         },
         {
+          name: 'salaryStructureId',
+          label: 'Salary structure',
+          type: 'select',
+          options: salaryStructures.options,
+          disabled: !canReadStructures,
+          placeholder: salaryStructures.isLoading ? 'Loading...' : 'Select salary structure',
+          description: canReadStructures
+            ? 'The rule set payroll computes this contract’s payslips from.'
+            : 'Set by payroll — your role does not have access to salary structures.',
+        },
+        {
           name: 'start',
           label: 'Start date',
           type: 'date',
@@ -159,7 +164,7 @@ export function ContractForm({
           type: 'select',
           options: schedules.options,
           span: 2,
-          // Locked: see the note at the top of this file.
+          
           disabled: true,
           placeholder: 'Select an employee first',
           description: employeeLocked

@@ -8,25 +8,38 @@ import {
   type UseCase,
 } from '@/modules/shared'
 import type { SalaryStructureRepositoryPort } from './ports/salary-structure-repository.port'
+import type { StructureEmployeeCountPort } from './ports/structure-employee-count.port'
 
 export interface ListSalaryStructuresInput {
   actor: Actor
   query: PageQuery
 }
 
-/** The list row the Structures screen renders. */
+
 export interface SalaryStructureListItem {
   id: string
   name: string
   code: string
   ruleCount: number
+  
+  employeeCount: number
   active: boolean
+}
+
+
+const NO_EMPLOYEE_COUNTS: StructureEmployeeCountPort = {
+  async countByStructure() {
+    return new Map()
+  },
 }
 
 export class ListSalaryStructuresUseCase
   implements UseCase<ListSalaryStructuresInput, Paged<SalaryStructureListItem>>
 {
-  constructor(private readonly structures: SalaryStructureRepositoryPort) {}
+  constructor(
+    private readonly structures: SalaryStructureRepositoryPort,
+    private readonly employeeCounts: StructureEmployeeCountPort = NO_EMPLOYEE_COUNTS,
+  ) {}
 
   async execute({
     actor,
@@ -39,15 +52,19 @@ export class ListSalaryStructuresUseCase
       query.sort ? query : { ...query, sort: 'name', order: 'asc' },
     )
 
+    
+    const counts = await this.employeeCounts.countByStructure(page.items.map((s) => s.id))
+
     return Ok({
       ...page,
       items: page.items.map((structure) => ({
         id: structure.id,
         name: structure.name,
         code: structure.code,
-        // Counted here rather than in the UI so the number cannot disagree with
-        // what the engine will actually run.
+        
+        
         ruleCount: structure.rules.length,
+        employeeCount: counts.get(structure.id) ?? 0,
         active: structure.active,
       })),
     })

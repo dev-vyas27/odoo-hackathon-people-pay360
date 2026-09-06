@@ -1,14 +1,7 @@
 'use client'
 
-/**
- * Edit an account: rename, change role, activate/deactivate, reset the
- * password, or revoke the login.
- *
- * Editing YOURSELF is deliberately restricted. The role and active fields are
- * disabled, and revoke is hidden, because all three would lock you out and the
- * damage only shows on the next page load. The API refuses them too — this just
- * means you find out before you click rather than after.
- */
+
+
 import { use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -26,13 +19,13 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function EditAccountPage({ params }: { params: Promise<{ id: string }> }) {
-  // Next 16: params is a promise. `use()` unwraps it in a client component.
+  
   const { id } = use(params)
   const router = useRouter()
 
   const { data: account, isLoading } = useResourceItem<AccountView>('users', id)
 
-  // Who am I? Needed to know whether this is my own account.
+  
   const { data: me } = useQuery<CurrentUser>({
     queryKey: ['auth', 'me'],
     queryFn: () => apiFetch<CurrentUser>('/api/auth/me'),
@@ -82,10 +75,9 @@ export default function EditAccountPage({ params }: { params: Promise<{ id: stri
             ? 'This person can sign in. Send a link if they need to reset their password.'
             : 'This person is an HR record with no login. Send them a link to set one.'}
         </p>
-        {/*
-          Issuing a new link invalidates any outstanding one, so resending after
-          a typo in the address genuinely revokes the first email.
-        */}
+        {
+
+}
         <Button
           size="sm"
           variant="outline"

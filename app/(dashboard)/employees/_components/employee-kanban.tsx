@@ -1,12 +1,7 @@
 'use client'
 
-/**
- * Kanban view of employees, grouped by department (spec A1).
- *
- * Kanban here means "cards grouped into columns", not a drag-and-drop board:
- * nothing about an employee is reordered by dragging, and inventing a drag
- * gesture that writes nothing would be a lie about what the screen does.
- */
+
+
 import Link from 'next/link'
 import { LuBuilding2, LuMail } from 'react-icons/lu'
 import { EMPLOYEE_TYPE_LABELS, type EmployeeListItem } from '@/modules/people/schemas'
@@ -41,7 +36,7 @@ export function EmployeeKanban({
     )
   }
 
-  // Group by department, preserving the order employees arrived in.
+  
   const columns = new Map<string, EmployeeListItem[]>()
   for (const employee of employees) {
     const key = employee.departmentName ?? UNASSIGNED

@@ -1,17 +1,11 @@
 "use client";
 
-/**
- * The login form — and the first demonstration of the project's form rule:
- * react-hook-form driven, validated by a zod schema imported from the identity
- * module, which the login route handler validates with too. One definition,
- * two enforcement points.
- */
+
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-// NOT '@/modules/identity' — that barrel reaches the Postgres repository, and
-// pulling the pg driver into a client bundle breaks at module evaluation.
-// See modules/identity/schemas.ts.
+
 import { loginSchema, type LoginValues } from "@/modules/identity/schemas";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { ResourceForm } from "@/components/resource/resource-form";
@@ -21,7 +15,7 @@ export function LoginForm({
   prefill,
 }: {
   next?: string;
-  /** Filled in by the demo panel. See login-screen.tsx for how it is applied. */
+  
   prefill?: { email: string; password: string };
 }) {
   const router = useRouter();
@@ -58,8 +52,8 @@ export function LoginForm({
           { name: "password", label: "Password", type: "password", span: 2 },
         ]}
         cancel={
-          // Centred beneath a full-width Sign in, not beside it: it is the way
-          // out of this screen, not the second half of a choice.
+          
+          
           <Link
             href="/forgot-password"
             className="self-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
@@ -74,13 +68,9 @@ export function LoginForm({
               method: "POST",
               body: JSON.stringify(values),
             });
-            /**
-             * Refresh BEFORE navigating. The session cookie was just set on the
-             * login response, and the router still holds the RSC payload it
-             * rendered while anonymous. Refreshing first throws that away, so
-             * the push lands on a tree rendered with the new cookie instead of
-             * bouncing straight back to /login.
-             */
+            
+
+
             router.refresh();
             router.push(next ?? "/");
           } catch (reason) {

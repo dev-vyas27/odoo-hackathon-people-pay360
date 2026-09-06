@@ -1,9 +1,5 @@
-/**
- * The states every payroll screen needs besides "it worked".
- *
- * Kept together so an error looks the same on the payslip screen as on the rule
- * list, and so no screen is tempted to render `null` when something fails.
- */
+
+
 import { LuCircleAlert, LuInfo, LuTriangleAlert } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 
@@ -49,7 +45,6 @@ export function WarningNote({ children, className }: { children: React.ReactNode
   )
 }
 
-/** A labelled read-only value, used across the payrun and payslip headers. */
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">

@@ -1,10 +1,6 @@
-/**
- * HTTP for payruns.
- *
- * The three lifecycle actions are POSTs with no body: the transition is decided
- * by the aggregate, not by whatever status a client asks for. A client cannot
- * PATCH a payrun to `paid`.
- */
+
+
+
 import { Ok, Period, pageQuerySchema, type PageQuery } from '@/modules/shared'
 import { z } from 'zod'
 import { errorResponse, parseQuery, respond } from '@/lib/http'
@@ -157,7 +153,7 @@ export async function markPayrunPaid(id: string): Promise<Response> {
   return respond(Ok(toPayrunView(result.value)))
 }
 
-/** Wizard step 2. A pure read — nothing is created by asking this question. */
+
 export async function listEligibleEmployees(request: Request): Promise<Response> {
   const session = await requireSession()
   if (!session.ok) return errorResponse(session.error)
