@@ -372,7 +372,7 @@ export function ResourceForm<T extends FieldValues>({
           className={cn(
             'flex items-center gap-3',
             surface
-              ? 'border-t border-border bg-secondary-50 px-6 py-4 sm:px-8'
+              ? 'border-t border-border bg-sunken px-6 py-4 sm:px-8'
               : 'pt-1',
           )}
         >

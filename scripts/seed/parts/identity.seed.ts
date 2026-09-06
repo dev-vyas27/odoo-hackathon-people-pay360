@@ -86,8 +86,16 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
   },
 ]
 
+/**
+ * The demo logins, in the order a jury should meet them.
+ *
+ * Exported for two consumers: the CLI prints them after seeding, and the
+ * sign-in screen lists them so an evaluator can pick one. Both read this array,
+ * so a password changed here cannot leave a stale copy on screen.
+ */
 export const DEMO_CREDENTIALS: SeedCredential[] = DEMO_ACCOUNTS.map((account) => ({
   role: ROLE_LABELS[account.role],
+  name: account.name,
   email: account.email,
   password: account.password,
 }))

@@ -18,12 +18,19 @@
  * moving underneath a payslip they are trying to read.
  */
 import Link from 'next/link'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { PayrollHorizon } from './_components/payroll-horizon'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-primary-100 px-6 py-16">
+    <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-auth-ground px-6 py-16">
       <PayrollHorizon />
+
+      {/* Reachable before signing in: somebody handed a laptop at a stand
+          should not have to authenticate to turn the brightness down. */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
 
       {/* Above the backdrop, and its own stacking context so the card's shadow
           lands on the bars rather than under them. */}

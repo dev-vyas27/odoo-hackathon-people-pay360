@@ -43,7 +43,7 @@ export function KpiCard({
     <Card
       className={cn(
         'gap-0 overflow-hidden transition-shadow hover:shadow-lg',
-        featured && 'border-primary-200 bg-primary-50',
+        featured && 'border-primary/25 bg-accent/70',
         className,
       )}
     >

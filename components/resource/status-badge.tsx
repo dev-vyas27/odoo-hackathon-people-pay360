@@ -47,7 +47,7 @@ const INTENT_BY_STATUS: Record<string, Intent> = {
  * already used here before the palette changed.
  */
 const CLASSES: Record<Intent, string> = {
-  neutral: 'border-border bg-secondary-100 text-muted-foreground',
+  neutral: 'border-border bg-muted text-muted-foreground',
   info: 'border-info/30 bg-info/10 text-info-foreground',
   success: 'border-success/35 bg-success/12 text-success-foreground',
   warning: 'border-warning/40 bg-warning/15 text-warning-foreground',

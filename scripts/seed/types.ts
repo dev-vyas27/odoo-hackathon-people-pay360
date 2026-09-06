@@ -54,7 +54,16 @@ export interface SeedPart {
 }
 
 export interface SeedCredential {
+  /** Human label for the role — 'HR Payroll Manager', not 'hr_payroll_manager'. */
   role: string
+  /**
+   * Who this actually is.
+   *
+   * Since the staff logins became real members of the workforce, "HR Manager"
+   * alone no longer identifies the account — the sign-in screen lists these,
+   * and a jury picking one should see the person they are about to become.
+   */
+  name: string
   email: string
   password: string
 }

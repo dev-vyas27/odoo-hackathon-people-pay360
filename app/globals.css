@@ -173,6 +173,25 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+
+  /*
+   * Roles the fixed ramps used to play inline, which is why they are tokens
+   * now: `bg-secondary-50` is a literal light grey and stays light grey in dark
+   * mode. Anything that has to FLIP has to be a variable.
+   *
+   * sunken        one step recessed from a card — table headers, form action
+   *               bars, the tray on the sign-in screen
+   * primary-hover the brand colour under the pointer. It cannot be "plum, but
+   *               darker": in dark mode the brand step is already light, so
+   *               darkening it moves the button toward the background
+   * auth-ground   the signed-out page. Its own token because the card must
+   *               read as RAISED against it in both themes
+   */
+  --color-sunken: var(--sunken);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-auth-ground: var(--auth-ground);
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -222,6 +241,11 @@
   --destructive: #dc2626;
   --destructive-foreground: #7f1d1d;
 
+  --sunken: #f6f7f8;
+  --primary-hover: #503549;
+  --primary-active: #3c2a37;
+  --auth-ground: #f2edf1;
+
   --success: #22c55e;
   --success-foreground: #15803d;
   --warning: #f59e0b;
@@ -265,6 +289,15 @@
 
   --destructive: #f87171;
   --destructive-foreground: #fecaca;
+
+  /* Sunken goes DOWN from the card, not up: #252733 is the card, so a recessed
+     row has to be darker than it or the hierarchy inverts. */
+  --sunken: #1f2029;
+  /* The brand step is already light here, so hover moves toward white. */
+  --primary-hover: #e2d5de;
+  --primary-active: #f2edf1;
+  /* Darker than the card (#252733) so the sign-in card still reads as raised. */
+  --auth-ground: #171019;
 
   --success: #22c55e;
   --success-foreground: #4ade80;

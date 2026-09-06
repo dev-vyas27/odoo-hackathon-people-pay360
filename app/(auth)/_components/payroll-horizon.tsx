@@ -77,7 +77,7 @@ function Ridge({
           <div
             key={`${pass}-${index}`}
             className={`flex-1 rounded-t-sm ${
-              paid?.has(index) ? 'bg-success/45' : 'bg-primary-300'
+              paid?.has(index) ? 'bg-success/45' : 'bg-primary-300 dark:bg-primary-800'
             }`}
             style={{
               height: `${height}%`,

@@ -11,13 +11,13 @@ const buttonVariants = cva(
         // Hover darkens down the plum ramp rather than fading opacity — a
         // translucent button sitting on the tinted page ground goes muddy.
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary-800 active:bg-primary-900",
+          "bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover active:bg-primary-active",
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
         outline:
-          "border border-border bg-card shadow-xs hover:border-primary-200 hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border border-border bg-card shadow-xs hover:border-primary/40 hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary-200 dark:hover:bg-secondary/70",
+          "bg-secondary text-secondary-foreground hover:bg-secondary-200 dark:hover:bg-secondary-700",
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",

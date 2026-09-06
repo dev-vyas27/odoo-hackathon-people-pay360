@@ -98,7 +98,7 @@ export function ResourceTable<T>({
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((group) => (
-            <TableRow key={group.id} className="bg-secondary-50 hover:bg-secondary-50">
+            <TableRow key={group.id} className="bg-sunken hover:bg-sunken">
               {group.headers.map((header) => {
                 const sortable = header.column.getCanSort()
                 const dir = header.column.getIsSorted()

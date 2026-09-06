@@ -18,6 +18,7 @@ import { LuMenu } from 'react-icons/lu'
 import type { CurrentUser } from '@/modules/shared'
 import { navItemsFor } from '@/components/layout/nav-items'
 import { UserMenu } from '@/components/layout/user-menu'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -42,7 +43,7 @@ export function TopNav({ user }: { user: CurrentUser }) {
       'rounded-xl px-3.5 py-1.5 text-sm transition-colors',
       active
         ? 'bg-accent font-medium text-primary'
-        : 'text-muted-foreground hover:bg-secondary-100 hover:text-foreground',
+        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
     )
 
   return (
@@ -68,7 +69,7 @@ export function TopNav({ user }: { user: CurrentUser }) {
                     'rounded-md px-3 py-2 text-sm transition-colors',
                     isActive(item.href)
                       ? 'bg-accent font-medium text-primary'
-                      : 'text-muted-foreground hover:bg-secondary-100 hover:text-foreground',
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
                   {item.label}
@@ -99,7 +100,8 @@ export function TopNav({ user }: { user: CurrentUser }) {
           ))}
         </nav>
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
           <UserMenu user={user} />
         </div>
       </div>
