@@ -35,7 +35,9 @@ export async function listSalaryRules(request: Request): Promise<Response> {
     ...page,
     filters: {
       ...(category ? { category } : {}),
-      ...(active ? { active: active === 'true' } : {}),
+      // Same fix as salary-structure.controller.ts: the column is `is_active`,
+      // so the filter key must be `isActive` for `toColumnName` to find it.
+      ...(active !== undefined ? { isActive: active === 'true' } : {}),
     },
   }
 

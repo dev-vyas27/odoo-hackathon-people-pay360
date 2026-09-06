@@ -133,6 +133,7 @@ function fakeSchedules(expectedDays: number): ScheduleQueryPort {
   return {
     findById: async () => null,
     expectedHours: async () => expectedDays * 8,
+    expectedDays: async () => expectedDays,
   }
 }
 

@@ -82,6 +82,9 @@ const NO_SCHEDULES: ScheduleQueryPort = {
   async expectedHours() {
     return 0
   },
+  async expectedDays() {
+    return 0
+  },
 }
 
 const NO_ATTENDANCE: AttendanceStatsPort = {

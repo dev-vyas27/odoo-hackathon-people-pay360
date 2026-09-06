@@ -139,6 +139,13 @@ export interface ScheduleSnapshot {
 export interface ScheduleQueryPort {
   findById(id: string): Promise<ScheduleSnapshot | null>
   expectedHours(scheduleId: string, period: Period): Promise<number>
+  /**
+   * Calendar days in `period` this schedule actually works.
+   *
+   * Payroll's proration denominator, and Time Off's leave duration: a leave
+   * request must not bill the days the employee was never rostered for.
+   */
+  expectedDays(scheduleId: string, period: Period): Promise<number>
 }
 
 /**

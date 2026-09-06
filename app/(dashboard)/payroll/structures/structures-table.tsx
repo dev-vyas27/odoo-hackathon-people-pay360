@@ -1,12 +1,25 @@
 'use client'
 
+/**
+ * The Salary Structure list.
+ *
+ * Previously fetched up to 100 structures once from a server component and
+ * filtered them client-side; `FilterBar`'s `?search=`/`?active=` never reached
+ * the server, and nothing beyond the hardcoded 100 could ever be found. This
+ * matches the pattern every other list screen uses: `useResourceList` against
+ * `/api/payroll/structures`, which already applies search/filter/sort in SQL
+ * (see `postgres-salary-structure.repository.ts`, which extends
+ * `BaseSqlRepository`) and returns real paging.
+ */
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { SalaryStructureListItem } from '@/modules/payroll-config'
+import { useResourceList } from '@/hooks/use-resource'
 import { ResourceTable } from '@/components/resource/resource-table'
 import { StatusBadge } from '@/components/resource/status-badge'
-import { FilterBar } from '@/components/resource/filter-bar'
+import { FilterBar, useFilterParams } from '@/components/resource/filter-bar'
+import { Pagination } from '@/components/resource/pagination'
 import { useCan } from '@/components/auth/current-user'
 import { Button } from '@/components/ui/button'
 
@@ -45,23 +58,10 @@ const columns: ColumnDef<SalaryStructureListItem, unknown>[] = [
   },
 ]
 
-export function StructuresTable({ structures }: { structures: SalaryStructureListItem[] }) {
+export function StructuresTable() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-
-  const search = (searchParams.get('search') ?? '').toLowerCase()
-  const activeParam = searchParams.get('active')
-
-  const filteredStructures = structures.filter((item) => {
-    if (activeParam === 'true' && !item.active) return false
-    if (activeParam === 'false' && item.active) return false
-    if (search) {
-      const matchName = item.name.toLowerCase().includes(search)
-      const matchCode = item.code.toLowerCase().includes(search)
-      if (!matchName && !matchCode) return false
-    }
-    return true
-  })
+  const params = useFilterParams(['active'])
+  const { page, isLoading } = useResourceList<SalaryStructureListItem>('payroll/structures', params)
 
   // hr_payroll_user reads salary configuration but cannot add to it.
   const canCreate = useCan('salary_structure', 'create')
@@ -74,23 +74,21 @@ export function StructuresTable({ structures }: { structures: SalaryStructureLis
       />
 
       <ResourceTable
-        data={filteredStructures}
+        data={page.items}
         columns={columns}
+        isLoading={isLoading}
         onRowClick={(row) => router.push(`/payroll/structures/${row.id}`)}
-        emptyMessage={
-          structures.length === 0
-            ? 'No salary structures yet. A payrun needs one before it can compute.'
-            : 'No salary structures match these filters.'
-        }
+        emptyMessage="No salary structures match these filters."
         emptyAction={
-          structures.length === 0 && canCreate ? (
+          canCreate ? (
             <Button asChild variant="outline">
               <Link href="/payroll/structures/new">Create the first structure</Link>
             </Button>
           ) : undefined
         }
       />
+
+      <Pagination page={page.page} pages={page.pages} total={page.total} limit={page.limit} />
     </div>
   )
 }
-

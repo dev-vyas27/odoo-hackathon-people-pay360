@@ -1,31 +1,50 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
+/**
+ * The Salary Rule list.
+ *
+ * Same fix as the Structures and Pay Runs lists: this used to fetch up to 200
+ * rules once from a server component and filter by category in the browser,
+ * so `?search=`/`?category=` never reached `/api/payroll/rules` and nothing
+ * beyond the hardcoded 200 could be found. `useResourceList` restores real
+ * server-side search/filter/paging (`postgres-salary-rule.repository.ts`
+ * extends `BaseSqlRepository`, which already does all three in SQL).
+ */
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'
-import { SALARY_CATEGORIES, SALARY_CATEGORY_LABELS, type SalaryCategory } from '@/modules/payroll-config'
+import type { SalaryRule } from '@/modules/payroll-config'
+import {
+  SALARY_CATEGORIES,
+  SALARY_CATEGORY_LABELS,
+  type SalaryCategory,
+} from '@/modules/payroll-config'
+import { useResourceList } from '@/hooks/use-resource'
 import { ResourceTable } from '@/components/resource/resource-table'
 import { StatusBadge } from '@/components/resource/status-badge'
-import { FilterBar } from '@/components/resource/filter-bar'
+import { FilterBar, useFilterParams } from '@/components/resource/filter-bar'
+import { Pagination } from '@/components/resource/pagination'
 import { useCan } from '@/components/auth/current-user'
 import { Button } from '@/components/ui/button'
-
-export interface RuleRow {
-  id: string
-  name: string
-  code: string
-  category: string
-  sequence: number
-  computation: string
-  active: boolean
-}
 
 const CATEGORY_OPTIONS = SALARY_CATEGORIES.map((cat) => ({
   value: cat,
   label: SALARY_CATEGORY_LABELS[cat] ?? cat,
 }))
 
-const columns: ColumnDef<RuleRow, unknown>[] = [
+/** One human-readable line describing how a rule computes its amount. */
+function describe(computation: SalaryRule['computation']): string {
+  switch (computation.type) {
+    case 'percentage':
+      return `${computation.percent}% of ${computation.ofCode}`
+    case 'formula':
+      return computation.expression
+    default:
+      return `Fixed ${computation.amount}`
+  }
+}
+
+const columns: ColumnDef<SalaryRule, unknown>[] = [
   {
     accessorKey: 'sequence',
     header: 'Seq',
@@ -49,9 +68,9 @@ const columns: ColumnDef<RuleRow, unknown>[] = [
     cell: ({ row }) => SALARY_CATEGORY_LABELS[row.original.category as SalaryCategory] ?? row.original.category,
   },
   {
-    accessorKey: 'computation',
+    id: 'computation',
     header: 'Computation',
-    cell: ({ row }) => <span className="text-muted-foreground">{row.original.computation}</span>,
+    cell: ({ row }) => <span className="text-muted-foreground">{describe(row.original.computation)}</span>,
   },
   {
     accessorKey: 'active',
@@ -60,22 +79,10 @@ const columns: ColumnDef<RuleRow, unknown>[] = [
   },
 ]
 
-export function RulesTable({ rules }: { rules: RuleRow[] }) {
+export function RulesTable() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-
-  const search = (searchParams.get('search') ?? '').toLowerCase()
-  const category = searchParams.get('category')
-
-  const filteredRules = rules.filter((item) => {
-    if (category && item.category !== category) return false
-    if (search) {
-      const matchName = item.name.toLowerCase().includes(search)
-      const matchCode = item.code.toLowerCase().includes(search)
-      if (!matchName && !matchCode) return false
-    }
-    return true
-  })
+  const params = useFilterParams(['category'])
+  const { page, isLoading } = useResourceList<SalaryRule>('payroll/rules', params)
 
   // hr_payroll_user reads salary configuration but cannot add to it.
   const canCreate = useCan('salary_rule', 'create')
@@ -88,23 +95,21 @@ export function RulesTable({ rules }: { rules: RuleRow[] }) {
       />
 
       <ResourceTable
-        data={filteredRules}
+        data={page.items}
         columns={columns}
+        isLoading={isLoading}
         onRowClick={(row) => router.push(`/payroll/rules/${row.id}`)}
-        emptyMessage={
-          rules.length === 0
-            ? 'No salary rules yet. Add BASIC, HRA and NET to get a payslip computing.'
-            : 'No salary rules match these filters.'
-        }
+        emptyMessage="No salary rules match these filters."
         emptyAction={
-          rules.length === 0 && canCreate ? (
+          canCreate ? (
             <Button asChild variant="outline">
               <Link href="/payroll/rules/new">Create the first rule</Link>
             </Button>
           ) : undefined
         }
       />
+
+      <Pagination page={page.page} pages={page.pages} total={page.total} limit={page.limit} />
     </div>
   )
 }
-

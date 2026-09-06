@@ -5,7 +5,7 @@
  * Nothing above this file sees a raw number, and nothing below sees Money.
  */
 import { query } from '@/lib/db'
-import { Money } from '@/modules/shared'
+import { Money, type PageQuery } from '@/modules/shared'
 import { BaseSqlRepository, type SqlValue } from '@/modules/shared/server'
 import type { ContractRepositoryPort } from '../application/ports/contract-repository.port'
 import type { Contract } from '../domain/contract'
@@ -18,6 +18,31 @@ export class PostgresContractRepository
   protected readonly table = CONTRACTS_TABLE
   protected readonly columns = CONTRACT_COLUMNS
   protected readonly defaultSort = 'starts_on'
+
+  /**
+   * `contracts` has no free-text column of its own — `searchable` stays empty
+   * on purpose, or every keystroke would ILIKE a uuid or a decimal wage and
+   * never match. What a person typing into this screen's search box actually
+   * means is "find the employee named X", and that name lives on `employees`,
+   * a table this repository does not otherwise touch. An EXISTS subquery,
+   * bolted onto whatever the base class already built, reaches it without
+   * turning this into a join-aware repository for every other filter too.
+   */
+  protected buildWhere(
+    q: PageQuery,
+    startIndex = 1,
+  ): { clause: string; values: SqlValue[]; nextIndex: number } {
+    const built = super.buildWhere(q, startIndex)
+    if (!q.search) return built
+
+    const index = built.nextIndex
+    const exists = `EXISTS (SELECT 1 FROM "employees" e WHERE e.id = "${CONTRACTS_TABLE}"."employee_id" AND e.name ILIKE $${index})`
+    return {
+      clause: built.clause ? `${built.clause} AND ${exists}` : `WHERE ${exists}`,
+      values: [...built.values, `%${q.search}%`],
+      nextIndex: index + 1,
+    }
+  }
 
   protected toDomain(row: ContractRow): Contract {
     return {

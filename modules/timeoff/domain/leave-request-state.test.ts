@@ -86,7 +86,7 @@ describe('leave request lifecycle', () => {
 })
 
 describe('duration defaulting', () => {
-  it('counts inclusive calendar days for day-unit leave', () => {
+  it('counts inclusive calendar days when the employee has no schedule', () => {
     expect(LeaveRequest.defaultDuration(period, 'day')).toBe(5)
     expect(LeaveRequest.defaultDuration(Period.of(day('2026-03-02'), day('2026-03-02')), 'day')).toBe(1)
   })
@@ -97,5 +97,33 @@ describe('duration defaulting', () => {
 
   it('insists on an explicit duration for hour-unit leave', () => {
     expect(() => LeaveRequest.defaultDuration(period, 'hour')).toThrowError(/explicit number of hours/)
+  })
+
+  /**
+   * The reported bug: twelve calendar days across a weekend is ten working
+   * days, and billing the employee for the Saturday and Sunday silently
+   * overdraws their balance.
+   *
+   * The weekday arithmetic itself belongs to the schedule (and is tested in
+   * `weekly-hours.service.test.ts`); what these assert is that the count wins
+   * over the calendar span once it is known.
+   */
+  it('bills the working-day count rather than the calendar span', () => {
+    // Mon 2 Mar -> Fri 13 Mar 2026 inclusive: 12 calendar days, one weekend.
+    const fortnight = Period.of(day('2026-03-02'), day('2026-03-13'))
+
+    expect(fortnight.days).toBe(12)
+    expect(LeaveRequest.defaultDuration(fortnight, 'day', undefined, 10)).toBe(10)
+  })
+
+  it('still lets an explicit half day win over the working-day count', () => {
+    expect(LeaveRequest.defaultDuration(period, 'day', 0.5, 5)).toBe(0.5)
+  })
+
+  it('refuses leave that falls entirely on non-working days', () => {
+    const weekend = Period.of(day('2026-03-07'), day('2026-03-08'))
+    expect(() => LeaveRequest.defaultDuration(weekend, 'day', undefined, 0)).toThrowError(
+      /no working days/i,
+    )
   })
 })

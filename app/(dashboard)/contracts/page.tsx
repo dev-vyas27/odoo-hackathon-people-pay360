@@ -57,11 +57,15 @@ export default function ContractsPage() {
     {
       accessorKey: 'start',
       header: 'Start',
+      // `startsOn` -> `starts_on`: BaseSqlRepository.buildOrderBy converts
+      // camelCase to the real column name and checks it against CONTRACT_COLUMNS.
+      meta: { sortKey: 'startsOn' },
       cell: ({ row }) => <span className="tabular">{formatDate(row.original.start)}</span>,
     },
     {
       accessorKey: 'end',
       header: 'End',
+      meta: { sortKey: 'endsOn' },
       cell: ({ row }) => (
         <span className="tabular">
           {row.original.end ? formatDate(row.original.end) : 'Open-ended'}

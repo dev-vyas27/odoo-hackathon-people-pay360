@@ -1,46 +1,5 @@
 'use client'
 
-/**
- * The demo accounts, on the plum panel of the sign-in sheet.
- *
- * This replaced a "Load demo data" button. That button seeded the database and
- * only THEN showed the credentials, which meant the first thing an evaluator
- * did was wait — and the second was wonder whether they had broken something.
- * The data is seeded by `npm run seed`; by the time anyone opens this page it
- * is already there, so the accounts can simply be listed.
- *
- * Tap an account to fill the form beside it, then Sign in. Two taps, no typing,
- * and the password is never guessed at from a screenshot.
- *
- * ── Two up, not five down ─────────────────────────────────────────────────
- *
- * Five full-width rows was 320px of list. As a 2-column grid the same five
- * accounts are three rows and half the height, and the odd one out spans the
- * full width rather than leaving a hole — a ragged last row reads as a
- * rendering bug. The height mattered: see brand-panel.tsx.
- *
- * Each tile is name over role, not name over email. The role is what you choose
- * ON; the email is what you are choosing, and it lands in the field beside it
- * the moment you pick, where it is bigger and selectable. It stays on the
- * tile's `title` for anyone who wants it before committing.
- *
- * ── Set on plum ───────────────────────────────────────────────────────────
- *
- * Tiles are white at 10% rather than `bg-card`: on this panel a white tile
- * would be a hole punched in the brand colour, and five of them would be the
- * loudest thing on the page. The tint keeps them legible and lets the chosen
- * one step forward simply by getting brighter.
- *
- * Deliberately NOT a one-tap sign-in. Filling the form leaves the chosen
- * account visible in the fields, so whoever is presenting can say which role
- * they are about to demonstrate before they demonstrate it — and can correct a
- * mis-tap without being dropped into the wrong dashboard.
- *
- * Rendered only when `DEMO_SEED_ENABLED` is set, decided on the server. These
- * are plaintext passwords on a public page; the flag is the only thing that
- * makes that acceptable, and it is checked where it cannot be flipped from a
- * client bundle.
- */
 import { LuCheck } from 'react-icons/lu'
 import type { SeedCredential } from '@/scripts/seed/types'
 import { cn } from '@/lib/utils'
@@ -75,7 +34,7 @@ export function DemoAccountsPanel({
   return (
     <section className="relative space-y-2">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="eyebrow text-primary-200">Demo accounts</h2>
+        <h2 className="eyebrow text-white">Demo accounts</h2>
         <p className="text-xs text-primary-300">Pick one to fill the form</p>
       </div>
 

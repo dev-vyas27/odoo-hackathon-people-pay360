@@ -34,6 +34,8 @@ import {
 import { LeaveRequest, type LeaveRequestView } from '../domain/leave-request'
 import { assertNoOverlap, selectAllocation } from '../domain/balance.service'
 import { consumeAllocationForApproval } from './approval.service'
+import type { EmployeeLookupPort } from './ports/employee-lookup.port'
+import type { ScheduleQueryPort } from './ports/schedule-lookup.port'
 import type { UnitOfWorkPort } from './ports/unit-of-work.port'
 
 export interface RequestLeaveInput {
@@ -53,7 +55,29 @@ export class RequestLeaveUseCase implements UseCase<RequestLeaveInput, LeaveRequ
   constructor(
     private readonly uow: UnitOfWorkPort,
     private readonly events: IEventBus,
+    private readonly employees: EmployeeLookupPort,
+    private readonly schedules: ScheduleQueryPort,
   ) {}
+
+  /**
+   * How many days of `period` this employee is actually rostered for.
+   *
+   * `undefined` means "unknown", not "none": either the employee has no
+   * schedule assigned, or `employment` has not registered its adapter. The
+   * caller falls back to the calendar span in that case, which is the old
+   * behaviour and the only honest answer when there is no pattern to measure.
+   */
+  private async workingDaysIn(employeeId: string, period: Period): Promise<number | undefined> {
+    const employee = await this.employees.findById(employeeId)
+    const scheduleId = employee?.workingScheduleId
+    if (!scheduleId) return undefined
+
+    // Guards the null object, which answers 0 to everything.
+    const schedule = await this.schedules.findById(scheduleId)
+    if (!schedule) return undefined
+
+    return this.schedules.expectedDays(scheduleId, period)
+  }
 
   async execute(input: RequestLeaveInput): Promise<Result<LeaveRequestView>> {
     const allowed = authorizeOwned(input.actor, 'leave_request', 'create', input.employeeId)
@@ -73,7 +97,12 @@ export class RequestLeaveUseCase implements UseCase<RequestLeaveInput, LeaveRequ
 
     try {
       const period = Period.of(input.start, input.end)
-      const duration = LeaveRequest.defaultDuration(period, type.unit, input.duration)
+      const duration = LeaveRequest.defaultDuration(
+        period,
+        type.unit,
+        input.duration,
+        await this.workingDaysIn(input.employeeId, period),
+      )
 
       const candidate = LeaveRequest.from({
         // The repository assigns the real id; overlap detection only needs this

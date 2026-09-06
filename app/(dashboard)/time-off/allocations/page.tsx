@@ -15,7 +15,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import Link from 'next/link'
 import { LuCheck, LuPlus, LuX } from 'react-icons/lu'
-import type { AllocationListItem } from '@/modules/timeoff/schemas'
+import type { AllocationListItem, TimeOffTypeView } from '@/modules/timeoff/schemas'
 import { ALLOCATION_STATUS_OPTIONS } from '../_components/options'
 import { useResourceAction, useResourceList } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
@@ -35,6 +35,11 @@ export default function AllocationsPage() {
   const canCreate = useCan('allocation', 'create')
   const params = useFilterParams(['status', 'timeOffTypeId'])
   const { page, isLoading } = useResourceList<AllocationListItem>(RESOURCE, params)
+
+  // Same fix as the requests screen: the filter was already wired end to end,
+  // it just had no control to set it from.
+  const types = useResourceList<TimeOffTypeView>('time-off/types', { limit: 100 })
+  const typeOptions = types.page.items.map((t) => ({ value: t.id, label: t.name }))
 
   const approve = useResourceAction(RESOURCE, 'approve', {
     successMessage: 'Allocation approved and now available',
@@ -77,7 +82,9 @@ export default function AllocationsPage() {
     {
       id: 'validity',
       header: 'Validity',
-      enableSorting: false,
+      // Keyed on the start of the validity window — see `orderBy`'s allowlist
+      // in timeoff.repositories.ts (`validFrom` -> `valid_from`).
+      meta: { sortKey: 'validFrom' },
       cell: ({ row }) => (
         <span className="tabular text-muted-foreground">
           {formatDateRange(row.original.validFrom, row.original.validTo)}
@@ -156,7 +163,10 @@ export default function AllocationsPage() {
 
       <FilterBar
         searchPlaceholder="Search allocations..."
-        filters={[{ name: 'status', label: 'Status', options: ALLOCATION_STATUS_OPTIONS }]}
+        filters={[
+          { name: 'status', label: 'Status', options: ALLOCATION_STATUS_OPTIONS },
+          { name: 'timeOffTypeId', label: 'Type', options: typeOptions },
+        ]}
       />
 
       <ResourceTable

@@ -342,6 +342,23 @@ export class PostgresAllocationRepository implements AllocationRepositoryPort {
       }
     }
 
+    /**
+     * `search` used to be accepted by the query string and simply never
+     * looked at: the FilterBar box rendered, every keystroke round-tripped to
+     * the API, and the result set never changed. What the column headers
+     * actually show is the employee and the leave type, both on other tables
+     * plus this row's own free-text `note` — so all three are searched.
+     */
+    if (q.search) {
+      values.push(`%${q.search}%`)
+      const i = values.length
+      conditions.push(
+        `(note ILIKE $${i}
+          OR EXISTS (SELECT 1 FROM "employees" e WHERE e.id = employee_id AND e.name ILIKE $${i})
+          OR EXISTS (SELECT 1 FROM "${TIMEOFF_TYPES_TABLE}" t WHERE t.id = timeoff_type_id AND t.name ILIKE $${i}))`,
+      )
+    }
+
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
     const sort = orderBy(
       q,
@@ -509,6 +526,19 @@ export class PostgresLeaveRequestRepository implements LeaveRequestRepositoryPor
     if (typeof to === 'string' && to !== '') {
       values.push(to)
       conditions.push(`starts_on <= $${values.length}::date`)
+    }
+
+    // Same gap as the allocations list: `search` reached the API and did
+    // nothing. The Request List shows Employee and Type, so both are searched,
+    // plus the requester's own free-text `reason`.
+    if (q.search) {
+      values.push(`%${q.search}%`)
+      const i = values.length
+      conditions.push(
+        `(reason ILIKE $${i}
+          OR EXISTS (SELECT 1 FROM "employees" e WHERE e.id = employee_id AND e.name ILIKE $${i})
+          OR EXISTS (SELECT 1 FROM "${TIMEOFF_TYPES_TABLE}" t WHERE t.id = timeoff_type_id AND t.name ILIKE $${i}))`,
+      )
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''

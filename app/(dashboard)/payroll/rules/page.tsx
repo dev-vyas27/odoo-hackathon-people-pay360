@@ -1,26 +1,15 @@
+'use client'
+
 import Link from 'next/link'
 import { LuPlus } from 'react-icons/lu'
-import { ListSalaryRulesUseCase, salaryRuleRepository } from '@/modules/payroll-config/server'
-import { can } from '@/modules/shared'
 import { PageHeader } from '@/components/resource/page-header'
 import { Button } from '@/components/ui/button'
-import { ErrorState } from '../_components/states'
-import { load, pageActor } from '../_lib/session'
-import { RulesTable, type RuleRow } from './rules-table'
+import { useCan } from '@/components/auth/current-user'
+import { RulesTable } from './rules-table'
 
-export default async function SalaryRulesPage() {
-  const actor = await pageActor()
+export default function SalaryRulesPage() {
   // hr_payroll_user reads salary configuration; only a manager may change it.
-  const canCreate = can(actor.role, 'salary_rule', 'create')
-
-  const result = await load(async () => {
-    const outcome = await new ListSalaryRulesUseCase(salaryRuleRepository()).execute({
-      actor,
-      query: { limit: 200 },
-    })
-    if (!outcome.ok) throw outcome.error
-    return outcome.value
-  })
+  const canCreate = useCan('salary_rule', 'create')
 
   return (
     <>
@@ -39,49 +28,7 @@ export default async function SalaryRulesPage() {
         }
       />
 
-      {result.ok ? (
-        <RulesTable rules={result.data.items.map(toRow)} />
-      ) : (
-        <ErrorState message={result.message} />
-      )}
+      <RulesTable />
     </>
   )
-}
-
-function toRow(rule: {
-  id: string
-  name: string
-  code: string
-  category: string
-  sequence: number
-  computation: { type: string; amount?: number; percent?: number; ofCode?: string; expression?: string }
-  active: boolean
-}): RuleRow {
-  return {
-    id: rule.id,
-    name: rule.name,
-    code: rule.code,
-    category: rule.category,
-    sequence: rule.sequence,
-    computation: describe(rule.computation),
-    active: rule.active,
-  }
-}
-
-/** One human-readable line describing how a rule computes its amount. */
-function describe(computation: {
-  type: string
-  amount?: number
-  percent?: number
-  ofCode?: string
-  expression?: string
-}): string {
-  switch (computation.type) {
-    case 'percentage':
-      return `${computation.percent}% of ${computation.ofCode}`
-    case 'formula':
-      return computation.expression ?? ''
-    default:
-      return `Fixed ${computation.amount}`
-  }
 }

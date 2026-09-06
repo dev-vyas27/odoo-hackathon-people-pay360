@@ -44,6 +44,7 @@ import type { LeaveRequestView } from '../domain/leave-request'
 import type { TimeOffTypeView } from '../domain/time-off-type'
 import { PostgresUnitOfWork } from '../infrastructure/postgres-unit-of-work'
 import { employeeLookup } from '../application/ports/employee-lookup.port'
+import { scheduleLookup } from '../application/ports/schedule-lookup.port'
 import { container } from '@/modules/shared'
 import {
   allocationDecisionSchema,
@@ -63,6 +64,9 @@ const deps = () => ({
   // returns the null object, and it must start returning real names the moment
   // they do — without a restart.
   employees: employeeLookup(),
+  // Same reasoning as `employees`: resolved per call so leave duration starts
+  // respecting real working patterns the moment `employment` registers.
+  schedules: scheduleLookup(),
   events: container().eventBus,
 })
 
@@ -101,9 +105,9 @@ export async function requestLeave(
   const parsed = leaveRequestSchema.safeParse(body)
   if (!parsed.success) return Err(invalid(parsed.error.issues))
 
-  const { uow, events } = deps()
+  const { uow, events, employees, schedules } = deps()
 
-  return new RequestLeaveUseCase(uow, events).execute({
+  return new RequestLeaveUseCase(uow, events, employees, schedules).execute({
     actor,
     employeeId: parsed.data.employeeId,
     timeOffTypeId: parsed.data.timeOffTypeId,

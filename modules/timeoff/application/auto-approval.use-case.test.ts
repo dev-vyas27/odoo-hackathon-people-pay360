@@ -16,6 +16,7 @@ import { RequestLeaveUseCase } from './request-leave.use-case'
 import { SubmitLeaveUseCase } from './submit-leave.use-case'
 import { RefuseLeaveUseCase } from './refuse-leave.use-case'
 import { InMemoryUnitOfWork } from './test-support/in-memory-unit-of-work'
+import { fakeEmployees, fakeSchedules } from './test-support/fake-schedule-lookup'
 
 const day = (iso: string) => new Date(`${iso}T00:00:00.000Z`)
 
@@ -71,7 +72,7 @@ describe('RequestLeaveUseCase — auto-approval', () => {
       status: 'approved',
     })
 
-    const result = await new RequestLeaveUseCase(uow, bus).execute({
+    const result = await new RequestLeaveUseCase(uow, bus, fakeEmployees(), fakeSchedules()).execute({
       actor: hr,
       employeeId,
       timeOffTypeId: type.id,
@@ -102,7 +103,7 @@ describe('RequestLeaveUseCase — auto-approval', () => {
       status: 'approved',
     })
 
-    const result = await new RequestLeaveUseCase(uow, bus).execute({
+    const result = await new RequestLeaveUseCase(uow, bus, fakeEmployees(), fakeSchedules()).execute({
       actor: hr,
       employeeId,
       timeOffTypeId: type.id,
@@ -133,7 +134,7 @@ describe('RequestLeaveUseCase — auto-approval', () => {
       status: 'approved',
     })
 
-    const result = await new RequestLeaveUseCase(uow, bus).execute({
+    const result = await new RequestLeaveUseCase(uow, bus, fakeEmployees(), fakeSchedules()).execute({
       actor: hr,
       employeeId,
       timeOffTypeId: type.id,
@@ -161,7 +162,7 @@ describe('RequestLeaveUseCase — auto-approval', () => {
       status: 'approved',
     })
 
-    const result = await new RequestLeaveUseCase(uow, bus).execute({
+    const result = await new RequestLeaveUseCase(uow, bus, fakeEmployees(), fakeSchedules()).execute({
       actor: hr,
       employeeId,
       timeOffTypeId: type.id,
@@ -261,7 +262,7 @@ describe('refusing an auto-approved request', () => {
     })
 
     const approved = unwrap(
-      await new RequestLeaveUseCase(uow, bus).execute({
+      await new RequestLeaveUseCase(uow, bus, fakeEmployees(), fakeSchedules()).execute({
         actor: hr,
         employeeId,
         timeOffTypeId: type.id,

@@ -155,6 +155,14 @@ export function FilterBar({
  * `names` is the whitelist of filter keys this screen understands, so an
  * unrelated query param (say `?tab=history`) is not sent to the API as a filter
  * on a column that does not exist.
+ *
+ * `sort`/`order` are forwarded unconditionally rather than through `names`:
+ * they are not a per-column filter a screen opts into, they are the paging
+ * convention every list endpoint already understands (see `PAGING_KEYS` in
+ * `lib/http.ts`), and `SortableHeader` below is what writes them into the URL.
+ * Forwarding them here, once, is what makes a header click actually reach the
+ * API — without it the URL would carry `?sort=startsOn` and the request would
+ * never see it.
  */
 export function useFilterParams(names: string[] = []): Record<string, string | number> {
   const params = useSearchParams()
@@ -166,10 +174,60 @@ export function useFilterParams(names: string[] = []): Record<string, string | n
   const page = Number(params.get('page'))
   if (Number.isFinite(page) && page > 1) result.page = page
 
+  const sort = params.get('sort')
+  if (sort) result.sort = sort
+
+  const order = params.get('order')
+  if (order === 'asc' || order === 'desc') result.order = order
+
   for (const name of names) {
     const value = params.get(name)
     if (value) result[name] = value
   }
 
   return result
+}
+
+/**
+ * The URL-backed sort state: which column, which direction, and how to change
+ * it. `ResourceTable` is the only caller — this is the "once, in the shared
+ * layer" half of adding sortable columns; a screen never touches this hook.
+ *
+ * Three states per column, cycling on each click: unsorted -> asc -> desc ->
+ * unsorted. Switching to a DIFFERENT column always starts at asc, matching
+ * the affordance the table already drew with TanStack's client-side sorting
+ * before this replaced it.
+ */
+export function useSort(): {
+  sort: string | null
+  order: 'asc' | 'desc'
+  toggle: (column: string) => void
+} {
+  const router = useRouter()
+  const pathname = usePathname()
+  const params = useSearchParams()
+
+  const sort = params.get('sort')
+  const order = params.get('order') === 'asc' ? 'asc' : 'desc'
+
+  const toggle = useCallback(
+    (column: string) => {
+      const next = new URLSearchParams(params.toString())
+      if (sort !== column) {
+        next.set('sort', column)
+        next.set('order', 'asc')
+      } else if (order === 'asc') {
+        next.set('order', 'desc')
+      } else {
+        next.delete('sort')
+        next.delete('order')
+      }
+      // A re-sort is a new view of the same filtered set; page 1 is where it starts.
+      next.delete('page')
+      router.replace(`${pathname}?${next.toString()}`, { scroll: false })
+    },
+    [params, pathname, router, sort, order],
+  )
+
+  return { sort, order, toggle }
 }

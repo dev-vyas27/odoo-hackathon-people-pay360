@@ -17,7 +17,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { LuPlus } from 'react-icons/lu'
 import Link from 'next/link'
 import { LEAVE_STATUSES } from '@/modules/shared'
-import type { LeaveRequestListItem } from '@/modules/timeoff/schemas'
+import type { LeaveRequestListItem, TimeOffTypeView } from '@/modules/timeoff/schemas'
 import { useResourceList } from '@/hooks/use-resource'
 import { PageHeader } from '@/components/resource/page-header'
 import { ResourceTable } from '@/components/resource/resource-table'
@@ -42,8 +42,10 @@ const columns: ColumnDef<LeaveRequestListItem, unknown>[] = [
   {
     id: 'dates',
     header: 'Dates',
-    // Sorting is server-side, keyed on the real column.
-    enableSorting: false,
+    // The cell shows a range, but a header can only sort by one real column —
+    // `startsOn` is what the repository's allowlist accepts (see `orderBy` in
+    // timeoff.repositories.ts), so that is what clicking this header toggles.
+    meta: { sortKey: 'startsOn' },
     cell: ({ row }) => (
       <span className="tabular">{formatDateRange(row.original.start, row.original.end)}</span>
     ),
@@ -69,6 +71,15 @@ export default function LeaveRequestsPage() {
   const params = useFilterParams(['status', 'timeOffTypeId'])
   const { page, isLoading } = useResourceList<LeaveRequestListItem>('time-off/requests', params)
 
+  /**
+   * `timeOffTypeId` was already forwarded to the API by `useFilterParams`
+   * above and already applied by the repository — there was simply no control
+   * on screen that could ever set it. Types are few, so fetching all of them
+   * for the filter's options is one small request, not a second paged list.
+   */
+  const types = useResourceList<TimeOffTypeView>('time-off/types', { limit: 100 })
+  const typeOptions = types.page.items.map((t) => ({ value: t.id, label: t.name }))
+
   return (
     <div>
       <PageHeader
@@ -86,7 +97,10 @@ export default function LeaveRequestsPage() {
 
       <FilterBar
         searchPlaceholder="Search requests..."
-        filters={[{ name: 'status', label: 'Status', options: STATUS_OPTIONS }]}
+        filters={[
+          { name: 'status', label: 'Status', options: STATUS_OPTIONS },
+          { name: 'timeOffTypeId', label: 'Type', options: typeOptions },
+        ]}
       />
 
       <ResourceTable

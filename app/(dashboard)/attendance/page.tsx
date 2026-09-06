@@ -72,6 +72,9 @@ export default function AttendancePage() {
     {
       accessorKey: 'checkIn',
       header: 'Date',
+      // The attendance repo's sort allowlist is the real column name directly
+      // (no camelCase conversion) — see postgres-attendance.repository.ts.
+      meta: { sortKey: 'worked_on' },
       cell: ({ row }) => <span className="tabular">{formatDate(row.original.checkIn)}</span>,
     },
     {

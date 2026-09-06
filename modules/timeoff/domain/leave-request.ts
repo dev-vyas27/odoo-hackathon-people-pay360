@@ -63,13 +63,40 @@ export class LeaveRequest {
   }
 
   /**
-   * Day-unit requests default to the inclusive calendar length of the period,
-   * so a Monday-to-Friday request is 5 and a single day is 1 rather than 0.
-   * An explicit duration still wins — that is how half days are expressed.
+   * Day-unit requests bill the days the employee's schedule actually works.
+   *
+   * Ten calendar days across two weekends is eight working days. Counting the
+   * calendar span instead overdraws the employee's balance for days they were
+   * never going to work, and the error compounds: the same inflated number is
+   * what gets consumed from the allocation and reported to payroll.
+   *
+   * `workingDays` is resolved from the employee's working schedule by the
+   * caller, which is the only layer with port access. It is deliberately NOT a
+   * "skip Saturday and Sunday" rule — a compressed Mon-Thu schedule does not
+   * work Friday either, and a hardcoded weekend would bill it.
+   *
+   * Undefined means "no schedule to measure against", not "zero": the employee
+   * has no defined pattern, so the inclusive calendar span is the only honest
+   * answer left. An explicit duration still wins over both — that is how half
+   * days are expressed.
    */
-  static defaultDuration(period: Period, unit: LeaveUnit, explicit?: number): number {
+  static defaultDuration(
+    period: Period,
+    unit: LeaveUnit,
+    explicit?: number,
+    workingDays?: number,
+  ): number {
     if (explicit !== undefined && explicit > 0) return explicit
-    if (unit === 'day') return period.days
+    if (unit === 'day') {
+      if (workingDays === undefined) return period.days
+      if (workingDays <= 0) {
+        throw DomainError.validation(
+          'LEAVE_NO_WORKING_DAYS',
+          'That period contains no working days for this employee',
+        )
+      }
+      return workingDays
+    }
     throw DomainError.validation(
       'LEAVE_DURATION_REQUIRED',
       'Hour-based leave needs an explicit number of hours',

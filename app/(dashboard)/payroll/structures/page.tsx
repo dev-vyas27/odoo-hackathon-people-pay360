@@ -1,33 +1,15 @@
+'use client'
+
 import Link from 'next/link'
 import { LuPlus } from 'react-icons/lu'
-import {
-  ListSalaryStructuresUseCase,
-  salaryStructureRepository,
-  structureEmployeeCount,
-} from '@/modules/payroll-config/server'
-import { can } from '@/modules/shared'
 import { PageHeader } from '@/components/resource/page-header'
 import { Button } from '@/components/ui/button'
-import { ErrorState } from '../_components/states'
-import { load, pageActor } from '../_lib/session'
+import { useCan } from '@/components/auth/current-user'
 import { StructuresTable } from './structures-table'
 
-export default async function SalaryStructuresPage() {
-  const actor = await pageActor()
+export default function SalaryStructuresPage() {
   // hr_payroll_user reads salary configuration; only a manager may change it.
-  const canCreate = can(actor.role, 'salary_structure', 'create')
-
-  const result = await load(async () => {
-    const outcome = await new ListSalaryStructuresUseCase(
-      salaryStructureRepository(),
-      structureEmployeeCount(),
-    ).execute({
-      actor,
-      query: { limit: 100 },
-    })
-    if (!outcome.ok) throw outcome.error
-    return outcome.value
-  })
+  const canCreate = useCan('salary_structure', 'create')
 
   return (
     <>
@@ -46,11 +28,7 @@ export default async function SalaryStructuresPage() {
         }
       />
 
-      {result.ok ? (
-        <StructuresTable structures={result.data.items} />
-      ) : (
-        <ErrorState message={result.message} />
-      )}
+      <StructuresTable />
     </>
   )
 }

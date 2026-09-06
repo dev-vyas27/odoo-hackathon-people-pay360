@@ -31,7 +31,11 @@ export async function listSalaryStructures(request: Request): Promise<Response> 
   const { active, ...page } = query.value
   const pageQuery: PageQuery = {
     ...page,
-    filters: active ? { active: active === 'true' } : {},
+    // The column is `is_active` (see SALARY_STRUCTURE_COLUMNS); a filter key of
+    // `active` does not survive `toColumnName` and BaseSqlRepository.buildWhere
+    // silently drops it as unrecognised, so `?active=false` was accepted end to
+    // end and never actually filtered anything.
+    filters: active !== undefined ? { isActive: active === 'true' } : {},
   }
 
   const result = await new ListSalaryStructuresUseCase(
