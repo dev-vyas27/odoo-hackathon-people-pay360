@@ -5,6 +5,7 @@
  */
 import { z } from 'zod'
 import { dateField, uuid, optionalUuid, pageQuerySchema } from '@/modules/shared'
+import { WORK_MODES } from '../domain/work-mode'
 
 export const ATTENDANCE_STATUSES = [
   'present',
@@ -19,6 +20,8 @@ export const checkInSchema = z.object({
   employeeId: uuid,
   checkIn: dateField.optional(),
   breakMinutes: z.number().nonnegative().optional(),
+  /** Asked at the moment of clocking in — see domain/work-mode.ts. */
+  workMode: z.enum(WORK_MODES).optional(),
 })
 export type CheckInBody = z.infer<typeof checkInSchema>
 

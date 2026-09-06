@@ -16,10 +16,21 @@ export interface NavItem {
   href: string
   label: string
   resource: Resource
+  /**
+   * Roles that HOLD the permission but have no use for the section.
+   *
+   * Not the same thing as removing the grant. An employee needs
+   * `employee:read` — it is what lets them open their own record, scoped — but
+   * the Employees tab is an HR directory, and offering it to somebody who will
+   * only ever find themselves in it is offering a filing cabinet with one
+   * drawer. Dropping the permission instead would break the record they are
+   * entitled to see.
+   */
+  hiddenFor?: Role[]
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: '/employees', label: 'Employees', resource: 'employee' },
+  { href: '/employees', label: 'Employees', resource: 'employee', hiddenFor: ['employee'] },
   { href: '/contracts', label: 'Contracts', resource: 'contract' },
   { href: '/attendance', label: 'Attendance', resource: 'attendance' },
   { href: '/time-off', label: 'Time Off', resource: 'leave_request' },
@@ -28,7 +39,9 @@ export const NAV_ITEMS: NavItem[] = [
 ]
 
 export function navItemsFor(role: Role): NavItem[] {
-  return NAV_ITEMS.filter((item) => can(role, item.resource, 'read'))
+  return NAV_ITEMS.filter(
+    (item) => can(role, item.resource, 'read') && !item.hiddenFor?.includes(role),
+  )
 }
 
 /**
@@ -37,6 +50,11 @@ export function navItemsFor(role: Role): NavItem[] {
  * A payroll manager wants the dashboard; a plain employee has no dashboard
  * permission at all and would bounce off `/reports` straight into `/forbidden`,
  * which is a terrible first impression of the app.
+ *
+ * Reading the FILTERED list rather than the raw one is what makes Attendance an
+ * employee's home page: it is the first section left once the Employees
+ * directory is hidden from them, so the landing page follows the navigation
+ * instead of having to be kept in step with it by hand.
  */
 export function landingPathFor(role: Role): string {
   if (can(role, 'dashboard', 'read')) return '/reports'

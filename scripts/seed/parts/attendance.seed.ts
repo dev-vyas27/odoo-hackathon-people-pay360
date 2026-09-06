@@ -20,6 +20,7 @@
  * Compressed 36h staff correctly have no Friday.
  */
 import { seedId } from '../ids'
+import { IST_OFFSET_MS } from '@/modules/shared'
 import { ACTIVE_ROSTER, SCHEDULES } from '../roster'
 import type { SeedPart, SeedRow } from '../types'
 
@@ -47,19 +48,28 @@ function makeRng(seed: number): () => number {
 const iso = (date: Date) => date.toISOString().slice(0, 10)
 
 /**
- * A timestamp from minutes-since-midnight.
+ * A timestamp from minutes-since-midnight IST.
  *
  * Minutes rather than an (hour, minute) pair because a late start is expressed
  * as "47 minutes after the shift began" and adding that to an hour field
  * produces 09:69, which Postgres rejects outright. Arithmetic in one unit, split
  * into two only at the very end. Clamped to 23:59 so a long overtime day cannot
  * roll past midnight into the wrong date.
+ *
+ * The pattern times below are WALL-CLOCK IST — a 09:00 start means nine in the
+ * morning in India — so the offset is subtracted to get the real instant. Left
+ * as UTC, the whole seeded company appeared to start work at 14:30 once the
+ * screens began rendering in IST, which is what a demo dataset looks like when
+ * it was written against a different clock than the one displaying it.
  */
 function stamp(day: string, minutesFromMidnight: number): string {
   const clamped = Math.min(23 * 60 + 59, Math.max(0, Math.round(minutesFromMidnight)))
   const hour = Math.floor(clamped / 60)
   const minute = clamped % 60
-  return `${day}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00.000Z`
+  const [year, month, date] = day.split('-').map(Number)
+  return new Date(
+    Date.UTC(year, month - 1, date, hour, minute) - IST_OFFSET_MS,
+  ).toISOString()
 }
 
 export const attendanceSeed: SeedPart = {

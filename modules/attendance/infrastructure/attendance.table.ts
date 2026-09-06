@@ -20,6 +20,8 @@
  * workaround to be tidied away.
  */
 import type { AttendanceStatus } from '../domain/exception'
+import { istDay } from '@/modules/shared'
+import type { WorkMode } from '../domain/work-mode'
 
 /** The statuses the column will actually accept. */
 export type StorableStatus = Exclude<AttendanceStatus, 'manual'>
@@ -39,6 +41,7 @@ export interface AttendanceRow {
   checked_in_at: Date | null
   checked_out_at: Date | null
   break_minutes: number
+  work_mode: WorkMode | null
   worked_hours: number
   status: StorableStatus
   is_manual: boolean
@@ -56,6 +59,7 @@ export const ATTENDANCE_COLUMNS = [
   'break_minutes',
   'worked_hours',
   'status',
+  'work_mode',
   'is_manual',
   'created_at',
   'updated_at',
@@ -83,7 +87,16 @@ export function toDomainStatus(status: StorableStatus, isManual: boolean): Atten
  * throughout the app, so this matches.
  */
 export function workedOnFor(checkIn: Date): Date {
-  return new Date(Date.UTC(checkIn.getUTCFullYear(), checkIn.getUTCMonth(), checkIn.getUTCDate()))
+  /**
+   * The IST day, not the UTC one.
+   *
+   * The company works to an Indian clock, so a shift starting at 02:00 IST
+   * belongs to that morning — but 02:00 IST is 20:30 UTC the PREVIOUS day, so
+   * a UTC-derived value filed it against yesterday. That also put the
+   * auto-close boundary in the wrong place: an evening shift would be treated
+   * as stale and closed while the person was still working.
+   */
+  return new Date(`${istDay(checkIn)}T00:00:00.000Z`)
 }
 
 /** Postgres unique_violation — surfaced as a domain conflict, never a 500. */

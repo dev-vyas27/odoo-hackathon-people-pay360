@@ -43,6 +43,7 @@ function toDomain(row: AttendanceRow): Attendance {
     checkIn: row.checked_in_at ?? row.worked_on,
     checkOut: row.checked_out_at,
     breakMinutes: row.break_minutes,
+    workMode: row.work_mode,
     manual: row.is_manual,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -71,6 +72,59 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
   }
 
   /**
+   * The record for one employee on one IST day, open or closed.
+   *
+   * `findOpenForEmployee` cannot answer this: coming back from lunch means
+   * finding a CLOSED record and reopening it, and an open-only lookup returns
+   * nothing at exactly the moment the answer matters.
+   */
+  async findForEmployeeOnDay(employeeId: string, workedOn: Date): Promise<AttendanceRecord | null> {
+    const row = await queryOne<AttendanceRow>(
+      `SELECT ${SELECTION} FROM "${ATTENDANCES_TABLE}"
+        WHERE employee_id = $1 AND worked_on = $2`,
+      [employeeId, workedOn],
+    )
+    if (!row) return null
+    return { attendance: toDomain(row), status: toDomainStatus(row.status, row.is_manual) }
+  }
+
+  /**
+   * Close shifts left open on a day that has already ended.
+   *
+   * Somebody who forgets to check out would otherwise carry one open record
+   * forever: every later check-in would be refused as ALREADY_CHECKED_IN, and
+   * their worked hours would never be computable. So an open shift from a past
+   * IST day is closed at 23:59:59 of the day it belongs to.
+   *
+   * Done lazily, on read and before check-in, rather than by a scheduler —
+   * there is no job runner in this deployment, and a sweep that only runs when
+   * somebody looks is still correct: the value written depends on the shift's
+   * own day, never on when the sweep happened to fire.
+   *
+   * `worked_hours` is recomputed here in SQL rather than round-tripping through
+   * the aggregate, because this can touch many employees at once and none of
+   * them are the caller.
+   */
+  async closeStaleOpenShifts(before: Date): Promise<number> {
+    const result = await query<{ id: string }>(
+      `UPDATE "${ATTENDANCES_TABLE}"
+          SET checked_out_at = (worked_on + interval '23 hours 59 minutes 59 seconds'),
+              worked_hours = GREATEST(
+                0,
+                EXTRACT(EPOCH FROM (
+                  (worked_on + interval '23 hours 59 minutes 59 seconds') - checked_in_at
+                )) / 3600.0 - (break_minutes / 60.0)
+              )
+        WHERE checked_out_at IS NULL
+          AND checked_in_at IS NOT NULL
+          AND worked_on < $1::date
+        RETURNING id`,
+      [before],
+    )
+    return result.length
+  }
+
+  /**
    * Insert or update in one statement.
    *
    * ON CONFLICT turns the UNIQUE (employee_id, worked_on) constraint from an
@@ -94,6 +148,7 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
       attendance.breakMinutes,
       hours,
       stored.status,
+      attendance.workMode,
       stored.isManual || attendance.manual,
     ]
 
@@ -102,8 +157,9 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
         const row = await queryOne<AttendanceRow>(
           `UPDATE "${ATTENDANCES_TABLE}"
               SET employee_id = $1, worked_on = $2, checked_in_at = $3, checked_out_at = $4,
-                  break_minutes = $5, worked_hours = $6, status = $7, is_manual = $8
-            WHERE id = $9
+                  break_minutes = $5, worked_hours = $6, status = $7, work_mode = $8,
+                  is_manual = $9
+            WHERE id = $10
             RETURNING ${SELECTION}`,
           [...params, attendance.id],
         )
@@ -116,14 +172,15 @@ export class PostgresAttendanceRepository implements AttendanceRepositoryPort {
       const row = await queryOne<AttendanceRow>(
         `INSERT INTO "${ATTENDANCES_TABLE}"
            (employee_id, worked_on, checked_in_at, checked_out_at,
-            break_minutes, worked_hours, status, is_manual)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            break_minutes, worked_hours, status, work_mode, is_manual)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (employee_id, worked_on) DO UPDATE SET
            checked_in_at = EXCLUDED.checked_in_at,
            checked_out_at = EXCLUDED.checked_out_at,
            break_minutes = EXCLUDED.break_minutes,
            worked_hours = EXCLUDED.worked_hours,
            status = EXCLUDED.status,
+           work_mode = EXCLUDED.work_mode,
            is_manual = EXCLUDED.is_manual
          RETURNING ${SELECTION}`,
         params,

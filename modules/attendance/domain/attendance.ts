@@ -8,6 +8,7 @@
 import { DomainError, Err, Ok, type Result } from '@/modules/shared'
 import { computeWorkedHours } from './worked-hours.service'
 import { deriveStatus, type AttendanceStatus, type DailySchedule } from './exception'
+import type { WorkMode } from './work-mode'
 
 export interface AttendanceProps {
   id: string
@@ -15,6 +16,8 @@ export interface AttendanceProps {
   checkIn: Date
   checkOut: Date | null
   breakMinutes: number
+  /** Where they worked. Null on records predating self-service check-in. */
+  workMode: WorkMode | null
   /** True once the record has been hand-corrected by an authorized user. */
   manual: boolean
   createdAt: Date
@@ -25,6 +28,7 @@ export interface NewAttendanceInput {
   employeeId: string
   checkIn: Date
   breakMinutes?: number
+  workMode?: WorkMode | null
 }
 
 const MS_PER_DAY = 86_400_000
@@ -68,6 +72,7 @@ export class Attendance {
         checkIn: input.checkIn,
         checkOut: null,
         breakMinutes,
+        workMode: input.workMode ?? null,
         manual: false,
         createdAt: now,
         updatedAt: now,
@@ -94,6 +99,13 @@ export class Attendance {
   }
   get breakMinutes(): number {
     return this.props.breakMinutes
+  }
+  get workMode(): WorkMode | null {
+    return this.props.workMode
+  }
+  /** Open shift — checked in and not yet out. */
+  get isOpen(): boolean {
+    return this.props.checkOut === null
   }
   get manual(): boolean {
     return this.props.manual
@@ -159,6 +171,52 @@ export class Attendance {
         ...this.props,
         checkOut: resolved,
         breakMinutes: nextBreak,
+        updatedAt: new Date(),
+      }),
+    )
+  }
+
+  /**
+   * Clock back in on a shift that was already closed today.
+   *
+   * The day is ONE record, not one per session — `attendances` has a unique
+   * constraint on (employee, day) and payroll reads one row per person per day.
+   * So coming back after lunch reopens the existing record rather than starting
+   * a second one, and the time spent away becomes the break.
+   *
+   * That is what makes break time measured rather than typed in: nobody has to
+   * remember how long they were out, because the system already watched them
+   * leave and come back.
+   *
+   * `workMode` is re-asked and re-applied, because it can genuinely change —
+   * morning in the office, afternoon from home. The last answer of the day is
+   * the one stored, which is a simplification worth naming: a single day cannot
+   * currently record two locations.
+   */
+  resume(at: Date, workMode?: WorkMode | null): Result<Attendance> {
+    const closedAt = this.props.checkOut
+    if (!closedAt) {
+      return Err(
+        DomainError.conflict('ALREADY_CHECKED_IN', 'This shift is already open — check out first'),
+      )
+    }
+    if (at.getTime() < closedAt.getTime()) {
+      return Err(
+        DomainError.validation(
+          'RESUME_BEFORE_CHECKOUT',
+          'Cannot resume a shift before it was checked out',
+        ),
+      )
+    }
+
+    const away = Math.round((at.getTime() - closedAt.getTime()) / 60_000)
+
+    return Ok(
+      new Attendance({
+        ...this.props,
+        checkOut: null,
+        breakMinutes: this.props.breakMinutes + away,
+        workMode: workMode === undefined ? this.props.workMode : workMode,
         updatedAt: new Date(),
       }),
     )

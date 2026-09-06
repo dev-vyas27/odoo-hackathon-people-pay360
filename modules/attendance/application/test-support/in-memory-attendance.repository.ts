@@ -6,6 +6,7 @@
  */
 import type { Paged, PageQuery } from '@/modules/shared'
 import { paged } from '@/modules/shared'
+import { istDay } from '@/modules/shared'
 import { Attendance } from '../../domain/attendance'
 import type {
   AttendanceFilter,
@@ -35,6 +36,31 @@ export class InMemoryAttendanceRepository implements AttendanceRepositoryPort {
       }
     }
     return null
+  }
+
+  /** Keyed on the IST day, the same way the Postgres implementation is. */
+  async findForEmployeeOnDay(employeeId: string, workedOn: Date): Promise<AttendanceRecord | null> {
+    const day = workedOn.toISOString().slice(0, 10)
+    for (const row of this.rows.values()) {
+      if (row.attendance.employeeId !== employeeId) continue
+      if (istDay(row.attendance.checkIn) === day) return row
+    }
+    return null
+  }
+
+  async closeStaleOpenShifts(before: Date): Promise<number> {
+    const cutoff = before.toISOString().slice(0, 10)
+    let closed = 0
+    for (const [id, row] of this.rows) {
+      const day = istDay(row.attendance.checkIn)
+      if (row.attendance.checkOut || day >= cutoff) continue
+      const result = row.attendance.recordCheckOut(new Date(`${day}T23:59:59.000Z`))
+      if (result.ok) {
+        this.rows.set(id, { attendance: result.value, status: row.status })
+        closed += 1
+      }
+    }
+    return closed
   }
 
   async save(attendance: Attendance, status: AttendanceStatus): Promise<Attendance> {
