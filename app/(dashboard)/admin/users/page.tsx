@@ -1,18 +1,7 @@
 'use client'
 
-/**
- * User administration — spec section 3's Admin role: "User management, role
- * assignment, permission updates, and complete system administration."
- *
- * Reachable from the user menu rather than the top nav. The nav is the six
- * sections the spec names in B1, and quietly adding a seventh would make the
- * screenshot disagree with the document. Administration is a setting, not a
- * daily workflow.
- *
- * Since migration 0010 an account IS an employee row, so this list shows people
- * who can sign in alongside people who cannot — the "Login" column is the
- * difference, and it is the thing an administrator actually came here to change.
- */
+
+
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -58,7 +47,7 @@ const columns: ColumnDef<AccountView, unknown>[] = [
           Can sign in
         </span>
       ) : (
-        /* An employee with no password hash: on the payroll, but no account. */
+        
         <span className="text-sm text-muted-foreground">HR record only</span>
       ),
   },

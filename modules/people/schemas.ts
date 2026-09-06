@@ -1,21 +1,8 @@
-/**
- * Client-safe surface of `people`.
- *
- * `@/modules/people` (index.ts) reaches the Postgres repositories, so importing
- * that barrel from a `'use client'` file drags the `pg` driver into the browser
- * bundle and the page dies at module evaluation.
- *
- * The zod schemas are what both sides genuinely share: the form validates with
- * them and the route handler validates with them, so client and server cannot
- * drift. They depend on nothing but zod and the shared contracts.
- */
-/**
- * The employee-type vocabulary, re-exported for the client.
- *
- * A closed string union and its labels — pure data, no database. Client code
- * MUST take it from here rather than from '@/modules/people', which reaches the
- * Postgres repositories and would drag `pg` into the browser bundle.
- */
+
+
+
+
+
 export {
   EMPLOYEE_TYPES,
   EMPLOYEE_TYPE_LABELS,
@@ -47,25 +34,16 @@ export {
   type UpdateJobPositionBody,
 } from './interface/job-position.schema'
 
-/**
- * Row shapes the API returns. Declared here rather than inferred from the
- * domain classes: a table should be typed against the JSON it actually
- * receives, and Employee's private constructor does not survive serialisation.
- */
+
+
 export interface EmployeeListItem {
   id: string
   name: string
   email: string
   departmentId: string | null
-  /**
-   * Resolved server-side, alongside the id.
-   *
-   * The screens used to look this up by fetching every department and matching
-   * on the client, which silently produced a blank for anyone without
-   * `department:read` — a plain employee could not see their own department.
-   * A name you are already allowed to see travels with the record.
-   * See interface/placement-names.ts.
-   */
+  
+
+
   departmentName: string | null
   jobPositionId: string | null
   jobPositionName: string | null
@@ -78,7 +56,7 @@ export interface EmployeeListItem {
   isActive: boolean
 }
 
-/** What the employee form's related-record counters show (spec B2). */
+
 export interface EmployeeDetailView extends EmployeeListItem {
   counts: {
     contracts: number

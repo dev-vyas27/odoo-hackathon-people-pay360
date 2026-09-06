@@ -1,13 +1,6 @@
-/**
- * `npm run seed` — CLI entry point.
- *
- *   npm run seed
- *   npm run seed -- --reset     empty the seeded tables first
- *   npm run seed -- --wipe      empty EVERY table first, then seed
- *
- * All of the actual work is in `scripts/seed/run.ts`, shared with the demo-seed
- * button on the login screen so the two can never drift apart.
- */
+
+
+
 import { closePool } from '@/lib/db'
 import { runSeed } from './seed/run'
 
@@ -33,7 +26,7 @@ async function main() {
   console.log('\nhttp://localhost:3000/login\n')
 }
 
-/** Never print the database password. */
+
 function redact(uri: string): string {
   return uri.replace(/\/\/([^:]+):[^@]+@/, '//$1:****@')
 }

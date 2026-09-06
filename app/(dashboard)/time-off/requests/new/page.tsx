@@ -1,13 +1,5 @@
 'use client'
 
-/**
- * Raise a leave request.
- *
- * The form is `ResourceForm` driven by `leaveRequestSchema` — the SAME schema
- * the route handler validates with. The employee and type dropdowns are loaded
- * from the API rather than hardcoded, so a leave type configured on the Types
- * tab is immediately selectable here.
- */
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -34,7 +26,7 @@ export default function NewLeaveRequestPage() {
     queryFn: () => apiFetch<EmployeeOption[]>('/api/time-off/employee-options'),
   })
 
-  // Only active types can be requested against, so only active types are shown.
+  
   const { page: types } = useResourceList<TimeOffTypeView>('time-off/types', {
     isActive: 'true',
     limit: 100,
@@ -64,13 +56,8 @@ export default function NewLeaveRequestPage() {
             name: 'employeeId',
             label: 'Employee',
             type: 'select',
-            /**
-             * Locked to the signed-in person for a self-scoped role, off the
-             * ROLE rather than off `employees.length === 1` as this used to be:
-             * a company with a single employee would otherwise lock the picker
-             * for HR too, and a scoped endpoint that wrongly returned two names
-             * would quietly unlock it.
-             */
+            
+
             options: selfOnly
               ? [{ value: me.employeeId, label: me.name }]
               : employees.map((e) => ({ value: e.id, label: e.name })),

@@ -1,13 +1,6 @@
-/**
- * The four rules that must not break, per docs/plans/DEV-A-platform.md:
- *   1. balance consumption
- *   2. over-draw rejection
- *   3. refuse-after-approve restores the balance
- *   4. the allocation validity window excludes out-of-range requests
- *
- * No database, no mocks of frameworks — just the aggregates. That is the payoff
- * of keeping domain/ framework-free.
- */
+
+
+
 import { describe, expect, it } from 'vitest'
 import { DomainError, Period } from '@/modules/shared'
 import { Allocation } from './allocation'
@@ -63,8 +56,8 @@ function request(overrides: Partial<Parameters<typeof LeaveRequest.from>[0]> = {
     duration: period.days,
     status: 'to_approve',
     ...overrides,
-    // After the spread so a caller who passes `period` gets the duration
-    // default derived from it rather than from the fixture's dates.
+    
+    
     period,
   })
 }
@@ -156,7 +149,7 @@ describe('selectAllocation', () => {
     })
     const req = request({ period: Period.of(day('2026-03-02'), day('2026-03-04')) })
 
-    // Deliberately passed later-first, so a stable sort is not what makes this pass.
+    
     expect(selectAllocation([later, expiring], req).id).toBe('expires-first')
   })
 
@@ -216,8 +209,8 @@ describe('buildBalanceTotals', () => {
       [{ timeOffTypeId: PAID, pending: 10 }],
     )
 
-    // Same formula as buildBalances: remaining answers "how much more may the
-    // filtered population book", so pending is subtracted alongside taken.
+    
+    
     expect(balance).toMatchObject({
       timeOffTypeId: PAID,
       allocated: 120,

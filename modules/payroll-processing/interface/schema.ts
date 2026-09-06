@@ -1,6 +1,6 @@
-/**
- * Validation shared by the payrun wizard and the route handler that receives it.
- */
+
+
+
 import { z } from 'zod'
 import { dateField, nonEmpty, uuid, optionalUuid } from '@/modules/shared'
 import { EMPLOYEE_TYPES } from '@/modules/shared'
@@ -26,7 +26,7 @@ export const createPayrunSchema = z
 
 export type CreatePayrunValues = z.infer<typeof createPayrunSchema>
 
-/** Step 1 of the wizard — scope only. Submitting this creates NOTHING. */
+
 export const payrunScopeSchema = z
   .object({
     name: nonEmpty('Payrun name'),
@@ -48,7 +48,7 @@ export const payrunScopeSchema = z
 
 export type PayrunScopeValues = z.infer<typeof payrunScopeSchema>
 
-/** Query for the eligible-employees lookup that drives wizard step 2. */
+
 export const eligibleEmployeesQuerySchema = z.object({
   periodStart: dateField,
   periodEnd: dateField,

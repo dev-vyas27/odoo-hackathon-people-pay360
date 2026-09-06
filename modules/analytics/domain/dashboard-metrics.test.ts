@@ -1,10 +1,6 @@
-/**
- * The derived dashboard figures.
- *
- * These matter more than most tests here because nobody can eyeball whether
- * "Attendance Health 94.7%" is right. The definition has to be pinned down by
- * something, and this is it.
- */
+
+
+
 import { describe, expect, it } from 'vitest'
 import { Period, type AttendanceSummary } from '@/modules/shared'
 import {
@@ -29,7 +25,7 @@ const summary = (over: Partial<AttendanceSummary> = {}): AttendanceSummary => ({
 
 describe('attendanceHealth', () => {
   it('is the share of records with no exception', () => {
-    // 18 clean out of 20 = 90%
+    
     expect(attendanceHealth(summary({ present: 18, late: 1, absent: 1 }))).toBe(90)
   })
 
@@ -42,7 +38,7 @@ describe('attendanceHealth', () => {
   })
 
   it('returns null on no data rather than 0', () => {
-    // 0 would read as "everybody was absent", which is a different claim.
+    
     expect(attendanceHealth(summary())).toBeNull()
   })
 
@@ -53,7 +49,7 @@ describe('attendanceHealth', () => {
 
 describe('businessDays', () => {
   it('counts Monday to Friday only', () => {
-    // March 2026: 31 days, 22 weekdays.
+    
     expect(businessDays(Period.month(2026, 3))).toBe(22)
   })
 
@@ -67,18 +63,15 @@ describe('attendanceCoverage', () => {
   const monthEnd = new Date(Date.UTC(2026, 2, 31))
 
   it('measures recorded days against headcount times business days', () => {
-    // 2 employees x 22 business days = 44 expected; 22 recorded = 50%.
+    
     const coverage = attendanceCoverage(summary({ present: 22 }), 2, Period.month(2026, 3), monthEnd)
     expect(coverage).toBe(50)
   })
 
   it('counts only business days ELAPSED, not the whole month', () => {
-    /**
-     * The bug this prevents: on the 4th of March, 5 recorded days out of one
-     * employee's 22-business-day month reads as 23% and looks like nobody is
-     * filing attendance. Against the 3 business days that have actually
-     * happened it is 100%, which is the truth.
-     */
+    
+
+
     const fourthOfMarch = new Date(Date.UTC(2026, 2, 4))
     const coverage = attendanceCoverage(summary({ present: 3 }), 1, Period.month(2026, 3), fourthOfMarch)
     expect(coverage).toBe(100)
@@ -150,8 +143,8 @@ describe('fillMonthlyTrend', () => {
   })
 
   it('fills a month with no payrun with an explicit zero', () => {
-    // Without this the line would run straight from Apr to Jun, implying a
-    // payment in May that never happened.
+    
+    
     const trend = fillMonthlyTrend(
       [
         { month: '2026-04', total: 100 },
@@ -185,7 +178,7 @@ describe('resolvePeriod', () => {
   })
 
   it('falls back to the current month rather than erroring on rubbish', () => {
-    // A malformed URL should show the dashboard, not a 400.
+    
     expect(resolvePeriod('not-a-period', today).toString()).toBe('2026-03-01..2026-03-31')
     expect(resolvePeriod(undefined, today).toString()).toBe('2026-03-01..2026-03-31')
   })

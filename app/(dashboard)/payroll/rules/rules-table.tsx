@@ -1,15 +1,5 @@
 'use client'
 
-/**
- * The Salary Rule list.
- *
- * Same fix as the Structures and Pay Runs lists: this used to fetch up to 200
- * rules once from a server component and filter by category in the browser,
- * so `?search=`/`?category=` never reached `/api/payroll/rules` and nothing
- * beyond the hardcoded 200 could be found. `useResourceList` restores real
- * server-side search/filter/paging (`postgres-salary-rule.repository.ts`
- * extends `BaseSqlRepository`, which already does all three in SQL).
- */
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -32,7 +22,6 @@ const CATEGORY_OPTIONS = SALARY_CATEGORIES.map((cat) => ({
   label: SALARY_CATEGORY_LABELS[cat] ?? cat,
 }))
 
-/** One human-readable line describing how a rule computes its amount. */
 function describe(computation: SalaryRule['computation']): string {
   switch (computation.type) {
     case 'percentage':
@@ -84,7 +73,7 @@ export function RulesTable() {
   const params = useFilterParams(['category'])
   const { page, isLoading } = useResourceList<SalaryRule>('payroll/rules', params)
 
-  // hr_payroll_user reads salary configuration but cannot add to it.
+  
   const canCreate = useCan('salary_rule', 'create')
 
   return (

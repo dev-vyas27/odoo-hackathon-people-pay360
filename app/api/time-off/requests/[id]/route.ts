@@ -1,9 +1,6 @@
-/**
- * GET    /api/time-off/requests/[id] — the Request Form's data
- * DELETE /api/time-off/requests/[id] — withdraw a draft
- *
- * Next 16: `params` is a promise and must be awaited.
- */
+
+
+
 import { deleteLeave, getLeaveRequest } from '@/modules/timeoff'
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'

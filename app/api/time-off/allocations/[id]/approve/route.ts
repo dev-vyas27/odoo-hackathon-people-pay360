@@ -1,6 +1,6 @@
-/**
- * POST /api/time-off/allocations/[id]/approve — make the balance spendable.
- */
+
+
+
 import { decideAllocation } from '@/modules/timeoff'
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'

@@ -11,7 +11,7 @@ import { ContractForm } from '../_components/contract-form'
 export default function NewContractPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  // Arriving from an employee's smart button pre-selects them.
+  
   const employeeId = searchParams.get('employeeId') ?? ''
 
   const create = useCreateResource<{ id: string }, CreateContractBody>('contracts', {

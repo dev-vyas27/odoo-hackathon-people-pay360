@@ -22,11 +22,8 @@ async function makeRule(api: any, overrides: Record<string, unknown> = {}) {
   return r.data
 }
 
-/**
- * A complete, self-created structure: BASIC prorated off the contract wage,
- * HRA as a percentage of it, GROSS and NET as formulas. This exercises all
- * three computation strategies plus the reserved WAGE / WORKED_RATIO inputs.
- */
+
+
 async function makeStructure(api: any) {
   const basic = await makeRule(api, {
     code: uniqCode('B'),
@@ -288,7 +285,7 @@ test.describe('Payroll processing — the full payrun lifecycle', () => {
     api,
   }) => {
     const employee = await makeEmployee(api)
-    // Deliberately no contract.
+    
     const { structure } = await makeStructure(api)
 
     const payrun = await api.post('/api/payruns', {
@@ -310,7 +307,7 @@ test.describe('Payroll processing — the full payrun lifecycle', () => {
 
   test('period-correct contract resolution: a raise does not rewrite history', async ({ api }) => {
     const employee = await makeEmployee(api, { bankAccount: '555555555555' })
-    // Two contracts: 40k for 2024, 80k from 2025.
+    
     await makeContract(api, employee.id, {
       wage: 40000,
       start: '2024-01-01',
@@ -332,9 +329,9 @@ test.describe('Payroll processing — the full payrun lifecycle', () => {
 
     const slip = computed.data.payslips?.[0]
     expect(slip, 'the 2024 contract should have been resolved').toBeTruthy()
-    // BASIC = WAGE * WORKED_RATIO. With no attendance the ratio is 0, but the
-    // contract picked must be the 2024 one — assert on the stored contract wage
-    // rather than the computed amount so this stays independent of attendance.
+    
+    
+    
     expect(
       JSON.stringify(slip),
       'the June 2024 payslip must not be built from the 2025 wage',
@@ -358,20 +355,18 @@ test.describe('Payroll processing — the full payrun lifecycle', () => {
     expect(payrun.status, JSON.stringify(payrun.raw)).toBe(201)
     const id = payrun.data.id
 
-    /**
-     * Nothing computed yet: there is no payslip to send, and saying so is more
-     * use than a silent success over an empty run.
-     */
+    
+
+
     const beforeCompute = await api.post(`/api/payruns/${id}/send`)
     expect(beforeCompute.status).toBe(422)
     expect(beforeCompute.error?.code).toBe('PAYRUN_HAS_NO_PAYSLIPS')
 
     await api.post(`/api/payruns/${id}/compute`)
 
-    /**
-     * Computed but not validated. The figures can still change, and an email
-     * cannot be recalled — so this is the gate that matters.
-     */
+    
+
+
     const beforeValidate = await api.post(`/api/payruns/${id}/send`)
     expect(beforeValidate.status).toBe(422)
     expect(beforeValidate.error?.code).toBe('PAYRUN_NOT_VALIDATED')

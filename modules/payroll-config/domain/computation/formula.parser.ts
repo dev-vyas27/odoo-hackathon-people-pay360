@@ -1,24 +1,6 @@
-/**
- * A tiny, safe arithmetic evaluator for salary formulas.
- *
- * `eval` and `new Function` are NOT used and must never be: a salary rule is
- * user-authored text that runs on the server, so handing it to the JS engine
- * would be arbitrary remote code execution behind a payroll form. Instead we
- * tokenise against a whitelist and walk a tiny AST. Anything outside the
- * grammar below is rejected at parse time with a message a user can act on.
- *
- *   expression := term (('+' | '-') term)*
- *   term       := unary (('*' | '/') unary)*
- *   unary      := '-'? primary
- *   primary    := number | RULE_CODE | ('min'|'max') '(' args ')' | '(' expression ')'
- *
- * Numbers are MAJOR units (50000 means fifty thousand rupees; 0.4 is a plain
- * multiplier) and rule codes resolve to the major-unit value of an earlier
- * rule's result. The caller converts the final number back through `Money.of()`,
- * which rounds half-up exactly once — the same discipline `Money.times()` uses.
- * Evaluating in integer minor units would not avoid floating point anyway, since
- * `BASIC * 0.4` has a fractional factor by definition; it would only hide it.
- */
+
+
+
 import { DomainError } from '@/modules/shared'
 
 export type FormulaNode =
@@ -123,10 +105,8 @@ function isIdentifierPart(ch: string): boolean {
   return isIdentifierStart(ch) || (ch >= '0' && ch <= '9')
 }
 
-/**
- * Recursive-descent parser. Kept as a closure over the token list so the
- * position is impossible to get out of sync between the parse functions.
- */
+
+
 export function parseFormula(expression: string): FormulaNode {
   const tokens = tokenize(expression)
   let position = 0
@@ -244,13 +224,8 @@ export function parseFormula(expression: string): FormulaNode {
   return ast
 }
 
-/**
- * Every rule code the expression depends on.
- *
- * Used at save time to check a formula only references rules that exist AND run
- * earlier in the structure's sequence, so a broken formula is caught in the form
- * rather than halfway through a 200-payslip run.
- */
+
+
 export function referencedCodes(node: FormulaNode): string[] {
   const found = new Set<string>()
 
@@ -278,7 +253,7 @@ export function referencedCodes(node: FormulaNode): string[] {
   return [...found]
 }
 
-/** Evaluate a parsed formula. `resolve` supplies each rule code's major-unit value. */
+
 export function evaluateFormula(node: FormulaNode, resolve: (code: string) => number): number {
   switch (node.kind) {
     case 'number':

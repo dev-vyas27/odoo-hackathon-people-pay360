@@ -1,9 +1,6 @@
-/**
- * Create a payrun — the ONLY moment the wizard writes anything.
- *
- * The batch is persisted containing exactly the employees that were ticked in
- * step 2, in `draft`, with no payslips: computing is a separate, explicit act.
- */
+
+
+
 import {
   authorize,
   DomainError,
@@ -62,8 +59,8 @@ export class CreatePayrunUseCase implements UseCase<CreatePayrunInput, Payrun> {
       )
     }
 
-    // Reject ids that do not resolve, rather than silently creating a run that
-    // computes fewer payslips than the user selected.
+    
+    
     const found = await this.employees.findManyByIds(input.employeeIds)
     const foundIds = new Set(found.map((e) => e.id))
     const unknown = input.employeeIds.filter((id) => !foundIds.has(id))

@@ -60,8 +60,8 @@ describe('CreateScheduleUseCase', () => {
 
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.value.weeklyHours).toBe(40)
-    // The use case never took weeklyHours as input in the first place -- the
-    // repository only ever receives the computed value.
+    
+    
     expect(repo.created[0]?.weeklyHours).toBe(40)
   })
 

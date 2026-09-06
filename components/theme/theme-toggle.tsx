@@ -1,17 +1,5 @@
 'use client'
 
-/**
- * Light / Dark / System, as a menu rather than a two-state switch.
- *
- * A switch can only say "light or dark", which loses the option most people
- * actually want: follow the machine. Three explicit choices also make the
- * current one legible — with a switch you cannot tell whether you are on dark
- * because you chose it or because it is night.
- *
- * The trigger icon shows the RESOLVED theme (what you are looking at); the tick
- * inside shows the CHOICE (what you asked for). Those differ under "System",
- * which is the whole point of showing both.
- */
 import { LuCheck, LuMonitor, LuMoon, LuSun } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { THEMES, type Theme } from '@/lib/theme'
@@ -36,11 +24,8 @@ const OPTION: Record<Theme, { label: string; hint: string; icon: IconType }> = {
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, resolvedTheme, setTheme, mounted } = useTheme()
 
-  /**
-   * Before mount the server and the client disagree about the theme by
-   * definition, so the trigger renders a neutral icon at the same size. Not
-   * rendering at all would make the header jump when it appeared.
-   */
+  
+
   const TriggerIcon = !mounted ? LuMonitor : resolvedTheme === 'dark' ? LuMoon : LuSun
 
   return (

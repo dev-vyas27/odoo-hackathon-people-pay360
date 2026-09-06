@@ -1,31 +1,17 @@
 import { test as base, expect, type APIRequestContext } from '@playwright/test'
 
-/**
- * The QA account. Created once by:
- *   npx tsx --env-file-if-exists=.env.local scripts/create-admin.ts \
- *     --email qa-bot@peoplepay360.test --password "QaBot!Passw0rd" --name "QA Bot" --role admin
- *
- * This is the ONLY pre-existing record the suite depends on, and it exists
- * because the application deliberately has no self-registration. Every business
- * record below is created by the tests themselves.
- */
 export const QA_EMAIL = 'qa-bot@peoplepay360.test'
 export const QA_PASSWORD = 'QaBot!Passw0rd'
 
 export interface ApiResult<T = any> {
   status: number
-  /** Unwrapped `{ data }` payload. */
+  
   data: T
-  /** Unwrapped `{ error }` payload, when the call failed. */
+  
   error?: { code: string; message: string; details?: any }
   raw: any
 }
 
-/**
- * Thin wrapper that unwraps the project's `{ data } | { error }` envelope and
- * never throws on a non-2xx — a QA suite asserts on failures as much as on
- * successes, so a 400 has to be a value, not an exception.
- */
 export class Api {
   constructor(readonly ctx: APIRequestContext) {}
 
@@ -62,7 +48,6 @@ export class Api {
   }
 }
 
-/** Unique-per-call suffix so parallel workers never collide on a unique index. */
 let counter = 0
 export function uniq(prefix = 'QA'): string {
   counter += 1
@@ -73,14 +58,6 @@ export function uniqEmail(): string {
   return `${uniq('qa').toLowerCase()}@peoplepay360.test`
 }
 
-/**
- * An uppercase code that satisfies RULE_CODE_PATTERN / time-off code rules.
- *
- * Random rather than time-plus-counter. Codes are capped at 10 characters, and
- * a timestamp in base36 already eats eight of them — so the counter that was
- * supposed to disambiguate got truncated away, and four parallel workers
- * generating a code in the same millisecond collided on the unique index.
- */
 export function uniqCode(prefix = 'Q'): string {
   counter += 1
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -92,7 +69,7 @@ export function uniqCode(prefix = 'Q'): string {
 }
 
 export const test = base.extend<{ api: Api; anon: Api }>({
-  /** Authenticated as the QA admin. */
+  
   api: async ({ playwright, baseURL }, use) => {
     const ctx = await playwright.request.newContext({ baseURL })
     const res = await ctx.post('/api/auth/login', {
@@ -108,7 +85,7 @@ export const test = base.extend<{ api: Api; anon: Api }>({
     await ctx.dispose()
   },
 
-  /** No session at all. */
+  
   anon: async ({ playwright, baseURL }, use) => {
     const ctx = await playwright.request.newContext({ baseURL })
     await use(new Api(ctx))
@@ -117,11 +94,6 @@ export const test = base.extend<{ api: Api; anon: Api }>({
 })
 
 export { expect }
-
-// ── data factory ────────────────────────────────────────────────────────────
-// Every helper here CREATES a record through the public API. Nothing reads a
-// pre-existing row, which is the point: a green suite proves the write paths
-// work, not that someone seeded the database once.
 
 export async function makeDepartment(api: Api, name = uniq('Dept')) {
   const r = await api.post('/api/departments', { name })
@@ -161,17 +133,6 @@ export async function makeEmployee(
   return r.data
 }
 
-/**
- * Give an existing employee a working login, the way the product actually does
- * it: create the account, send an invitation, redeem the link.
- *
- * There is no "create with a password" shortcut any more, deliberately — an
- * account is born without one and the holder sets it from a single-use link.
- * The invite response carries the full `link` "so an admin can hand it over
- * when mail is down", which is what makes this testable without an inbox.
- *
- * Returns the credentials so the caller can sign in as that person.
- */
 export async function grantLogin(
   api: Api,
   employee: { id: string; name: string; email: string },

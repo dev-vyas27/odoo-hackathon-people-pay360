@@ -27,17 +27,15 @@ export interface GetSalaryStructureDetailInput {
 export interface SalaryStructureDetail {
   structure: SalaryStructure
   rules: Array<{ rule: SalaryRule; sequence: number }>
-  /**
-   * Ordering problems found by static analysis — a rule referencing something
-   * that runs later, or a code that is not in the structure at all. Surfaced in
-   * the form so they are fixed there rather than mid-payrun.
-   */
+  
+
+
   issues: StructureIssue[]
-  /** Distinct employees whose currently active contract references this structure. See StructureEmployeeCountPort. */
+  
   employeeCount: number
 }
 
-/** Degrades to a zero count for callers that predate this port. */
+
 const NO_EMPLOYEE_COUNTS: StructureEmployeeCountPort = {
   async countByStructure() {
     return new Map()

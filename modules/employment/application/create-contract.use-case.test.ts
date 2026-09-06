@@ -119,7 +119,7 @@ describe('CreateContractUseCase', () => {
       workingScheduleId: null,
       departmentId: null,
       jobPositionName: null,
-      start: new Date('2025-06-01'), // inside the existing 2025 contract
+      start: new Date('2025-06-01'), 
       end: null,
     })
 

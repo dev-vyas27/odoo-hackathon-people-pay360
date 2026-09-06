@@ -1,9 +1,6 @@
-/**
- * POST /api/attendance/[id]/check-out — the employee's own self-service
- * check-out. Kept distinct from PATCH /api/attendance/[id] because that
- * route is a correction (always flags `manual`); this one is the normal,
- * unflagged completion of the day's attendance.
- */
+
+
+
 import { requireActor } from '@/lib/auth'
 import { handle, respond } from '@/lib/http'
 import { Ok } from '@/modules/shared'

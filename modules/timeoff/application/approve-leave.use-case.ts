@@ -1,24 +1,6 @@
-/**
- * Approve a leave request AND deduct the allocation. One transaction.
- *
- * This is the rule the whole module exists to protect, and the spec states it
- * twice: "Approved leave requests automatically deduct from assigned
- * allocations" (A4) and "Approved requests automatically reduce balances for
- * leave types requiring allocation" (B4).
- *
- * Three things make it hold:
- *
- *   1. Approval and deduction are ONE use case. If they lived apart — a
- *      controller, an event handler, a UI callback — they would eventually
- *      diverge and the system would show approved leave nobody paid for.
- *   2. They are ONE transaction. Either both writes land or neither does.
- *   3. Both rows are read FOR UPDATE, so two approvers clicking at once are
- *      serialised rather than both reading the same "before" balance.
- *
- * Order matters: the allocation is consumed FIRST. `consume()` throws when the
- * balance is short, so the request is never marked approved against a balance
- * that could not fund it.
- */
+
+
+
 import {
   DomainError,
   Err,
@@ -55,18 +37,9 @@ export class ApproveLeaveUseCase implements UseCase<ApproveLeaveInput, LeaveRequ
           throw DomainError.notFound('LEAVE_NOT_FOUND', 'That leave request does not exist')
         }
 
-        /**
-         * Nobody approves their own leave. The permission table cannot express
-         * this: it is about the relationship between the actor and the row, not
-         * about the role.
-         *
-         * This guard is specific to a HUMAN clicking Approve, so it lives only
-         * here — the auto-approve path in `request-leave` / `submit-leave`
-         * never reaches this use case at all. That is not a loophole: which
-         * types skip manual review is HR configuration on the Time Off Type,
-         * decided up front for everyone, not a choice the requester makes for
-         * their own request.
-         */
+        
+
+
         if (input.actor.employeeId && input.actor.employeeId === request.employeeId) {
           throw DomainError.forbidden(
             'LEAVE_SELF_APPROVAL',
@@ -85,12 +58,9 @@ export class ApproveLeaveUseCase implements UseCase<ApproveLeaveInput, LeaveRequ
         return repos.requests.save(request)
       })
 
-      /**
-       * Published AFTER the commit, deliberately. A subscriber that reads the
-       * request back must not see a row that is still uncommitted, and a
-       * subscriber that throws must not be able to roll back an approval that
-       * has already been granted.
-       */
+      
+
+
       await this.events.publish({
         type: 'leave_request.approved',
         occurredAt: new Date(),

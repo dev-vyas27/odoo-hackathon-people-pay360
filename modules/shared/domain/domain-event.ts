@@ -1,14 +1,5 @@
-/**
- * Domain events — the one-way seam between modules.
- *
- * When Time Off approves a request it does NOT call Attendance or Payroll. It
- * publishes LeaveRequestApproved and forgets. Subscribers react. This is how a
- * module gains behaviour in another context without either side importing the
- * other (Observer + Dependency Inversion).
- *
- * The union below is the single registry of everything that crosses a module
- * boundary. Adding a member here is a deliberate, reviewable act.
- */
+
+
 export interface DomainEventBase {
   readonly occurredAt: Date
 }
@@ -60,5 +51,4 @@ export type DomainEvent =
 
 export type DomainEventType = DomainEvent['type']
 
-/** Narrow a handler to exactly the event it subscribes to. */
 export type EventOf<T extends DomainEventType> = Extract<DomainEvent, { type: T }>

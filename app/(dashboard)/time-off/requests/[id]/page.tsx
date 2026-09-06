@@ -1,20 +1,7 @@
 'use client'
 
-/**
- * The Request Form.
- *
- * Spec B4: "Request Form details the request and supports a simple approval or
- * refusal workflow." So: the details, and two buttons.
- *
- * Which buttons appear is decided by the SERVER (`canApprove` / `canRefuse` on
- * the detail payload), not by re-deriving the rules here. The screen and the
- * API therefore cannot disagree about what is allowed — including the rule that
- * you may not decide on your own request, which no permission table can express.
- *
- * The balance panel shows what approving will cost before it is spent. That is
- * the "transparently linked" half of spec A4: the deduction is not a side effect
- * you discover afterwards.
- */
+
+
 import { use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -32,7 +19,7 @@ import { formatDate, formatDateRange, formatDuration } from '../../_components/f
 const RESOURCE = 'time-off/requests'
 
 export default function LeaveRequestPage({ params }: { params: Promise<{ id: string }> }) {
-  // Next 16: params is a promise. `use()` unwraps it in a client component.
+  
   const { id } = use(params)
   const router = useRouter()
 
@@ -163,8 +150,8 @@ export default function LeaveRequestPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      {/* The approval workflow. Every button here corresponds to a transition the
-          state machine will accept — see leave-request-state.ts. */}
+      {
+}
       <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
         {request.canSubmit ? (
           <Button onClick={() => submit.mutate({ id })} disabled={busy}>

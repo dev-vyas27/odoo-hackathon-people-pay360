@@ -1,14 +1,6 @@
-/**
- * Postgres adapter for PayrunRepositoryPort.
- *
- * A payrun spans two tables: `payruns` and the `payrun_employees` join that
- * records exactly who the wizard selected. Both are written in one transaction,
- * because a payrun that saved without its employees would compute an empty
- * payroll and look successful.
- *
- * Reads join `salary_structures` for the name and aggregate the employee ids in
- * the same statement, so the list screen is one query rather than one per row.
- */
+
+
+
 import { Period, type PageQuery, type Paged } from '@/modules/shared'
 import { normalizePageQuery, paged } from '@/modules/shared'
 import { query, queryOne, transaction } from '@/lib/db'
@@ -21,13 +13,8 @@ import {
   type PayrunReadRow,
 } from './payroll.tables'
 
-/**
- * The projection every read uses.
- *
- * `array_remove(array_agg(pe.employee_id), NULL)` yields `{}` rather than
- * `{NULL}` for a payrun with no employees, which is what a LEFT JOIN over an
- * empty join table would otherwise produce.
- */
+
+
 const SELECT_PAYRUN = `
   SELECT p.id, p.name, p.salary_structure_id, p.period_start, p.period_end,
          p.status, p.created_at, p.updated_at,
@@ -40,11 +27,11 @@ const SELECT_PAYRUN = `
 
 const GROUP_BY = `GROUP BY p.id, s.name`
 
-/** Sort columns a query string may name. A column name cannot be bound. */
+
 const SORTABLE = new Set(['name', 'period_start', 'period_end', 'status', 'created_at'])
 
 function toDomain(row: PayrunReadRow): Payrun {
-  // reconstitute, not create: reading a row must not re-run create-time rules.
+  
   return reconstitutePayrun({
     id: row.id,
     name: row.name,
@@ -135,8 +122,8 @@ export class PostgresPayrunRepository implements PayrunRepositoryPort {
 
       const employeeIds = [...payrun.employeeIds]
       if (employeeIds.length) {
-        // unnest expands one array parameter into rows: a single statement
-        // whatever the size of the selection.
+        
+        
         await client.query(
           `INSERT INTO "${PAYRUN_EMPLOYEES_TABLE}" (payrun_id, employee_id)
            SELECT $1, unnest($2::uuid[])`,
@@ -147,8 +134,8 @@ export class PostgresPayrunRepository implements PayrunRepositoryPort {
       return newId
     })
 
-    // Read back through the same projection every other caller sees, so the
-    // returned aggregate carries the joined structure name.
+    
+    
     const created = await this.findById(id)
     if (!created) {
       throw new Error(`Payrun ${id} vanished immediately after insert`)

@@ -4,7 +4,7 @@ import { LuCheck } from 'react-icons/lu'
 import type { SeedCredential } from '@/scripts/seed/types'
 import { cn } from '@/lib/utils'
 
-/** "Aarav Menon" → "AM". Two letters at most; one for a mononym. */
+
 function initials(name: string): string {
   return name
     .split(' ')
@@ -20,15 +20,15 @@ export function DemoAccountsPanel({
   activeEmail,
 }: {
   accounts: SeedCredential[]
-  /** Fills the sign-in form. See login-screen.tsx for how it is applied. */
+  
   onPick: (credential: { email: string; password: string }) => void
-  /** The account currently filled in, so the list shows where you are. */
+  
   activeEmail?: string
 }) {
   if (accounts.length === 0) return null
 
-  // A trailing odd tile spans both columns. With five accounts that is the
-  // employee — the one an evaluator is most likely to want anyway.
+  
+  
   const oddLast = accounts.length % 2 === 1
 
   return (
@@ -66,10 +66,9 @@ export function DemoAccountsPanel({
                   )}
                   aria-hidden
                 >
-                  {/* The tick replaces the initials rather than sitting at the
-                      end of the row: a trailing glyph would steal 20px from the
-                      name and role the moment you picked, and "HR Payroll
-                      Manager" would truncate as you clicked it. */}
+                  {
+
+}
                   {active ? <LuCheck className="size-3.5" /> : initials(account.name)}
                 </span>
 

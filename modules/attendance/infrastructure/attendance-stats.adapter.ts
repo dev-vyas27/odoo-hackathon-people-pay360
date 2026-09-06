@@ -1,23 +1,9 @@
-/**
- * Postgres implementation of the shared AttendanceStatsPort.
- *
- * Everything here is an aggregate computed by the database. Payroll has no
- * business iterating check-ins, and the dashboard should not pull 60 days of
- * rows to count them in JavaScript.
- *
- * `worked_on` (a date column, unique per employee per day) is what makes these
- * queries simple: "worked days" is a row count, not a date-truncation over
- * timestamps.
- *
- * Department filtering joins `employees` — unlike the Mongo version, the
- * attendances table does not denormalise department_id, and inventing a column
- * is not ours to do.
- */
+
+
 import { query, queryOne } from '@/lib/db'
 import type { AttendanceStatsPort, AttendanceSummary, Period } from '@/modules/shared'
 import { ATTENDANCES_TABLE } from './attendance.table'
 
-/** A day counts as worked once it has a check-out; an open record is not yet a day worked. */
 const COMPLETED = 'a.checked_out_at IS NOT NULL'
 
 export class PostgresAttendanceStats implements AttendanceStatsPort {
@@ -44,13 +30,8 @@ export class PostgresAttendanceStats implements AttendanceStatsPort {
     return row?.days ?? 0
   }
 
-  /**
-   * ONE query for the whole payrun batch.
-   *
-   * A 200-employee payrun calling workedDays() in a loop would be 200 round
-   * trips to a hosted database — several seconds of a five-minute demo spent
-   * waiting. GROUP BY does it in one.
-   */
+  
+
   async workedDaysForMany(employeeIds: string[], period: Period): Promise<Map<string, number>> {
     const result = new Map<string, number>()
     if (employeeIds.length === 0) return result
@@ -66,24 +47,20 @@ export class PostgresAttendanceStats implements AttendanceStatsPort {
     )
 
     for (const row of rows) result.set(row.employee_id, row.days)
-    // Employees with no attendance at all are absent from the result set, but
-    // callers expect a number for everyone they asked about.
+    
+    
     for (const id of employeeIds) if (!result.has(id)) result.set(id, 0)
 
     return result
   }
 
-  /**
-   * The dashboard's Attendance Overview, as a single pass over the period.
-   *
-   * FILTER (WHERE ...) gives one conditional count per status without five
-   * separate queries or any client-side counting.
-   */
+  
+
   async summary(period: Period, departmentId?: string, employeeType?: string): Promise<AttendanceSummary> {
     const values: unknown[] = [period.start, period.end]
-    // Joined only when a filter needs it: `employees` is not denormalised onto
-    // `attendances`, and `e.id` is unique, so the join can only drop a record
-    // whose employee vanished — never duplicate one.
+    
+    
+    
     const needsEmployeeJoin = Boolean(departmentId || employeeType)
     const employeeJoin = needsEmployeeJoin ? 'JOIN employees e ON e.id = a.employee_id' : ''
     let extraFilters = ''

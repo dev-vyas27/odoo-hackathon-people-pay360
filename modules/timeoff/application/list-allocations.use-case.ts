@@ -1,12 +1,6 @@
-/**
- * The Allocation List: the balances the spec describes as "taken, remaining,
- * and validity periods" (A4).
- *
- * Same shape as the request list — scoped to self for the `employee` role,
- * names batched rather than fetched per row. `remaining` is computed by the
- * aggregate, so the number on screen and the number the approval check uses
- * come from one place.
- */
+
+
+
 import {
   Ok,
   authorize,
@@ -36,7 +30,7 @@ export interface AllocationListItem {
   validFrom: string
   validTo: string
   status: AllocationStatus
-  /** Optional to match AllocationView exactly, so the spread below type-checks. */
+  
   note?: string | null
 }
 

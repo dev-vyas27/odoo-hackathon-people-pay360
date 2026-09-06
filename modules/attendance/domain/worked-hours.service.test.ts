@@ -17,8 +17,8 @@ describe('computeWorkedHours', () => {
   })
 
   it('handles a shift crossing midnight', () => {
-    // 22:00 -> 06:00 the next day = 8 hours, even though checkOut's clock
-    // time is numerically before checkIn's.
+    
+    
     const result = computeWorkedHours(d('2026-03-10T22:00:00Z'), d('2026-03-10T06:00:00Z'), 0)
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.value).toBe(8)

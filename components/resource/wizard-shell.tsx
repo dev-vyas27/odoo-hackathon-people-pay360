@@ -1,17 +1,7 @@
 'use client'
 
-/**
- * WizardShell — multi-step flows that persist NOTHING until the final step.
- *
- * This exists because of a specific requirement in the payrun wizard: pressing
- * Continue on step 1 must not create a record. The shell therefore owns only
- * navigation; the caller keeps the collected values in React state and performs
- * exactly one write in `onFinish`. There is no "draft" concept and no
- * autosave to accidentally leak a half-configured payrun into the database.
- *
- * Per-step gating is `canContinue`, so a step can refuse to advance while its
- * own form is invalid without the shell knowing what a payrun is.
- */
+
+
 import { useState } from 'react'
 import { LuArrowLeft, LuArrowRight, LuCheck, LuLoaderCircle } from 'react-icons/lu'
 import { Button } from '@/components/ui/button'
@@ -22,13 +12,13 @@ export interface WizardStep {
   title: string
   description?: string
   content: React.ReactNode
-  /** Defaults to true. Set false while the step's own form is incomplete. */
+  
   canContinue?: boolean
 }
 
 export interface WizardShellProps {
   steps: WizardStep[]
-  /** The ONE write. Runs only from the last step. */
+  
   onFinish: () => Promise<void> | void
   finishLabel?: string
   onCancel?: () => void
@@ -60,9 +50,9 @@ export function WizardShell({
 
   return (
     <div className={cn('space-y-8', className)}>
-      {/* Stepper. Completed steps are clickable so a user can go back and fix
-          an earlier answer; future steps are not, because their prerequisites
-          may not be satisfied yet. */}
+      {
+
+}
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-3">
         {steps.map((s, i) => {
           const done = i < index

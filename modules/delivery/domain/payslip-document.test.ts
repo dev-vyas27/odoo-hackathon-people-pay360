@@ -1,7 +1,6 @@
-/**
- * The layout is asserted here WITHOUT generating a PDF — which is the whole
- * reason `PayslipDocument` exists as a separate thing from the renderer.
- */
+
+
+
 import { describe, expect, it } from 'vitest'
 import { amountInWords } from './money-words'
 import {
@@ -18,7 +17,7 @@ const COMPANY = {
   email: 'payroll@example.com',
 }
 
-/** Rahul Verma's August 2026 payslip, exactly as the screen shows it. */
+
 function input(overrides: Partial<PayslipDocumentInput['payslip']> = {}): PayslipDocumentInput {
   return {
     payslip: {
@@ -68,11 +67,9 @@ describe('buildPayslipDocument', () => {
     expect(document.earnings.map((l) => l.code)).toEqual(['BASIC', 'HRA', 'TA'])
     expect(document.deductions.map((l) => l.code)).toEqual(['PF', 'TAX'])
 
-    /**
-     * The regression this guards: GROSS and NET are subtotal rules. Printed
-     * among the earnings they would make the column sum to ~2x the gross and
-     * read as an arithmetic bug to anyone checking by hand.
-     */
+    
+
+
     const printed = [...document.earnings, ...document.deductions].map((l) => l.code)
     expect(printed).not.toContain('GROSS')
     expect(printed).not.toContain('NET')
@@ -106,7 +103,7 @@ describe('buildPayslipDocument', () => {
 
     const department = document.employeeFields.find((f) => f.label === 'Department')
     expect(department?.value).toBe('—')
-    // Still a valid payslip: the money is what matters and it is all present.
+    
     expect(document.totals.net).toBe(90360)
   })
 
@@ -152,7 +149,7 @@ describe('storageKeyFor / fileNameFor', () => {
 
 describe('amountInWords', () => {
   it('uses the Indian numbering system, not the western one', () => {
-    // 1,23,45,678 — crore/lakh, never "twelve million".
+    
     expect(amountInWords(12345678)).toBe(
       'One Crore Twenty Three Lakh Forty Five Thousand Six Hundred Seventy Eight Rupees Only',
     )

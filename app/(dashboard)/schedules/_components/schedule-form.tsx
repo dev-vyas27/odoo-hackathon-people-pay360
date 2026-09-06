@@ -1,18 +1,5 @@
 'use client'
 
-/**
- * The working-schedule form (spec A3).
- *
- * A repeating day pattern is not a flat field list, so this does not use
- * `ResourceForm` — but it keeps the project rule: react-hook-form driving the
- * inputs, the same zod schema the route handler validates with, and
- * `useFieldArray` for the rows.
- *
- * Weekly hours are DERIVED and shown live as you edit. The spec is explicit
- * that they are calculated "rather than entering them manually", so the number
- * is read-only here and recomputed server-side on save — the display is a
- * courtesy, never the source of truth.
- */
 import { useForm, useFieldArray, useWatch, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LuLoaderCircle, LuPlus, LuTrash2 } from 'react-icons/lu'
@@ -53,21 +40,21 @@ export function ScheduleForm({
   cancel?: React.ReactNode
 }) {
   const form = useForm<CreateScheduleBody>({
-    // Same variance clash as ResourceForm: zod v4 and RHF v7 cannot infer
-    // through zodResolver. Contained to this line; every prop stays typed.
+    
+    
     resolver: zodResolver(createScheduleSchema as never) as Resolver<CreateScheduleBody>,
     defaultValues,
     mode: 'onTouched',
   })
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'days' })
-  // useWatch rather than form.watch(): the latter returns a fresh function the
-  // React Compiler cannot memoize, and it re-renders the whole form on any change.
+  
+  
   const days = useWatch({ control: form.control, name: 'days' })
   const type = useWatch({ control: form.control, name: 'type' })
   const { isSubmitting } = form.formState
 
-  // Live preview using the very function the server uses to persist the value.
+  
   const weeklyHours = computeWeeklyHours(
     (days ?? []).filter((d) => d?.start && d?.end) as CreateScheduleBody['days'],
   )

@@ -29,7 +29,7 @@ describe('resolveApplicableContract', () => {
   })
 
   it('prefers the contract covering the period end when two overlap', () => {
-    // Employee promoted mid-March: old contract ends the 15th, new one starts the 16th.
+    
     const period = Period.month(2026, 3)
     const old = contract('old', '2025-01-01', '2026-03-15')
     const current = contract('current', '2026-03-16', null)
@@ -52,7 +52,7 @@ describe('resolveApplicableContract', () => {
   })
 
   it('handles a contract starting mid-period', () => {
-    const period = Period.month(2026, 3) // 2026-03-01..2026-03-31
+    const period = Period.month(2026, 3) 
     const c = contract('mid', '2026-03-20', null)
     const result = resolveApplicableContract([c], period)
     expect(result?.id).toBe('mid')
@@ -60,8 +60,8 @@ describe('resolveApplicableContract', () => {
 
   it('when several overlap but none covers the end, ties break on the latest start', () => {
     const period = Period.month(2026, 3)
-    // Both contracts overlap the period but end before period end (03-31);
-    // neither "covers the end" -- fall back to latest start.
+    
+    
     const earlier = contract('earlier', '2026-01-01', '2026-03-10')
     const later = contract('later', '2026-03-05', '2026-03-12')
     const result = resolveApplicableContract([earlier, later], period)

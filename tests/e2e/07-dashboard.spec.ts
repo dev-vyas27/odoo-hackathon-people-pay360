@@ -28,9 +28,9 @@ test.describe('Analytics — dashboard aggregation', () => {
 
     const after = await api.get('/api/dashboard?period=2025-06')
     expect(after.status).toBe(200)
-    // `>=` not `===`: the suite runs four workers, so a sibling test may create
-    // an employee between the two reads. The claim under test is that the
-    // number moves with the data, not that this test is the only writer.
+    
+    
+    
     expect(
       after.data.headcount,
       'creating an employee must move the dashboard headcount',
@@ -38,13 +38,9 @@ test.describe('Analytics — dashboard aggregation', () => {
   })
 
   test('administrators appear in neither the headcount nor the alerts', async ({ api }) => {
-    /**
-     * An operator account is not a member of staff. It is hidden from the
-     * employee list, so counting it here would put a headcount of nine beside a
-     * list of eight — and it would sit in "missing required information"
-     * reporting a problem nobody can fix, because there is no bank account to
-     * add for a login.
-     */
+    
+
+
     const admins = await api.get('/api/employees?limit=200&includeAdmins=true')
     const staff = await api.get('/api/employees?limit=200')
     const staffIds = new Set(staff.data.items.map((e: any) => e.id))
@@ -54,7 +50,7 @@ test.describe('Analytics — dashboard aggregation', () => {
     const dashboard = await api.get('/api/dashboard?period=2026-07')
     expect(dashboard.status).toBe(200)
 
-    // Exact, by id — this is the assertion that matters.
+    
     const flagged = JSON.stringify(dashboard.data.alerts?.missingBankDetails ?? [])
     for (const admin of adminAccounts) {
       expect(
@@ -63,16 +59,9 @@ test.describe('Analytics — dashboard aggregation', () => {
       ).not.toContain(admin.id)
     }
 
-    /**
-     * Headcount is bracketed rather than compared for equality. Four workers run
-     * in parallel and several of them create employees, so a sibling test can
-     * add one between two reads — an equality assertion here failed exactly that
-     * way, off by one, with nothing wrong.
-     *
-     * Bracketing is still a real test: the population only ever grows during a
-     * run, so a headcount read BEFORE the list can never legitimately exceed it.
-     * Counting administrators would push it over.
-     */
+    
+
+
     const after = await api.get('/api/employees?limit=200')
     expect(
       dashboard.data.headcount,
@@ -141,7 +130,7 @@ test.describe('Analytics — dashboard aggregation', () => {
 
   test('a contract nearing expiry surfaces as a contract attention item', async ({ api }) => {
     const employee = await makeEmployee(api)
-    // Ends inside the 60-day attention window relative to the queried period.
+    
     await makeContract(api, employee.id, {
       wage: 45000,
       start: '2025-01-01',

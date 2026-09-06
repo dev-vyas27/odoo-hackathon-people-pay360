@@ -1,15 +1,5 @@
 'use client'
 
-/**
- * The part of the structure form that manages WHICH rules are included and IN
- * WHAT ORDER.
- *
- * Sequence is edited as a number rather than by dragging: it is the value the
- * engine actually sorts on, so showing it makes the execution order legible
- * instead of implied. Rules are listed in sequence order as you type, and the
- * panel warns about references that resolve to a rule running later — the same
- * analysis the API runs, surfaced while the user can still fix it.
- */
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu'
 import {
@@ -34,7 +24,7 @@ export interface AvailableRule {
   code: string
   category: string
   sequence: number
-  /** Codes this rule reads. Drives the ordering warnings below. */
+  
   dependencies: string[]
 }
 
@@ -148,7 +138,7 @@ export function StructureRulesField({ available }: { available: AvailableRule[] 
         </div>
       )}
 
-      {/* The array-level zod message ("needs at least one salary rule") lands here. */}
+      {}
       <FormMessage>{form.formState.errors.rules?.message}</FormMessage>
 
       {issues.length ? (
@@ -168,7 +158,6 @@ export function StructureRulesField({ available }: { available: AvailableRule[] 
   )
 }
 
-/** Row indexes in the order the engine will execute them. */
 function orderIndexesBySequence(rows: Array<{ sequence?: number } | undefined>): number[] {
   return rows
     .map((row, index) => ({ index, sequence: row?.sequence ?? 0 }))
@@ -181,10 +170,6 @@ function nextSequence(rows: Array<{ sequence?: number } | undefined>, fallback =
   return highest ? highest + 10 : fallback
 }
 
-/**
- * The same three problems the API reports, computed live: a reference to a rule
- * that is not in the structure, one that runs later, and two rules sharing a code.
- */
 function findOrderingIssues(
   rows: Array<{ ruleId?: string; sequence?: number } | undefined>,
   byId: Map<string, AvailableRule>,

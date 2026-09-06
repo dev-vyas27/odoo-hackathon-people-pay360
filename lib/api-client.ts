@@ -1,18 +1,13 @@
-/**
- * The one fetch wrapper. Every client-side request in the app goes through it.
- *
- * Two jobs: unwrap the `{ data }` / `{ error }` envelope that `lib/http.ts`
- * always produces, and turn a failure into a typed `ApiError` carrying the
- * server's own code and message. Without this, error handling is 40 copies of
- * `if (!res.ok) throw new Error('failed')` and the user sees "failed".
- */
+
+
+
 
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
     message: string,
-    /** Field-level messages from zod, keyed by field name. */
+    
     readonly details?: Record<string, unknown>,
   ) {
     super(message)
@@ -32,7 +27,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
       ...init?.headers,
     },
-    // Session lives in an httpOnly cookie; without this, mutations are anonymous.
+    
     credentials: 'same-origin',
   })
 
@@ -53,7 +48,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   return body.data as T
 }
 
-/** Build `?a=1&b=2`, dropping empty values so a cleared filter disappears. */
+
 export function toQueryString(params: Record<string, unknown> = {}): string {
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {

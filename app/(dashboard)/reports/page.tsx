@@ -1,23 +1,7 @@
 'use client'
 
-/**
- * The Payroll Dashboard — spec B9.
- *
- * Section by section, in the spec's own order:
- *   KPI cards        Total Net Salary Paid, Payslips Generated, Average Salary,
- *                    Approved Time Off, Attendance Health
- *   Charts           Salary Cost by Department, Monthly Net Salary Trend
- *   Operational      missing bank details, duplicate payslips, contract
- *   alerts           attention items
- *   Attendance       Present, Late, Absent, Overtime, missing check-outs,
- *   overview         manual edits, coverage
- *   Department       headcount plus total salary expenditure
- *   breakdown
- *
- * Every figure comes from an aggregation over real rows — spec A7 requires
- * "live metrics derived from actual system records", and there is not a
- * hardcoded number on this page.
- */
+
+
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -48,7 +32,7 @@ const money = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0,
 })
 
-/** ₹4.4L rather than ₹440,400 on a tile, which has to fit in one line. */
+
 function compactMoney(value: number): string {
   if (value >= 10_000_000) return `₹${(value / 10_000_000).toFixed(2)} Cr`
   if (value >= 100_000) return `₹${(value / 100_000).toFixed(2)} L`
@@ -110,12 +94,9 @@ export default function ReportsPage() {
 
       <DashboardFilters departments={data.departmentOptions} />
 
-      {/*
-        ── KPI cards ────────────────────────────────────────────────────────
-        Six columns, not five: total net paid takes two of them and is the one
-        tile allowed the display size. It is the figure the page exists to
-        answer, and giving the other four equal weight would bury it.
-      */}
+      {
+
+}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <KpiCard
           featured
@@ -160,7 +141,7 @@ export default function ReportsPage() {
         />
       </div>
 
-      {/* ── Charts ────────────────────────────────────────────────────────── */}
+      {}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -193,7 +174,7 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      {/* ── Operational alerts ────────────────────────────────────────────── */}
+      {}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
@@ -241,7 +222,7 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* ── Attendance overview and department breakdown ──────────────────── */}
+      {}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -315,7 +296,7 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      {/* ── Time off overview ─────────────────────────────────────────────── */}
+      {}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="eyebrow">Time off overview</CardTitle>

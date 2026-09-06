@@ -1,16 +1,6 @@
-/**
- * Compute a payrun: resolve everything each employee needs, then run the engine.
- *
- * The single most important line in this file is the call to
- * `findApplicableContract(employeeId, period)`. Payroll must use the contract
- * that applies to the PERIOD BEING RUN, not the employee's current one — that is
- * what makes rerunning last quarter produce last quarter's figures instead of
- * today's. The rule is owned by Employment and consumed through the port, so it
- * exists in exactly one place.
- *
- * Employees whose contract cannot be resolved are skipped rather than paid zero,
- * and the missing-contract check turns each into a blocking warning.
- */
+
+
+
 import {
   authorize,
   DomainError,
@@ -42,7 +32,7 @@ export interface ComputePayrunOutput {
   payrun: Payrun
   payslips: Payslip[]
   warnings: PayrollWarning[]
-  /** Employees in the run that produced no payslip, with the reason. */
+  
   skipped: Array<{ employeeId: string; employeeName: string; reason: string }>
 }
 
@@ -113,17 +103,15 @@ export class ComputePayrunUseCase implements UseCase<ComputePayrunInput, Compute
           structure,
           period: payrun.period,
           workedDays: worked?.days ?? 0,
-          /**
-           * Proration is measured in HOURS, not days: a part-time employee's
-           * schedule expects fewer hours per day, and dividing days by days
-           * would pay them a full-timer's wage for a full-timer's day count.
-           */
+          
+
+
           workedUnits: worked?.hours ?? 0,
           expectedUnits: expectedHours.get(employee.id) ?? 0,
         }),
       )
-      // A broken structure (a formula referencing a later rule, say) must fail
-      // the whole run loudly rather than quietly producing partial payslips.
+      
+      
       if (!built.ok) return built
 
       drafts.push(built.value)
@@ -169,7 +157,7 @@ export class ComputePayrunUseCase implements UseCase<ComputePayrunInput, Compute
     return new Map(entries)
   }
 
-  /** Hours worked and days present, per employee, for the period. */
+  
   private async resolveAttendance(
     employees: EmployeeSummary[],
     payrun: Payrun,
@@ -186,12 +174,9 @@ export class ComputePayrunUseCase implements UseCase<ComputePayrunInput, Compute
     return new Map(entries)
   }
 
-  /**
-   * Expected working hours per employee, cached per schedule.
-   *
-   * Twenty employees on one 40-hour schedule ask Employment once, not twenty
-   * times — the calculation is identical for all of them.
-   */
+  
+
+
   private async resolveExpectedHours(
     employees: EmployeeSummary[],
     contracts: ReadonlyMap<string, ContractSnapshot | null>,
@@ -204,7 +189,7 @@ export class ComputePayrunUseCase implements UseCase<ComputePayrunInput, Compute
       const scheduleId =
         contracts.get(employee.id)?.workingScheduleId ?? employee.workingScheduleId
       if (!scheduleId) {
-        // No schedule to prorate against; the factory pays in full.
+        
         result.set(employee.id, 0)
         continue
       }

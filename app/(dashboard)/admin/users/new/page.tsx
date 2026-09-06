@@ -1,23 +1,7 @@
 'use client'
 
-/**
- * Create an account.
- *
- * This is the ONLY way a person enters the system — the Employees screen has no
- * create button, because since migration 0010 an account IS an employee row and
- * two creation paths writing one table is how duplicates happen.
- *
- * There is no password field. An administrator must not choose somebody else's
- * password and must not be able to read it afterwards, so the account is created
- * without one and an invitation link is emailed; the person sets their own at
- * /set-password. Untick "Send an invitation" to create an HR record with no
- * login at all — a new starter on the payroll before their first day.
- *
- * The email decides between two outcomes — see `create-account.use-case.ts`:
- *
- *   unknown email        creates the person
- *   known employee email grants THAT person a login
- */
+
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -45,11 +29,9 @@ export default function NewAccountPage() {
     successMessage: 'Account created',
   })
 
-  /**
-   * When the invitation could not be emailed, the account still exists and the
-   * link is still valid — so the screen shows it rather than navigating away
-   * and leaving the admin with an account nobody can get into.
-   */
+  
+
+
   if (created) {
     const invite = created.invite
     return (

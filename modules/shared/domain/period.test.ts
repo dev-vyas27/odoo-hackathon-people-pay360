@@ -3,7 +3,7 @@ import { Period } from './period'
 
 describe('Period', () => {
   it('builds a calendar month with the correct last day', () => {
-    const feb = Period.month(2024, 2) // leap year
+    const feb = Period.month(2024, 2) 
     expect(feb.end.toISOString().slice(0, 10)).toBe('2024-02-29')
     expect(feb.days).toBe(29)
   })

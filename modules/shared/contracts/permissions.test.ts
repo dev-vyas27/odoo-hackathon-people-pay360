@@ -1,22 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { ACTIONS, RESOURCES, ROLES, can, scopeToSelf, type Permission } from './permissions'
 
-/**
- * The authorisation matrix, asserted exhaustively.
- *
- * Every other permission test in this repo checks one path. This one pins the
- * WHOLE table: for each of the five roles it lists exactly what they may do, so
- * a grant added or removed by accident fails here with a diff rather than
- * surfacing months later as somebody seeing a button they should not.
- *
- * Written as explicit lists rather than derived from the same helpers the
- * source uses — a test that rebuilds the table the same way would agree with a
- * mistake.
- */
+
+
 
 const EXPECTED: Record<string, Permission[]> = {
   employee: [
-    // Read-only, and row-scoped on top (see scopeToSelf).
+    
     'employee:read',
     'attendance:read',
     'attendance:create',
@@ -38,14 +28,14 @@ const EXPECTED: Record<string, Permission[]> = {
     ...crud('time_off_type', 'allocation', 'leave_request'),
     'leave_request:approve',
     'allocation:approve',
-    // Payroll: may run one, may NOT sign it off.
+    
     'payrun:create',
     'payrun:read',
     'payrun:update',
     'payslip:create',
     'payslip:read',
     'payslip:update',
-    // Salary configuration is read-only for this role.
+    
     'salary_structure:read',
     'salary_rule:read',
     'dashboard:read',
@@ -79,7 +69,7 @@ function crud(...resources: string[]): Permission[] {
   )
 }
 
-/** Everything this role is actually granted, as a sorted list. */
+
 function granted(role: string): string[] {
   const out: string[] = []
   for (const resource of RESOURCES) {
@@ -111,12 +101,9 @@ describe('the rules that make each role different', () => {
   })
 
   it('an employee may only create their own records, never edit or delete', () => {
-    /**
-     * Two writes, both self-service: clocking in, and raising leave. Anything
-     * they create still passes through `authorizeOwned`, so it can only ever be
-     * their own — and there is deliberately no `update` or `delete` anywhere,
-     * because correcting attendance and deciding leave are HR's jobs.
-     */
+    
+
+
     const writes = granted('employee').filter((p) => !p.endsWith(':read')).sort()
     expect(writes).toEqual(['attendance:create', 'leave_request:create'])
     expect(writes.every((p) => p.endsWith(':create'))).toBe(true)
@@ -165,8 +152,8 @@ describe('the rules that make each role different', () => {
   })
 
   it('each role includes everything the one below it can do', () => {
-    // The matrix is built by spreading the previous role, and the screens rely
-    // on that: a manager is never offered less than a user.
+    
+    
     const ladder = ['hr_manager', 'hr_payroll_user', 'hr_payroll_manager', 'admin'] as const
     for (let i = 1; i < ladder.length; i++) {
       const lower = new Set(granted(ladder[i - 1]))

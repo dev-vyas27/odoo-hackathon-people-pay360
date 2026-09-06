@@ -1,17 +1,7 @@
 'use client'
 
-/**
- * The Request List.
- *
- * Spec B4: "Request List provides an overview of Employee, Type, Dates,
- * Duration, and Status." Those five columns, in that order, are the whole
- * requirement — so they are the whole table.
- *
- * Everything else is the shared kernel doing its job: `FilterBar` writes to the
- * URL, `useResourceList` reads the same URL back, `ResourceTable` renders, and
- * `Pagination` pages. Building this screen is a column definition, which is the
- * entire point of having built the kernel first.
- */
+
+
 import { useRouter } from 'next/navigation'
 import type { ColumnDef } from '@tanstack/react-table'
 import { LuPlus } from 'react-icons/lu'
@@ -42,9 +32,9 @@ const columns: ColumnDef<LeaveRequestListItem, unknown>[] = [
   {
     id: 'dates',
     header: 'Dates',
-    // The cell shows a range, but a header can only sort by one real column —
-    // `startsOn` is what the repository's allowlist accepts (see `orderBy` in
-    // timeoff.repositories.ts), so that is what clicking this header toggles.
+    
+    
+    
     meta: { sortKey: 'startsOn' },
     cell: ({ row }) => (
       <span className="tabular">{formatDateRange(row.original.start, row.original.end)}</span>
@@ -71,12 +61,9 @@ export default function LeaveRequestsPage() {
   const params = useFilterParams(['status', 'timeOffTypeId'])
   const { page, isLoading } = useResourceList<LeaveRequestListItem>('time-off/requests', params)
 
-  /**
-   * `timeOffTypeId` was already forwarded to the API by `useFilterParams`
-   * above and already applied by the repository — there was simply no control
-   * on screen that could ever set it. Types are few, so fetching all of them
-   * for the filter's options is one small request, not a second paged list.
-   */
+  
+
+
   const types = useResourceList<TimeOffTypeView>('time-off/types', { limit: 100 })
   const typeOptions = types.page.items.map((t) => ({ value: t.id, label: t.name }))
 

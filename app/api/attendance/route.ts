@@ -1,7 +1,6 @@
-/**
- * GET  /api/attendance       — paged list, filterable by employee/date range/status.
- * POST /api/attendance       — check an employee in (creates a new open record).
- */
+
+
+
 import { requireActor } from '@/lib/auth'
 import { handle, parseQuery, respond } from '@/lib/http'
 import { Ok } from '@/modules/shared'
@@ -24,14 +23,9 @@ export async function GET(request: Request) {
     })
     if (!result.ok) return respond(result)
 
-    /**
-     * Map to the AttendanceListItem DTO the screen is typed against.
-     *
-     * Returning the aggregate directly published `workedHours` and `status` as
-     * undefined, and the list page died on `status.replace(...)` inside
-     * StatusBadge. The domain object is not a wire format: the boundary is
-     * where it becomes one.
-     */
+    
+
+
     return respond(
       Ok({
         ...result.value,

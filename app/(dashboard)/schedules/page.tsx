@@ -1,9 +1,5 @@
 'use client'
 
-/**
- * The Working Schedule list (spec A3): "list view should show key metrics like
- * name, type, and weekly hours".
- */
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { ColumnDef } from '@tanstack/react-table'

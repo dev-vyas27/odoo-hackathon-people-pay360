@@ -1,6 +1,6 @@
-/**
- * Analytics' controller: parse the filters, run the use case, return a Result.
- */
+
+
+
 import { DomainError, Err, type Actor, type Result } from '@/modules/shared'
 import {
   GetDashboardUseCase,
@@ -15,7 +15,7 @@ export async function getDashboard(
 ): Promise<Result<DashboardView>> {
   const parsed = dashboardFilterSchema.safeParse({
     period: params.period || undefined,
-    // '' is what a cleared <select> submits; it means "no filter".
+    
     departmentId: params.departmentId || undefined,
     employeeType: params.employeeType || undefined,
   })

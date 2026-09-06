@@ -1,12 +1,5 @@
-/**
- * Leave duration must bill working days, not calendar days.
- *
- * The reported bug: an employee asks for "ten days off", the span crosses two
- * weekends, and the system deducts every calendar day — including the
- * Saturdays and Sundays they were never rostered for. The balance is overdrawn
- * by the difference, and because approval consumes the same number, payroll
- * inherits it.
- */
+
+
 import { describe, expect, it } from 'vitest'
 import { InMemoryEventBus, Period, unwrap, type Actor } from '@/modules/shared'
 import { RequestLeaveUseCase } from './request-leave.use-case'
@@ -44,12 +37,6 @@ function seed(uow: InMemoryUnitOfWork) {
   return type
 }
 
-/**
- * Mon 2 Mar -> Fri 13 Mar 2026: 12 calendar days spanning one weekend.
- *
- * The reported case exactly — the employee is asking for two working weeks,
- * which is ten days off, not the twelve the calendar span would charge.
- */
 const start = day('2026-03-02')
 const end = day('2026-03-13')
 
@@ -69,7 +56,7 @@ describe('leave duration respects the working schedule', () => {
   it('excludes weekends for a Mon-Fri employee', async () => {
     const view = await request(fakeSchedules(MON_TO_FRI))
 
-    // 12 calendar days, 2 of them weekend.
+    
     expect(Period.of(start, end).days).toBe(12)
     expect(view.duration).toBe(10)
   })
@@ -77,7 +64,7 @@ describe('leave duration respects the working schedule', () => {
   it('excludes the Friday too on a compressed Mon-Thu week', async () => {
     const view = await request(fakeSchedules(MON_TO_THU))
 
-    // A hardcoded "skip Saturday and Sunday" would wrongly say 10 here.
+    
     expect(view.duration).toBe(8)
   })
 
@@ -100,7 +87,7 @@ describe('leave duration respects the working schedule', () => {
       actor: hr,
       employeeId,
       timeOffTypeId: type.id,
-      // Saturday and Sunday.
+      
       start: day('2026-03-07'),
       end: day('2026-03-08'),
     })
@@ -137,7 +124,7 @@ describe('leave duration respects the working schedule', () => {
       fakeSchedules(MON_TO_FRI),
     ).execute({ actor: hr, employeeId, timeOffTypeId: type.id, start, end })
 
-    // The whole point: 10 consumed, not the 12 calendar days.
+    
     const after = await uow.allocations.findById(allocation.id)
     expect(after?.taken).toBe(10)
   })

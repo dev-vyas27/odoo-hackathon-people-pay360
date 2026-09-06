@@ -11,7 +11,7 @@ const ACTOR: Actor = {
   name: 'Payroll Manager',
 }
 
-/** Records the query it was asked for, which is what these tests are about. */
+
 class SpyRepository implements SalaryRuleRepositoryPort {
   lastQuery: PageQuery | null = null
 
@@ -53,9 +53,9 @@ describe('ListSalaryRulesUseCase', () => {
   it('does not let the query-string defaults undo that default', async () => {
     const repository = new SpyRepository()
 
-    // Exactly what pageQuerySchema produces when no sort is requested: an
-    // explicit `order` and an absent `sort`. Spreading this over the default
-    // used to flip the list into createdAt-descending.
+    
+    
+    
     await new ListSalaryRulesUseCase(repository).execute({
       actor: ACTOR,
       query: { page: 1, limit: 20, order: 'desc', sort: undefined },

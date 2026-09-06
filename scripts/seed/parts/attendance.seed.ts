@@ -1,24 +1,6 @@
-/**
- * Forty-five days of attendance across the whole workforce.
- *
- * The dashboard's Attendance Health and coverage figures are meaningless
- * without records, and a spotless dataset is just as useless — a health score
- * of 100% proves nothing about whether the calculation works. So exceptions are
- * generated at realistic rates rather than planted one by one:
- *
- *   late              4%
- *   absent            1.6%
- *   overtime          1.2%
- *   missing_checkout  0.9%
- *   manually edited   1%   (of otherwise-present days)
- *
- * That lands health in the low nineties, which is what a real company looks
- * like and what makes the number worth reading.
- *
- * Weekends are skipped, which is what makes coverage land near 100% rather than
- * near 70%. Each person's working days come from their own schedule, so the
- * Compressed 36h staff correctly have no Friday.
- */
+
+
+
 import { seedId } from '../ids'
 import { IST_OFFSET_MS } from '@/modules/shared'
 import { ACTIVE_ROSTER, SCHEDULES } from '../roster'
@@ -26,7 +8,7 @@ import type { SeedPart, SeedRow } from '../types'
 
 const DAYS_BACK = 45
 
-/** Which weekdays each schedule works, and the hours a normal day carries. */
+
 const PATTERN: Record<string, { days: number[]; hours: number; startHour: number }> = {
   [SCHEDULES.standard40]: { days: [1, 2, 3, 4, 5], hours: 8, startHour: 9 },
   [SCHEDULES.compressed36]: { days: [1, 2, 3, 4], hours: 9, startHour: 9 },
@@ -34,7 +16,7 @@ const PATTERN: Record<string, { days: number[]; hours: number; startHour: number
   [SCHEDULES.partTime20]: { days: [1, 2, 3, 4, 5], hours: 4, startHour: 9 },
 }
 
-/** mulberry32, seeded per run so the anomalies fall in the same places twice. */
+
 function makeRng(seed: number): () => number {
   let a = seed >>> 0
   return () => {
@@ -47,21 +29,8 @@ function makeRng(seed: number): () => number {
 
 const iso = (date: Date) => date.toISOString().slice(0, 10)
 
-/**
- * A timestamp from minutes-since-midnight IST.
- *
- * Minutes rather than an (hour, minute) pair because a late start is expressed
- * as "47 minutes after the shift began" and adding that to an hour field
- * produces 09:69, which Postgres rejects outright. Arithmetic in one unit, split
- * into two only at the very end. Clamped to 23:59 so a long overtime day cannot
- * roll past midnight into the wrong date.
- *
- * The pattern times below are WALL-CLOCK IST — a 09:00 start means nine in the
- * morning in India — so the offset is subtracted to get the real instant. Left
- * as UTC, the whole seeded company appeared to start work at 14:30 once the
- * screens began rendering in IST, which is what a demo dataset looks like when
- * it was written against a different clock than the one displaying it.
- */
+
+
 function stamp(day: string, minutesFromMidnight: number): string {
   const clamped = Math.min(23 * 60 + 59, Math.max(0, Math.round(minutesFromMidnight)))
   const hour = Math.floor(clamped / 60)
@@ -104,8 +73,8 @@ export const attendanceSeed: SeedPart = {
 
         tally[status] = (tally[status] ?? 0) + 1
 
-        // A late start is 20–70 minutes after the shift begins and costs the
-        // day roughly that much; overtime runs two to three hours past.
+        
+        
         const lateMinutes = status === 'late' ? 20 + Math.floor(random() * 50) : 0
         const overtimeHours = status === 'overtime' ? 2 + Math.round(random() * 10) / 10 : 0
 
@@ -124,12 +93,12 @@ export const attendanceSeed: SeedPart = {
         const checkOut =
           status === 'absent' || status === 'missing_checkout'
             ? null
-            : // Worked hours plus the unpaid break: leaving is later than the
-              // hours alone, which is what makes the break visible on screen.
+            : 
+              
               stamp(day, startedAt + hours * 60 + breakMinutes)
 
-        // Somebody in HR corrected the record afterwards. Only ever on a day
-        // that has both stamps — correcting an absence would need a reason.
+        
+        
         const isManual = status === 'present' && random() < 0.01
         if (isManual) manualEdits += 1
 

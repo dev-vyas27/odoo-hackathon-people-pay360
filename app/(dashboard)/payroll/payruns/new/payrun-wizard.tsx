@@ -1,18 +1,5 @@
 'use client'
 
-/**
- * The payrun creation wizard.
- *
- * The rule that matters: **step 1 creates nothing**. Choosing a structure and a
- * period only moves the wizard forward — the scope lives in React state, step 2
- * asks a read-only question (`GET /api/payruns/eligible-employees`), and the one
- * and only write is the single `POST /api/payruns` behind "Create pay run". You
- * can watch that in the network tab, which is the point.
- *
- * Built local to this route rather than on a shared wizard shell, so the payroll
- * screens do not block on the platform kit landing; it swaps over cleanly when
- * that arrives.
- */
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -63,7 +50,6 @@ const EMPLOYEE_TYPE_LABELS: Record<EmployeeType, string> = {
   intern: 'Intern',
 }
 
-/** The row shape returned by the eligible-employees endpoint. */
 interface EligibleRow {
   id: string
   name: string
@@ -103,7 +89,7 @@ export function PayrunWizard({ structures }: { structures: StructureOption[] }) 
     },
   })
 
-  /** Step 1 -> step 2. Reads who is eligible; writes nothing. */
+  
   async function continueToSelection(values: PayrunScopeValues) {
     setScope(values)
     setStep(2)
@@ -119,7 +105,7 @@ export function PayrunWizard({ structures }: { structures: StructureOption[] }) 
       })
       const rows = await apiGet<EligibleRow[]>(`/api/payruns/eligible-employees?${query}`)
       setCandidates(rows)
-      // Pre-tick everyone who can actually be paid; the user unticks exceptions.
+      
       setSelected(new Set(rows.filter((r) => r.eligible).map((r) => r.id)))
     } catch (reason) {
       setCandidates(null)
@@ -131,7 +117,7 @@ export function PayrunWizard({ structures }: { structures: StructureOption[] }) 
     }
   }
 
-  /** The wizard's only write. */
+  
   async function createPayrun() {
     if (!scope || !selected.size) return
     setCreating(true)
@@ -468,10 +454,6 @@ function Steps({ current }: { current: 1 | 2 }) {
   )
 }
 
-/**
- * Date inputs speak "YYYY-MM-DD" while the zod schema coerces to Date, so the
- * form holds whichever the last write produced. This normalises both.
- */
 function toIso(value: Date | string | undefined): string {
   if (!value) return ''
   if (typeof value === 'string') return value.slice(0, 10)

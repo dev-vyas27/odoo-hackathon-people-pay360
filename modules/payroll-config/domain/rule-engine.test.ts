@@ -4,7 +4,7 @@ import { createSalaryRule, type SalaryRule } from './salary-rule'
 import { runRuleEngine, totalForCategory } from './rule-engine'
 import type { ComputationConfig } from './computation/computation.strategy'
 
-/** Terse rule builder so each test reads as the payslip it describes. */
+
 function rule(
   code: string,
   category: SalaryRule['category'],
@@ -24,14 +24,8 @@ function rule(
   }
 }
 
-/**
- * The worked example from docs/plans/DEV-C-payroll.md.
- *
- * BASIC is "the contract wage, prorated by worked days" written as a formula
- * over the two reserved inputs, which is how a structure reads the
- * period-applicable contract using only the three computation types the schema
- * allows.
- */
+
+
 function standardStructure() {
   return [
     rule('BASIC', 'basic', 10, { type: 'formula', expression: 'WAGE * WORKED_RATIO' }),
@@ -51,12 +45,12 @@ describe('runRuleEngine', () => {
     const byCode = Object.fromEntries(lines.map((l) => [l.code, l.amount.toNumber()]))
 
     expect(byCode.BASIC).toBe(50000)
-    expect(byCode.HRA).toBe(20000) // 40% of 50,000
+    expect(byCode.HRA).toBe(20000) 
     expect(byCode.TA).toBe(1600)
     expect(byCode.GROSS).toBe(71600)
-    expect(byCode.PF).toBe(6000) // 12% of 50,000
-    expect(byCode.TAX).toBe(4160) // (71,600 - 30,000) * 10%
-    expect(byCode.NET).toBe(61440) // 71,600 - 6,000 - 4,160
+    expect(byCode.PF).toBe(6000) 
+    expect(byCode.TAX).toBe(4160) 
+    expect(byCode.NET).toBe(61440) 
   })
 
   it('returns lines in sequence order with their codes, so a payslip is readable', () => {
@@ -86,7 +80,7 @@ describe('runRuleEngine', () => {
 
   it('raises when a rule references a code that has not run yet', () => {
     const rules = [
-      // NET runs first and asks for GROSS, which is still in the future.
+      
       rule('NET', 'net', 10, { type: 'formula', expression: 'GROSS - 100' }),
       rule('GROSS', 'gross', 20, { type: 'fixed', amount: 5000 }),
     ]
@@ -121,7 +115,7 @@ describe('runRuleEngine', () => {
       rule('TA', 'allowance', 20, { type: 'fixed', amount: 1600 }),
     ]
 
-    // 22 of 30 days worked.
+    
     const lines = runRuleEngine({
       rules,
       contractWage: Money.of(50000),
@@ -133,7 +127,7 @@ describe('runRuleEngine', () => {
   })
 
   it('keeps the proration ratio at full precision rather than rounding it to paise', () => {
-    // 22/30 is 0.7333...; rounding the RATIO to 0.73 would underpay by ~183.
+    
     const rules = [rule('BASIC', 'basic', 10, { type: 'formula', expression: 'WAGE * WORKED_RATIO' })]
 
     const lines = runRuleEngine({
@@ -163,7 +157,7 @@ describe('runRuleEngine', () => {
   })
 
   it('keeps paise exact where a float would drift', () => {
-    // 33.33% of 1,000.10 = 333.333... and must round once, to 333.33.
+    
     const rules = [
       rule('BASE', 'basic', 10, { type: 'fixed', amount: 1000.1 }),
       rule('CUT', 'deduction', 20, { type: 'percentage', percent: 33.33, ofCode: 'BASE' }),
@@ -245,8 +239,8 @@ describe('totalForCategory', () => {
   it('sums every allowance line and isolates deductions from net', () => {
     const lines = runRuleEngine({ rules: standardStructure(), contractWage: Money.of(50000) })
 
-    expect(totalForCategory(lines, 'allowance').toNumber()).toBe(21600) // HRA + TA
-    expect(totalForCategory(lines, 'deduction').toNumber()).toBe(10160) // PF + TAX
+    expect(totalForCategory(lines, 'allowance').toNumber()).toBe(21600) 
+    expect(totalForCategory(lines, 'deduction').toNumber()).toBe(10160) 
     expect(totalForCategory(lines, 'net').toNumber()).toBe(61440)
   })
 

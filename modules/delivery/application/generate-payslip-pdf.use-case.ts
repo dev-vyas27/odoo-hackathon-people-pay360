@@ -1,15 +1,6 @@
-/**
- * Generate one payslip PDF.
- *
- * Three collaborators, all injected: the payslip read model (Dev C's port), the
- * employee lookup (Dev B's port) and a renderer. None of them is imported
- * directly, so this use case runs against null objects long before either team
- * has finished — which is the whole point of the port registry.
- *
- * Archiving to object storage is NOT done here. The PDF must reach the browser
- * whether or not a bucket is configured, so the caller streams the bytes first
- * and archives afterwards (see the controller's `after()` call).
- */
+
+
+
 import {
   authorize,
   authorizeOwned,
@@ -62,22 +53,15 @@ export class GeneratePayslipPdfUseCase
       return Err(DomainError.notFound('PAYSLIP_NOT_FOUND', 'That payslip no longer exists.'))
     }
 
-    /**
-     * The same row-level rule the payslip screen enforces: an `employee` may
-     * download their OWN payslip and nobody else's. Repeating it here is not
-     * duplication — a PDF route that skipped it would be a way around the
-     * screen's check, which is precisely the kind of hole an export endpoint
-     * tends to open.
-     */
+    
+
+
     const owned = authorizeOwned(actor, 'payslip', 'read', payslip.employeeId)
     if (!owned.ok) return owned
 
-    /**
-     * Best-effort enrichment. Department, designation and bank account make the
-     * document look like a real payslip, but a payslip with "—" in those fields
-     * is still a valid payslip — so a missing employee record degrades the
-     * layout rather than failing the download.
-     */
+    
+
+
     const employee = await this.employees.findById(payslip.employeeId).catch(() => null)
 
     const document = buildPayslipDocument({

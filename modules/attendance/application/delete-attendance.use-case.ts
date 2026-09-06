@@ -1,7 +1,6 @@
-/**
- * DeleteAttendanceUseCase — authorized users only (`attendance:delete`,
- * granted to hr_manager and above, never to `employee`).
- */
+
+
+
 import { authorize, DomainError, Err, Ok, type Actor, type Result } from '@/modules/shared'
 import type { AttendanceRepositoryPort } from './ports/attendance-repository.port'
 

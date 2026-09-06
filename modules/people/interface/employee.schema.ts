@@ -2,11 +2,8 @@ import { z } from 'zod'
 import { email, nonEmpty, optionalUuid, pageQuerySchema } from '@/modules/shared'
 import { EMPLOYEE_TYPES } from '../domain/employee-type'
 
-/**
- * Single source of truth for what a valid employee payload looks like.
- * Imported by both the route handler (server) — there is no client form yet
- * in this backend-only slice, but the contract is ready for one.
- */
+
+
 export const employeeTypeSchema = z.enum(EMPLOYEE_TYPES)
 
 export const createEmployeeSchema = z.object({
@@ -30,12 +27,9 @@ export const employeeQuerySchema = pageQuerySchema.extend({
     .enum(['true', 'false'])
     .optional()
     .transform((v) => (v === undefined ? undefined : v === 'true')),
-  /**
-   * Administrator accounts are hidden from employee lists by default — they are
-   * operators, not staff. See the note on `buildWhere` in
-   * postgres-employee.repository.ts. This is the way back in for a screen that
-   * genuinely wants every account.
-   */
+  
+
+
   includeAdmins: z
     .enum(['true', 'false'])
     .optional()

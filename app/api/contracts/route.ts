@@ -6,14 +6,9 @@ import { createContractSchema, listContracts, createContract } from '@/modules/e
 export async function GET(req: NextRequest) {
   return handle(async () => {
     const actor = await requireActor()
-    /**
-     * `parsePageQuery`, not `pageQuerySchema.parse(parseQuery(...))`.
-     *
-     * The schema only describes paging keys, so parsing with it DROPS every
-     * other query parameter — `?employeeId=…` silently returned the whole
-     * table. parsePageQuery keeps the non-paging keys as `filters`, which is
-     * what BaseSqlRepository.buildWhere turns into a parameterised WHERE.
-     */
+    
+
+
     return respond(await listContracts(actor, parsePageQuery(req.url)))
   })
 }

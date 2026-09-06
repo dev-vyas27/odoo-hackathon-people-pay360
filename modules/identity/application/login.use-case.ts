@@ -1,12 +1,6 @@
-/**
- * Email + password -> session claims.
- *
- * Security note that is worth saying out loud in the demo: an unknown email and
- * a wrong password return the SAME error. Distinguishing them turns the login
- * form into an account-enumeration oracle. The hasher is also run against a
- * dummy hash when the user does not exist, so the response time does not leak
- * whether the address is registered either.
- */
+
+
+
 import { DomainError, Err, Ok, type CurrentUser, type Result, type UseCase } from '@/modules/shared'
 import type { AccountRepositoryPort } from './ports/account-repository.port'
 import type { PasswordHasherPort } from './ports/password-hasher.port'
@@ -17,7 +11,7 @@ export interface LoginInput {
   password: string
 }
 
-/** A bcrypt hash of a random string. Never matches; costs the same to check. */
+
 const DUMMY_HASH = '$2b$10$CwTycUXWue0Thq9StjUM0uJ8.Ux3Vh4pQ2qFqvIcS8B0eYbkVsKQK'
 
 export class LoginUseCase implements UseCase<LoginInput, CurrentUser> {
@@ -31,8 +25,8 @@ export class LoginUseCase implements UseCase<LoginInput, CurrentUser> {
 
     const matches = await this.hasher.compare(
       input.password,
-      // Null for an employee with no login, which must cost the same to reject as
-      // a wrong password — otherwise the timing says who has an account.
+      
+      
       account?.passwordHash ?? DUMMY_HASH,
     )
 

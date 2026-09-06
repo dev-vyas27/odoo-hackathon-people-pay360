@@ -1,8 +1,6 @@
-/**
- * The password rule. Worth testing precisely because it is the kind of thing
- * that gets "tidied" into a single regex that quietly stops requiring one of
- * the three things.
- */
+
+
+
 import { describe, expect, it } from 'vitest'
 import { checkPassword, isPasswordAcceptable, PASSWORD_RULES } from './password-policy'
 
@@ -27,8 +25,8 @@ describe('checkPassword', () => {
   })
 
   it('reports every broken rule at once, not just the first', () => {
-    // Someone typing "password" should learn all three problems in one go
-    // rather than discovering them across three submissions.
+    
+    
     expect(codes('pass')).toEqual(['too_short', 'no_uppercase', 'no_special'])
   })
 
@@ -37,8 +35,8 @@ describe('checkPassword', () => {
   })
 
   it('does not count whitespace as a special character', () => {
-    // "Correct horse" would otherwise sail through the special-character rule
-    // on the strength of a space, which is not what anyone means by it.
+    
+    
     expect(codes('Correct horse')).toEqual(['no_special'])
   })
 
@@ -51,8 +49,8 @@ describe('checkPassword', () => {
 
 describe('PASSWORD_RULES', () => {
   it('matches what checkPassword enforces', () => {
-    // The checklist under the field and the validator must never disagree —
-    // three green ticks next to a rejected password is a bug report.
+    
+    
     const good = 'Str0ng!pass'
     expect(PASSWORD_RULES.every((rule) => rule.test(good))).toBe(true)
     expect(isPasswordAcceptable(good)).toBe(true)

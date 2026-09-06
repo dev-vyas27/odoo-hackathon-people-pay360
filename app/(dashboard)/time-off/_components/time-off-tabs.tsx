@@ -1,9 +1,7 @@
 'use client'
 
-/**
- * Section tabs. A client component only because it needs the current pathname
- * to mark the active one; the LIST of tabs is decided on the server.
- */
+
+
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'

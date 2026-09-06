@@ -1,22 +1,12 @@
-/**
- * Small edge helpers shared by this module's controllers.
- *
- * `lib/http.ts` already owns Result -> Response; these cover the two things it
- * does not: turning a missing session into a proper 401, and turning a zod
- * failure into the same `{ error: { code, message, details } }` envelope every
- * other API failure uses, so the frontend has exactly one error shape to render.
- */
+
+
+
 import type { ZodType } from 'zod'
 import { DomainError, Err, Ok, type Actor, type Result } from '@/modules/shared'
 import { getActor } from '@/lib/auth'
 
-/**
- * The authenticated caller, or a Result the controller can return as-is.
- *
- * No explicit "connect" step: the Postgres pool in lib/db.ts connects lazily on
- * the first query and is shared across requests, so a controller never has to
- * think about connection lifecycle.
- */
+
+
 export async function requireSession(): Promise<Result<Actor>> {
   const actor = await getActor()
   if (!actor) {
@@ -42,7 +32,7 @@ export function parseWith<T>(schema: ZodType<T>, value: unknown): Result<T> {
   const fieldErrors: Record<string, string> = {}
   for (const issue of parsed.error.issues) {
     const path = issue.path.join('.') || '_'
-    // Keep the first message per field: it is the one the user should fix first.
+    
     fieldErrors[path] ??= issue.message
   }
 

@@ -1,7 +1,6 @@
-/**
- * GetAttendanceUseCase — fetch one record. An `employee` may fetch only
- * their own; every other role may fetch any record.
- */
+
+
+
 import { authorizeOwned, DomainError, Err, Ok, type Actor, type Result } from '@/modules/shared'
 import type {
   AttendanceRecord,

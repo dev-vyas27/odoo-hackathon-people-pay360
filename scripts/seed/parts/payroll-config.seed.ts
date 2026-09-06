@@ -1,20 +1,6 @@
-/**
- * Salary rules and the structure that orders them.
- *
- * ── Dev C: this file is yours to replace (modules/payroll-config). ──────────
- *
- * It runs BEFORE contracts, because a contract names the salary structure it is
- * paid under. The rules are the spec's worked example (section 6), sequenced so
- * each can reference the codes that ran before it:
- *
- *   10 BASIC  fixed        contract wage
- *   20 HRA    percentage   40% of BASIC
- *   30 TA     fixed        1600
- *   40 GROSS  formula      BASIC + HRA + TA
- *   50 PF     percentage   12% of BASIC        (deduction)
- *   60 TAX    formula      10% of GROSS        (deduction)
- *   70 NET    formula      GROSS - PF - TAX
- */
+
+
+
 import { seedId } from '../ids'
 import type { SeedPart } from '../types'
 
@@ -39,11 +25,9 @@ export const payrollConfigSeed: SeedPart = {
       { id: STRUCTURE_ID, name: 'Regular Salary', code: 'REG', is_active: true },
     ])
 
-    /**
-     * The join table has a composite primary key and no `id`, so it cannot go
-     * through `ctx.upsert` — that helper keys on `id`. `ctx.link` is the
-     * two-column equivalent, and writes the set in one statement.
-     */
+    
+
+
     await ctx.link(
       'salary_structure_rules',
       ['salary_structure_id', 'salary_rule_id'],

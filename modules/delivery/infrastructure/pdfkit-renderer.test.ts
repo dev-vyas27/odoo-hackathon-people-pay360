@@ -1,12 +1,6 @@
-/**
- * Smoke tests for the renderer.
- *
- * The LAYOUT is asserted against `PayslipDocument` in the domain test, which
- * needs no PDF at all. What can only be checked here is that pdfkit actually
- * produces a file: that the brand fonts load, that a normal payslip stays on
- * one page, and that a structure with sixty rules paginates instead of writing
- * over the footer.
- */
+
+
+
 import { describe, expect, it } from 'vitest'
 import { buildPayslipDocument, type PayslipDocumentInput } from '../domain/payslip-document'
 import { PdfKitPayslipRenderer } from './pdfkit-renderer'
@@ -49,7 +43,7 @@ function documentWith(lineCount: number) {
   })
 }
 
-/** `/Type /Page` appears once per page; `/Pages` must not be miscounted. */
+
 function pageCount(bytes: Uint8Array): number {
   const text = Buffer.from(bytes).toString('latin1')
   return (text.match(/\/Type\s*\/Page[^s]/g) ?? []).length

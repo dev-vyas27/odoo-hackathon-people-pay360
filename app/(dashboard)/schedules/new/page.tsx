@@ -12,7 +12,6 @@ import { PageHeader } from '@/components/resource/page-header'
 import { Button } from '@/components/ui/button'
 import { ScheduleForm } from '../_components/schedule-form'
 
-/** Monday to Friday, 9 to 5 with an hour for lunch — the common case, pre-filled. */
 const STANDARD_WEEK: CreateScheduleBody['days'] = [1, 2, 3, 4, 5].map((day) => ({
   day: day as CreateScheduleBody['days'][number]['day'],
   start: '09:00',
@@ -20,11 +19,6 @@ const STANDARD_WEEK: CreateScheduleBody['days'] = [1, 2, 3, 4, 5].map((day) => (
   breakMinutes: 60,
 }))
 
-/**
- * Starting suggestion for `type`, from the same threshold that used to be the
- * ONLY answer. It is a suggestion, not a derivation: the field is editable and
- * this only saves a click for the common case.
- */
 const STANDARD_WEEK_TYPE = isFullTimeSchedule(computeWeeklyHours(STANDARD_WEEK))
   ? 'full_time'
   : 'part_time'

@@ -1,20 +1,6 @@
-/**
- * The two things you can do to a request that is still yours: send it for
- * approval, or withdraw it.
- *
- * Both are gated by the state machine rather than by an `if` here.
- * `LeaveRequest.submit()` throws on anything that is not a draft, and
- * `isEditable` is false the moment a request reaches an approver — which is the
- * rule that stops someone quietly changing the dates of a request already
- * sitting in a manager's queue.
- *
- * A type configured to auto-approve does not stop there: submitting drives
- * straight through to approved, in the SAME transaction, using the same
- * allocation-consuming helper the manual approval path uses
- * (`consumeAllocationForApproval`). A draft never auto-approves — only the
- * act of submitting it does, which is what makes "save as draft" still mean
- * "not sent for a decision yet".
- */
+
+
+
 import {
   DomainError,
   Err,
@@ -47,7 +33,7 @@ export class SubmitLeaveUseCase implements UseCase<SubmitLeaveInput, LeaveReques
         return Err(DomainError.notFound('LEAVE_NOT_FOUND', 'That leave request does not exist'))
       }
 
-      // You may submit your own; HR may submit on someone's behalf.
+      
       const allowed = authorizeOwned(input.actor, 'leave_request', 'update', existing.employeeId)
       if (!allowed.ok) return allowed
 
@@ -67,7 +53,7 @@ export class SubmitLeaveUseCase implements UseCase<SubmitLeaveInput, LeaveReques
         }
 
         if (type.autoApprove) {
-          // `null`: the policy decided, not a person — see LeaveRequest.approve.
+          
           const allocationId = await consumeAllocationForApproval(repos, type, request)
           request.approve(null, allocationId)
           autoApproved = true
@@ -76,8 +62,8 @@ export class SubmitLeaveUseCase implements UseCase<SubmitLeaveInput, LeaveReques
         return repos.requests.save(request)
       })
 
-      // Published after the commit, same rule as approve-leave: a subscriber
-      // must never see this event before the row it describes is durable.
+      
+      
       if (autoApproved) {
         await this.events.publish({
           type: 'leave_request.approved',
@@ -103,13 +89,8 @@ export interface DeleteLeaveInput {
   requestId: string
 }
 
-/**
- * Withdraw a request.
- *
- * Only drafts can be deleted. Once a request has been submitted it is part of
- * the record — an approved one especially, since it is the counterpart of an
- * allocation deduction. Removing it would leave `taken` pointing at nothing.
- */
+
+
 export class DeleteLeaveUseCase implements UseCase<DeleteLeaveInput, true> {
   constructor(private readonly uow: UnitOfWorkPort) {}
 

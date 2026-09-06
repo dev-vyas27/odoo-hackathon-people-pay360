@@ -1,9 +1,6 @@
-/**
- * In-memory fake of AttendanceRepositoryPort for use-case tests.
- *
- * Never used outside tests — no database, no mongoose, matches the project
- * rule that use cases are tested against hand-written fakes.
- */
+
+
+
 import type { Paged, PageQuery } from '@/modules/shared'
 import { paged } from '@/modules/shared'
 import { istDay } from '@/modules/shared'
@@ -38,7 +35,7 @@ export class InMemoryAttendanceRepository implements AttendanceRepositoryPort {
     return null
   }
 
-  /** Keyed on the IST day, the same way the Postgres implementation is. */
+  
   async findForEmployeeOnDay(employeeId: string, workedOn: Date): Promise<AttendanceRecord | null> {
     const day = workedOn.toISOString().slice(0, 10)
     for (const row of this.rows.values()) {

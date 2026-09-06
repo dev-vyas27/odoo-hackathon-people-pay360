@@ -1,11 +1,6 @@
-/**
- * The same employee paid twice for the same period.
- *
- * Two ways this happens: the same employee appears twice inside this run, or
- * another payrun already covers an overlapping period for them. Both are errors
- * rather than warnings — paying someone twice is the one payroll mistake that is
- * genuinely expensive to unwind.
- */
+
+
+
 import type {
   IPayrollWarningCheck,
   PayrollWarning,

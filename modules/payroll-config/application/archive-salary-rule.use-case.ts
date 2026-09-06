@@ -16,15 +16,8 @@ export interface ArchiveSalaryRuleInput {
   id: string
 }
 
-/**
- * Rules are archived, never deleted.
- *
- * Historical payslips are a record of what an employee was actually paid and
- * they name the rules that produced each line. Hard-deleting a rule would leave
- * that history unexplainable, so `active: false` is the strongest thing a user
- * can do — and even that is refused while a live structure still includes it,
- * because silently dropping a line from the next payrun is worse than an error.
- */
+
+
 export class ArchiveSalaryRuleUseCase implements UseCase<ArchiveSalaryRuleInput, SalaryRule> {
   constructor(
     private readonly rules: SalaryRuleRepositoryPort,

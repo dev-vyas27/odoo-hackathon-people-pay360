@@ -1,13 +1,6 @@
 import { LuCircleAlert, LuCircleCheck, LuTriangleAlert } from 'react-icons/lu'
 import type { PayrollWarning } from '@/modules/payroll-processing'
 
-/**
- * Pre-finalisation checks, grouped by whether they BLOCK.
- *
- * The split is what keeps this panel useful: an error means validation will
- * refuse, a warning means a human should look and may proceed anyway. A single
- * undifferentiated list is the fastest way to teach people to ignore it.
- */
 export function PayrunWarnings({ warnings }: { warnings: PayrollWarning[] }) {
   if (!warnings.length) {
     return (

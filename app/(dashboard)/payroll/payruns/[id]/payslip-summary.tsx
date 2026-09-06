@@ -3,17 +3,6 @@ import { LuChevronRight, LuDownload, LuInbox } from 'react-icons/lu'
 import type { PayrunStatus, PayslipView } from '@/modules/payroll-processing'
 import { formatMoney } from '../../_lib/format'
 
-/**
- * The payslips this run produced.
- *
- * Net is the number people scan for, so it is right-aligned and tabular; the
- * full rule breakdown is one click away on each row.
- *
- * The row is a link AND carries a download button, which cannot be nested —
- * an <a> inside an <a> is invalid HTML and browsers silently unnest it. So the
- * row is a positioned container, the link is stretched across it with an
- * ::after overlay, and the download anchor sits above that overlay on its own.
- */
 export function PayslipSummary({
   payslips,
   status,
@@ -86,7 +75,7 @@ export function PayslipSummary({
             </span>
 
             <span className="relative flex w-16 items-center justify-end gap-1">
-              {/* Above the row-link overlay, so it downloads instead of navigating. */}
+              {}
               <a
                 href={`/api/payslips/${payslip.id}/pdf?download=1`}
                 title={`Download ${payslip.employeeName}'s payslip as PDF`}

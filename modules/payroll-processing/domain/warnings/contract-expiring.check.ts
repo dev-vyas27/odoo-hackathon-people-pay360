@@ -1,11 +1,6 @@
-/**
- * Contracts that need attention: expiring during or shortly after the period.
- *
- * A contract that ends mid-period means the employee is being paid for days the
- * contract does not cover; one expiring soon after means next month's run will
- * fail unless somebody renews it. Both are worth saying out loud while a human
- * is already looking at this screen.
- */
+
+
+
 import type {
   IPayrollWarningCheck,
   PayrollWarning,
@@ -14,7 +9,7 @@ import type {
 
 const DAY_MS = 86_400_000
 
-/** How far past the period end still counts as "expiring soon". */
+
 export const EXPIRY_HORIZON_DAYS = 30
 
 export class ContractExpiringCheck implements IPayrollWarningCheck {

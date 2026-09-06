@@ -1,17 +1,6 @@
-/**
- * The payrun and payslip tables as TypeScript sees them.
- *
- * The seam between migration 0009 and the domain: snake_case below, camelCase
- * above. If you change a column here, there is a migration to write.
- *
- * ── On money ───────────────────────────────────────────────────────────────
- * Every amount is `numeric(14,2)` in MAJOR units (rupees), and `lib/db.ts`
- * parses numerics into JS numbers. The domain works in `Money` (integer minor
- * units), so the conversion happens exactly twice — `Money.of(row.net)` on the
- * way out and `.toNumber()` on the way in — and nowhere in between.
- * `numeric` is not a float: Postgres stores it exactly, so the round trip is
- * lossless at two decimal places.
- */
+
+
+
 import type { PayrunStatus, PayslipStatus, SalaryCategory } from '@/modules/shared'
 
 export const PAYRUNS_TABLE = 'payruns'
@@ -41,7 +30,7 @@ export const PAYRUN_COLUMNS = [
   'updated_at',
 ] as const
 
-/** A payrun row plus the joined structure name and its selected employees. */
+
 export interface PayrunReadRow extends PayrunRow {
   structure_name: string
   employee_ids: string[] | null
@@ -81,13 +70,8 @@ export const PAYSLIP_COLUMNS = [
   'updated_at',
 ] as const
 
-/**
- * A payslip with everything the screens display, joined in one query.
- *
- * The names come from `employees`, `payruns` and `salary_structures`; the table
- * itself stores only foreign keys. Lines arrive as aggregated JSON so a payrun
- * of 200 payslips is still ONE round trip rather than 201.
- */
+
+
 export interface PayslipReadRow extends PayslipRow {
   employee_name: string
   employee_email: string | null

@@ -1,18 +1,7 @@
 'use client'
 
-/**
- * The two-field password form behind an invitation link.
- *
- * Validated by `setPasswordSchema`, the same object the route handler uses — so
- * the confirm-match check and all three policy rules are enforced on both
- * sides. A client that skipped the comparison could not set a password the user
- * only typed once.
- *
- * The rule checklist ticks live as they type. Rules you can see while typing
- * beat an error message after submitting, and it is the same
- * `PASSWORD_RULES` array the validator uses, so the ticks cannot promise
- * something the server then rejects.
- */
+
+
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -40,13 +29,9 @@ export function SetPasswordForm({ token }: { token: string }) {
 
   const [status, setStatus] = useState<LinkStatus | null>(null)
 
-  /**
-   * A plain fetch rather than TanStack Query.
-   *
-   * This page lives in the `(auth)` group, which has no QueryClientProvider —
-   * and mounting one for a single request on a public page is more machinery
-   * than the job needs. `cancelled` guards the unmount-before-resolve case.
-   */
+  
+
+
   useEffect(() => {
     if (!token) return
     let cancelled = false
@@ -129,11 +114,9 @@ export function SetPasswordForm({ token }: { token: string }) {
           }
         }}
       >
-        {/*
-          Rendered inside the form so it sits above the submit button. The
-          `onInput` listener reads the field directly rather than lifting form
-          state, which would re-render every keystroke through react-hook-form.
-        */}
+        {
+
+}
         <ul
           className="space-y-1.5"
           onInput={(event) => {

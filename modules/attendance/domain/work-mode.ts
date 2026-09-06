@@ -1,15 +1,6 @@
-/**
- * Where an employee worked a shift.
- *
- * Asked at check-in because it is only knowable then — where somebody worked on
- * a Tuesday in March cannot be reconstructed afterwards from anything the
- * system stores.
- *
- * `other` is deliberately present and deliberately vague. Without it the honest
- * answer for a client site, a train, or a conference is to pick one of the two
- * wrong ones, and a field people are forced to lie in stops being worth
- * reporting on.
- */
+
+
+
 export const WORK_MODES = ['office', 'home', 'other'] as const
 
 export type WorkMode = (typeof WORK_MODES)[number]

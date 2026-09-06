@@ -32,7 +32,7 @@ describe('Employee.create', () => {
   })
 
   it('rejects an unknown employee type', () => {
-    // @ts-expect-error deliberately invalid at the boundary
+    
     const result = Employee.create({ ...validInput, employeeType: 'freelancer' })
     expect(result.ok).toBe(false)
     if (result.ok) return

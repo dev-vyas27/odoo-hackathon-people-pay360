@@ -28,9 +28,9 @@ export class GetPayslipDetailUseCase implements UseCase<GetPayslipDetailInput, P
       return Err(DomainError.notFound('PAYSLIP_NOT_FOUND', 'That payslip no longer exists.'))
     }
 
-    // Row-level rule: an `employee` may open their OWN payslip and no one
-    // else's. proxy.ts cannot enforce this — it has no idea whose payslip this
-    // is — so it belongs here.
+    
+    
+    
     const owned = authorizeOwned(actor, 'payslip', 'read', payslip.employeeId)
     if (!owned.ok) return owned
 

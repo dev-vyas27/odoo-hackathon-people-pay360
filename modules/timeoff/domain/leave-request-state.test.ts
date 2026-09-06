@@ -1,7 +1,6 @@
-/**
- * The lifecycle. These tests exist because "illegal transitions throw" is a
- * claim, and a claim without a test is a hope.
- */
+
+
+
 import { describe, expect, it } from 'vitest'
 import { DomainError, Period } from '@/modules/shared'
 import { LeaveRequest } from './leave-request'
@@ -49,10 +48,10 @@ describe('leave request lifecycle', () => {
   })
 
   it('reaches approved with no human decider, for a type that auto-approves', () => {
-    // The application layer calls exactly this — submit() then approve(null, ...)
-    // — when the request's Time Off Type is configured to skip manual review.
-    // The transition is the SAME to_approve -> approved edge a human triggers;
-    // only who decided differs.
+    
+    
+    
+    
     const request = draft()
     request.submit()
 
@@ -99,17 +98,11 @@ describe('duration defaulting', () => {
     expect(() => LeaveRequest.defaultDuration(period, 'hour')).toThrowError(/explicit number of hours/)
   })
 
-  /**
-   * The reported bug: twelve calendar days across a weekend is ten working
-   * days, and billing the employee for the Saturday and Sunday silently
-   * overdraws their balance.
-   *
-   * The weekday arithmetic itself belongs to the schedule (and is tested in
-   * `weekly-hours.service.test.ts`); what these assert is that the count wins
-   * over the calendar span once it is known.
-   */
+  
+
+
   it('bills the working-day count rather than the calendar span', () => {
-    // Mon 2 Mar -> Fri 13 Mar 2026 inclusive: 12 calendar days, one weekend.
+    
     const fortnight = Period.of(day('2026-03-02'), day('2026-03-13'))
 
     expect(fortnight.days).toBe(12)

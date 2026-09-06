@@ -1,10 +1,6 @@
-/**
- * Edge helpers for this module's controllers.
- *
- * Mirrors payroll-config's copy deliberately: the two modules stay independent
- * of each other, and neither reaches into `lib/` for something that would then
- * be shared state across every team's code.
- */
+
+
+
 import type { ZodType } from 'zod'
 import { DomainError, Err, Ok, type Actor, type Result } from '@/modules/shared'
 import { getActor } from '@/lib/auth'

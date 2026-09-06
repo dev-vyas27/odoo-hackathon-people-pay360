@@ -1,15 +1,5 @@
 'use client'
 
-/**
- * Record a check-in.
- *
- * `attendance:create` is granted to every role including `employee`, but for
- * that role it is row-scoped: `authorizeOwned` refuses a record filed against
- * anyone else. So the employee picker is theirs alone — offering the rest of
- * the company would be offering names that can only answer 403, and honouring
- * `?employeeId=` from the URL would let a self-scoped user *aim* at a colleague
- * and only find out on submit.
- */
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { checkInSchema, type CheckInBody } from '@/modules/attendance/schemas'
@@ -26,7 +16,7 @@ export default function NewAttendancePage() {
   const me = useCurrentUser()
   const selfOnly = useScopedToSelf()
 
-  // A self-scoped role files against themselves, whatever the URL asks for.
+  
   const employeeId = selfOnly ? me.employeeId : (searchParams.get('employeeId') ?? '')
   const employees = useEmployeeOptions()
 
@@ -66,7 +56,7 @@ export default function NewAttendancePage() {
             description: selfOnly ? 'You can only record your own attendance.' : undefined,
             placeholder: employees.isLoading && !selfOnly ? 'Loading...' : 'Select employee',
           },
-          // A timestamp, not a date — see attendance-detail.tsx.
+          
           { name: 'checkIn', label: 'Check in (UTC)', type: 'datetime-local' },
           {
             name: 'breakMinutes',

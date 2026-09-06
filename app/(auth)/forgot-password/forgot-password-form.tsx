@@ -1,15 +1,7 @@
 'use client'
 
-/**
- * Request a reset link.
- *
- * The confirmation never says whether the address matched an account. It cannot:
- * the API deliberately returns the same thing either way, so any wording that
- * distinguished the two would be a lie in one of the cases — and the honest
- * version happens to also be the one that does not leak who works here.
- *
- * "If there is an account for that address" carries the whole meaning.
- */
+
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { LuArrowLeft, LuMailCheck } from 'react-icons/lu'

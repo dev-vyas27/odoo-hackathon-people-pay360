@@ -5,11 +5,8 @@ import { Employee } from '../domain/employee'
 import type { EmployeeRepositoryPort } from './ports/employee-repository.port'
 import { UpdateEmployeeUseCase } from './update-employee.use-case'
 
-/**
- * A loop in the reporting line is not a cosmetic problem: every walk up the
- * chain runs forever. The employee form hides the choice, but the API is
- * reachable without it, so the rule has to hold here too.
- */
+
+
 const hrActor: Actor = {
   employeeId: 'emp-hr',
   role: 'hr_manager',
@@ -17,7 +14,7 @@ const hrActor: Actor = {
   name: 'HR',
 }
 
-/** sahil <- rahul <- priya, each reporting to the one before. */
+
 function makeRepo(): EmployeeRepositoryPort {
   const rows = new Map<string, Employee>()
   const add = (id: string, name: string, managerId: string | null) => {
@@ -79,15 +76,15 @@ async function setManager(id: string, managerId: string) {
 
 describe('manager cycles', () => {
   it('refuses a direct report as the manager', async () => {
-    // Rahul reports to Sahil, so Rahul cannot manage Sahil.
+    
     const result = await setManager('sahil', 'rahul')
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error.code).toBe('EMPLOYEE_MANAGER_CYCLE')
   })
 
   it('refuses an INDIRECT report as the manager', async () => {
-    // Priya -> Rahul -> Sahil. Priya managing Sahil closes a three-node loop,
-    // which no row-level constraint can express.
+    
+    
     const result = await setManager('sahil', 'priya')
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error.code).toBe('EMPLOYEE_MANAGER_CYCLE')
@@ -100,7 +97,7 @@ describe('manager cycles', () => {
   })
 
   it('allows a manager who is not below the employee', async () => {
-    // Sahil is above Priya, so Sahil managing Priya directly is fine.
+    
     const result = await setManager('priya', 'sahil')
     expect(result.ok, JSON.stringify(result)).toBe(true)
   })

@@ -1,15 +1,6 @@
-/**
- * Postgres adapter for SalaryStructureRepositoryPort.
- *
- * A structure spans two tables — `salary_structures` and the
- * `salary_structure_rules` join — so every read batch-loads the join rows for
- * the whole page in ONE extra query rather than one per structure. A payroll
- * config screen with twenty structures issues two queries, not twenty-one.
- *
- * Writes go through a transaction: the structure and its rule set land together
- * or not at all. A structure that saved its name but lost half its rules would
- * compute wrong payslips and look fine on screen.
- */
+
+
+
 import { BaseSqlRepository, type SqlValue } from '@/modules/shared/server'
 import { query, transaction, type PoolClient } from '@/lib/db'
 import type { PageQuery, Paged } from '@/modules/shared'
@@ -27,7 +18,7 @@ import {
   type SalaryStructureRow,
 } from './salary-rule.table'
 
-/** A join row plus the referenced rule's own sequence, for the COALESCE default. */
+
 interface JoinRow {
   salary_structure_id: string
   salary_rule_id: string
@@ -43,11 +34,9 @@ export class PostgresSalaryStructureRepository
   protected readonly searchable = ['name', 'code']
   protected readonly defaultSort = 'name'
 
-  /**
-   * Rules are attached by the callers below, which is why this takes them as an
-   * argument rather than reading them itself — a mapper that queries is a
-   * mapper that N+1s.
-   */
+  
+
+
   protected toDomain(row: SalaryStructureRow, rules: StructureRuleRef[] = []): SalaryStructure {
     return createSalaryStructure({
       id: row.id,
@@ -70,8 +59,8 @@ export class PostgresSalaryStructureRepository
   }
 
   async findMany(pageQuery: PageQuery): Promise<Paged<SalaryStructure>> {
-    // The base class does the paging, filtering and ORDER BY; it just cannot
-    // know about the join, so the rules are attached afterwards.
+    
+    
     const page = await super.findMany(pageQuery)
     if (!page.items.length) return page
 
@@ -136,8 +125,8 @@ export class PostgresSalaryStructureRepository
       const row = updated.rows[0]
       if (!row) return null
 
-      // `undefined` means "the caller did not touch the rule set"; an empty
-      // array means "remove them all", and those must not be confused.
+      
+      
       if (data.rules === undefined) {
         const existing = await this.loadRules([id])
         return this.toDomain(row, existing.get(id) ?? [])
@@ -149,12 +138,9 @@ export class PostgresSalaryStructureRepository
     })
   }
 
-  /**
-   * Batch-load the rule references for several structures at once.
-   *
-   * `COALESCE(sequence_override, sr.sequence)` implements the schema's rule:
-   * a NULL override means "use the rule's own sequence".
-   */
+  
+
+
   private async loadRules(structureIds: string[]): Promise<Map<string, StructureRuleRef[]>> {
     const byStructure = new Map<string, StructureRuleRef[]>()
     if (!structureIds.length) return byStructure
@@ -179,13 +165,9 @@ export class PostgresSalaryStructureRepository
     return byStructure
   }
 
-  /**
-   * Replace the whole rule set.
-   *
-   * Delete-then-insert rather than a diff: the set is small, the statement is
-   * obvious, and it cannot leave a stale row behind the way a partial update
-   * can. Runs inside the caller's transaction.
-   */
+  
+
+
   private async replaceRules(
     client: PoolClient,
     structureId: string,
@@ -197,7 +179,7 @@ export class PostgresSalaryStructureRepository
     )
     if (!rules.length) return
 
-    // One multi-row INSERT rather than a statement per rule.
+    
     const values: SqlValue[] = []
     const tuples = rules.map((rule, index) => {
       values.push(structureId, rule.ruleId, rule.sequence)

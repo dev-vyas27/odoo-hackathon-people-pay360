@@ -1,32 +1,12 @@
 'use client'
 
-/**
- * Self-service check-in / check-out, for the employee's own shift.
- *
- * Sits where "Record attendance" sits for HR — the same corner of the same
- * page — because it is the same job seen from the other side: HR files a record
- * about somebody, an employee files one about themselves.
- *
- * ── The clock is the server's ──────────────────────────────────────────────
- *
- * The displayed time ticks locally, but it is anchored to the `now` the API
- * returned and only advances from there. A laptop with a wrong clock therefore
- * shows the time the record will actually be stamped with, instead of a time
- * that disagrees with it — a disagreement nobody notices until it becomes an
- * argument about hours worked.
- *
- * ── Two steps, never one ───────────────────────────────────────────────────
- *
- * Check-in asks where you are working before it opens the shift; check-out
- * states the total before it closes one. Both are single, irreversible-feeling
- * acts against a real timesheet, and neither should happen on a stray tap.
- */
+
+
 import { useCallback, useState, useSyncExternalStore } from 'react'
 import { LuLoaderCircle, LuLogIn, LuLogOut } from 'react-icons/lu'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-// NOT '@/modules/attendance' — that barrel reaches the Postgres repository,
-// and pulling the pg driver into a client bundle breaks at module evaluation.
+
 import {
   WORK_MODES,
   WORK_MODE_LABELS,
@@ -54,17 +34,8 @@ import {
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 
-/**
- * One second, shared by every subscriber.
- *
- * The passage of time is an external source, so it is subscribed to rather than
- * copied into state by an effect — the same reason the theme store is built
- * this way. One interval serves every mounted clock and stops itself when the
- * last one unmounts.
- *
- * The snapshot is a NUMBER. Returning a fresh `Date` would be a new reference
- * on every read, and React would re-render forever.
- */
+
+
 const tickers = new Set<() => void>()
 let ticking: ReturnType<typeof setInterval> | null = null
 let tick = 0
@@ -99,33 +70,24 @@ export function ClockWidget({ employeeId }: { employeeId: string }) {
   const { data, isLoading, dataUpdatedAt } = useQuery<TodayAttendanceView>({
     queryKey: ['attendance', 'today'],
     queryFn: () => apiFetch<TodayAttendanceView>('/api/attendance/today'),
-    /**
-     * The shift's own clock is local, but break minutes and the auto-close
-     * sweep are server-side. A slow refetch keeps a tab left open all day
-     * honest without polling every second for something that changes twice.
-     */
+    
+
+
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   })
 
   const tick = useSyncExternalStore(subscribeToTick, getTick, getServerTick)
 
-  /**
-   * The gap between this browser's clock and the server's.
-   *
-   * `dataUpdatedAt` is when React Query received the response, on the LOCAL
-   * clock; `data.now` is what the server said at that moment. The difference is
-   * the skew, and adding it to local time gives the time the record will
-   * actually be stamped with — which is the only time worth showing somebody
-   * about to commit to a timesheet. Re-derived on every refetch, so a tab left
-   * open all day cannot drift, and no effect is needed to re-anchor it.
-   */
+  
+
+
   const now =
     data && dataUpdatedAt
       ? new Date(Math.max(tick, dataUpdatedAt) + (new Date(data.now).getTime() - dataUpdatedAt))
       : null
 
-  /** Both mutations refresh the same two things: the clock and the list. */
+  
   const settle = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['attendance', 'today'] }),
@@ -167,13 +129,9 @@ export function ClockWidget({ employeeId }: { employeeId: string }) {
 
   const isIn = data.state === 'checked_in'
 
-  /**
-   * Live for an open shift.
-   *
-   * `workedMinutes` from the server is a snapshot; recomputing against the
-   * ticking clock is what makes the check-out dialog show a total that matches
-   * what the person is looking at rather than what it was a minute ago.
-   */
+  
+
+
   const workedMinutes =
     isIn && data.checkedInAt
       ? Math.max(
@@ -193,7 +151,7 @@ export function ClockWidget({ employeeId }: { employeeId: string }) {
               {IST_LABEL}
             </span>
           </p>
-          {/* What the record currently says, under the clock that is making it. */}
+          {}
           {data.checkedInAt ? (
             <p className="mt-1 text-xs text-muted-foreground">
               {isIn ? 'Checked in at' : 'Checked out at'}{' '}
@@ -214,7 +172,7 @@ export function ClockWidget({ employeeId }: { employeeId: string }) {
         </Button>
       </div>
 
-      {/* ── Check in ─────────────────────────────────────────────────────── */}
+      {}
       <Dialog open={checkingIn} onOpenChange={setCheckingIn}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -258,7 +216,7 @@ export function ClockWidget({ employeeId }: { employeeId: string }) {
         </DialogContent>
       </Dialog>
 
-      {/* ── Check out ────────────────────────────────────────────────────── */}
+      {}
       <Dialog open={checkingOut} onOpenChange={setCheckingOut}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -268,7 +226,7 @@ export function ClockWidget({ employeeId }: { employeeId: string }) {
             </DialogDescription>
           </DialogHeader>
 
-          {/* The total, stated before it is committed. */}
+          {}
           <div className="rounded-md border border-border bg-sunken px-4 py-3">
             <p className="eyebrow">Time worked today</p>
             <p className="tabular mt-1 text-xl font-medium text-foreground">

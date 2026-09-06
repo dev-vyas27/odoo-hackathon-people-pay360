@@ -1,15 +1,6 @@
-/**
- * Postgres repositories for the three Time Off aggregates.
- *
- * Each takes an `Executor` — either the pool (autocommit) or a transaction
- * client. That one parameter is what lets `approve-leave.use-case` run the
- * allocation deduction and the status change through the same connection, and
- * therefore the same transaction, without the use case knowing what a
- * connection is.
- *
- * Every value is bound as `$n`. The only interpolated strings are column lists
- * from `timeoff.tables.ts`, which are compile-time constants.
- */
+
+
+
 import { pool } from '@/lib/db'
 import type { QueryResultRow } from 'pg'
 import {
@@ -43,11 +34,8 @@ import {
   type TimeOffTypeRow,
 } from './timeoff.tables'
 
-/**
- * Both `Pool` and `PoolClient` satisfy this, which is the whole trick: the same
- * repository class works on a pooled connection (autocommit) or a transaction
- * client, and only the caller knows which.
- */
+
+
 export interface Executor {
   query<T extends QueryResultRow>(
     text: string,
@@ -59,7 +47,7 @@ const TYPE_COLS = selection(TIMEOFF_TYPE_COLUMNS)
 const ALLOC_COLS = selection(ALLOCATION_COLUMNS)
 const REQ_COLS = selection(REQUEST_COLUMNS)
 
-// ── mappers ──────────────────────────────────────────────────────────────────
+
 
 function toType(row: TimeOffTypeRow): TimeOffType {
   return TimeOffType.from({
@@ -104,12 +92,8 @@ function toRequest(row: LeaveRequestRow): LeaveRequest {
   })
 }
 
-/**
- * Postgres tells us WHICH constraint failed. Turning that into a DomainError
- * here means the API returns "That code is already in use" rather than a 500
- * with a driver message — and the check stays in the database, where a race
- * cannot slip past it.
- */
+
+
 function translate(reason: unknown): never {
   const error = reason as { code?: string; constraint?: string; detail?: string }
 
@@ -154,13 +138,13 @@ async function run<T extends QueryResultRow>(
   }
 }
 
-/** Sort columns arrive from a query string, so they are picked from a fixed set. */
+
 function orderBy(q: PageQuery, allowed: Record<string, string>, fallback: string): string {
   const column = (q.sort && allowed[q.sort]) || fallback
   return `ORDER BY "${column}" ${q.order === 'asc' ? 'ASC' : 'DESC'}`
 }
 
-// ── time off types ───────────────────────────────────────────────────────────
+
 
 export class PostgresTimeOffTypeRepository implements TimeOffTypeRepositoryPort {
   constructor(private readonly db: Executor = pool()) {}
@@ -243,8 +227,8 @@ export class PostgresTimeOffTypeRepository implements TimeOffTypeRepositoryPort 
     id: string,
     props: Partial<Omit<TimeOffTypeProps, 'id'>>,
   ): Promise<TimeOffType | null> {
-    // COALESCE keeps this one fixed statement usable for any partial update,
-    // which means no dynamically built identifier list.
+    
+    
     const rows = await run<TimeOffTypeRow>(
       this.db,
       `UPDATE "${TIMEOFF_TYPES_TABLE}" SET
@@ -272,8 +256,8 @@ export class PostgresTimeOffTypeRepository implements TimeOffTypeRepositoryPort 
   }
 
   async delete(id: string): Promise<boolean> {
-    // The FK from allocations and requests is ON DELETE RESTRICT, so this
-    // throws rather than orphaning history. Deactivating is the usual answer.
+    
+    
     const rows = await run<{ id: string }>(
       this.db,
       `DELETE FROM "${TIMEOFF_TYPES_TABLE}" WHERE id = $1 RETURNING id`,
@@ -283,7 +267,7 @@ export class PostgresTimeOffTypeRepository implements TimeOffTypeRepositoryPort 
   }
 }
 
-// ── allocations ──────────────────────────────────────────────────────────────
+
 
 export class PostgresAllocationRepository implements AllocationRepositoryPort {
   constructor(private readonly db: Executor = pool()) {}
@@ -297,14 +281,9 @@ export class PostgresAllocationRepository implements AllocationRepositoryPort {
     return rows[0] ? toAllocation(rows[0]) : null
   }
 
-  /**
-   * `FOR UPDATE` locks the row for the rest of the transaction.
-   *
-   * Without it, two approvals for the same employee could both read
-   * `taken = 0`, both decide there is room, and both write. The CHECK constraint
-   * would catch the worst case, but the correct fix is to serialise the
-   * read-modify-write, which is exactly what this does.
-   */
+  
+
+
   async findByIdForUpdate(id: string): Promise<Allocation | null> {
     const rows = await run<AllocationRow>(
       this.db,
@@ -342,13 +321,9 @@ export class PostgresAllocationRepository implements AllocationRepositoryPort {
       }
     }
 
-    /**
-     * `search` used to be accepted by the query string and simply never
-     * looked at: the FilterBar box rendered, every keystroke round-tripped to
-     * the API, and the result set never changed. What the column headers
-     * actually show is the employee and the leave type, both on other tables
-     * plus this row's own free-text `note` — so all three are searched.
-     */
+    
+
+
     if (q.search) {
       values.push(`%${q.search}%`)
       const i = values.length
@@ -405,7 +380,7 @@ export class PostgresAllocationRepository implements AllocationRepositoryPort {
     return toAllocation(rows[0])
   }
 
-  /** Persists a mutated aggregate. Takes the whole thing, not a patch. */
+  
   async save(allocation: Allocation): Promise<Allocation> {
     const props = allocation.toProps()
     const rows = await run<AllocationRow>(
@@ -442,7 +417,7 @@ export class PostgresAllocationRepository implements AllocationRepositoryPort {
   }
 }
 
-// ── leave requests ───────────────────────────────────────────────────────────
+
 
 export class PostgresLeaveRequestRepository implements LeaveRequestRepositoryPort {
   constructor(private readonly db: Executor = pool()) {}
@@ -476,7 +451,7 @@ export class PostgresLeaveRequestRepository implements LeaveRequestRepositoryPor
     return rows.map(toRequest)
   }
 
-  /** Approved leave intersecting a period — the dashboard's leave figure. */
+  
   async findApprovedInPeriod(period: Period, employeeIds?: string[]): Promise<LeaveRequest[]> {
     const rows = await run<LeaveRequestRow>(
       this.db,
@@ -516,7 +491,7 @@ export class PostgresLeaveRequestRepository implements LeaveRequestRepositoryPor
       }
     }
 
-    // ?from= / ?to= narrow the list to requests overlapping a window.
+    
     const from = q.filters?.from
     if (typeof from === 'string' && from !== '') {
       values.push(from)
@@ -528,9 +503,9 @@ export class PostgresLeaveRequestRepository implements LeaveRequestRepositoryPor
       conditions.push(`starts_on <= $${values.length}::date`)
     }
 
-    // Same gap as the allocations list: `search` reached the API and did
-    // nothing. The Request List shows Employee and Type, so both are searched,
-    // plus the requester's own free-text `reason`.
+    
+    
+    
     if (q.search) {
       values.push(`%${q.search}%`)
       const i = values.length

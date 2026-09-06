@@ -1,11 +1,6 @@
-/**
- * CheckOutUseCase — completes an open attendance record.
- *
- * Same authorization story as check-in: this is the employee finishing their
- * own day, not a correction, so it is scoped as `attendance:create` against
- * the record's owning employee. An HR/manual edit after the fact goes through
- * correct-attendance.use-case.ts instead, which requires `attendance:update`.
- */
+
+
+
 import { authorizeOwned, DomainError, Err, Ok, type Actor, type Result } from '@/modules/shared'
 import type { Attendance } from '../domain/attendance'
 import type { AttendanceRepositoryPort } from './ports/attendance-repository.port'
